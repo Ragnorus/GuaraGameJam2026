@@ -19,7 +19,6 @@ var gates: Array = []
 var hp_bar: ProgressBar
 var meter_bar: ProgressBar
 var boss_bar: ProgressBar
-var cloud_layer: ParallaxLayer
 
 func _ready() -> void:
 	InputSetup.setup()
@@ -78,30 +77,36 @@ func _add_prop(path: String, pos: Vector2, px_scale := 2.0, z := -1) -> void:
 	s.z_index = z
 	add_child(s)
 
-# Yeral's night city: five full-height layers built from art/sheets/neon_gotham_sheet.png by tools/slice_neon.js.
+# Yeral's night city: the painted skyline from art/sheets/spoiler_gotham_sheet.png, cropped unaltered by
+# tools/slice_gotham.js and drawn top-aligned at 2x with nearest filtering (1021x322 -> 2042x644; the floor at
+# y=600 covers the rest). A flipped copy sits beside it so the loop is seamless; a plain sky strip is the backstop.
 func _build_city_background(pb: ParallaxBackground) -> void:
-	# [file, scroll speed, y offset from the top of the 720px screen, tint, pixel scale]
-	# Layers are stored at game-pixel size; one integer scale keeps pixels crisp (256x144 * 5 = 1280x720).
-	# Far to near, buildings reach the top of the screen; deeper layers scroll slower. Clouds also drift on their own.
-	var layers := [["city_bg_sky", 0.02, 0.0, Color.WHITE, 5], ["city_bg_clouds", 0.06, 20.0, Color(1, 1, 1, 0.85), 5],
-			["city_bg_far", 0.08, 0.0, Color.WHITE, 5], ["city_bg_mid", 0.18, 0.0, Color.WHITE, 5],
-			["city_bg_near", 0.32, 0.0, Color(0.85, 0.9, 0.85), 5]]
-	for l in layers:
-		var tex: Texture2D = load("res://assets/sprites/city_bg/%s.png" % l[0])
-		var pl := ParallaxLayer.new()
-		pl.motion_scale = Vector2(l[1], 0.0)
-		pl.motion_mirroring = Vector2(tex.get_width() * l[4], 0)
-		if l[0] == "city_bg_clouds":
-			cloud_layer = pl
+	var sky: Texture2D = load("res://assets/sprites/city_bg/city_bg_sky.png")
+	var sky_layer := ParallaxLayer.new()
+	sky_layer.motion_scale = Vector2.ZERO
+	var sky_spr := Sprite2D.new()
+	sky_spr.texture = sky
+	sky_spr.centered = false
+	sky_spr.scale = Vector2(1280.0 / sky.get_width(), 720.0 / sky.get_height())
+	sky_layer.add_child(sky_spr)
+	pb.add_child(sky_layer)
+
+	var tex: Texture2D = load("res://assets/sprites/city_bg/city_bg_panorama.png")
+	const PX := 2
+	var w := tex.get_width() * PX
+	var pl := ParallaxLayer.new()
+	pl.motion_scale = Vector2(0.25, 0.0)
+	pl.motion_mirroring = Vector2(w * 2, 0)
+	for i in 2:
 		var spr := Sprite2D.new()
 		spr.texture = tex
 		spr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 		spr.centered = false
-		spr.scale = Vector2(l[4], l[4])
-		spr.position = Vector2(0, l[2])
-		spr.modulate = l[3]
+		spr.flip_h = i == 1
+		spr.scale = Vector2(PX, PX)
+		spr.position = Vector2(w * i, 0.0)
 		pl.add_child(spr)
-		pb.add_child(pl)
+	pb.add_child(pl)
 
 func _build_background() -> void:
 	var pb := ParallaxBackground.new()
@@ -312,8 +317,6 @@ func _update_hud() -> void:
 	hud_label.add_theme_font_size_override("font_size", 14)
 
 func _process(delta: float) -> void:
-	if cloud_layer:
-		cloud_layer.motion_offset.x -= 14.0 * delta
 	if dialogue_time > 0.0:
 		dialogue_time -= delta
 		if dialogue_time <= 0.0:
