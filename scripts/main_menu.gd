@@ -1,6 +1,6 @@
 extends Control
 
-const YERAL_SCENE := "res://scenes/main.tscn"
+const INTRO_SCENE := "res://scenes/story_intro.tscn"
 const TITLE_ART := preload("res://assets/ui/title_screen.png")
 
 var menu: Control
@@ -93,4 +93,4 @@ func _open_menu(fade := true) -> void:
 
 func _start_game() -> void:
 	GameSettings.begin_run()
-	MenuKit.go(self, YERAL_SCENE)
+	MenuKit.go(self, INTRO_SCENE)
