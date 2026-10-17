@@ -20,12 +20,12 @@ Yeral the Spoilerman palette (level, UI, projectiles, traps):
 - `robot_sheet.png` - robot minion: idle, run, warn, shoot, hurt, dead frames, plus bolt and boom FX.
 - `level_sheet.png` - lair props: banners, lamps, desk/crown screen/hologram, crates, platforms, spikes, terminal, vat, etc.
 - `glizzy_sheet.png` - supplied 1536x1024 Yeral-to-hotdog transformation, bun combat poses, collapse, and condiment effects.
-- `city_sheet.png` - Gotham-style night city: skyline panorama, clouds/moon, modular towers, bridges, rooftop platforms, street props, windows, ground strips, atmosphere/fog.
+- `neon_gotham_sheet.png` - Neon Gotham background spritesheet (real RGBA, transparent backdrop): skyline painting, clouds/moon, modular towers, rooftop details, bridges, walkways/platforms, street props, windows, fog/beam effects.
 
 ## Pipeline
 1. `node tools/slice_sheets.js` - explicit frame boxes (`GROUPS`), keeps the main blob, trims, downscales, and puts every frame of a group on one uniform canvas aligned to the feet. Output `assets/sprites/<group>/<group>_<frame>.png` (`yeral`, `yeral_fx`, `robot`, `robot_fx`).
 2. `node tools/slice_lair.js` - labels blobs and assigns them to named `REGIONS`; output `assets/sprites/lair/lair_<name>.png`, trimmed, scaled 0.6.
-3. `node tools/slice_city.js` - `city_sheet.png` is opaque, so it builds parallax layers `assets/sprites/city_bg/city_bg_{far,mid,near}.png` (far: sky + clouds, 1280x720; mid: mirrored skyline, fades in at top; near: fog/silhouettes with brightness alpha) and flood-fills the dark backdrop to cut `assets/sprites/city/city_<tower|bridge|platform|prop|window|ground>_<n>.png` (numbered row-major).
+3.  `node tools/slice_neon.js` - alpha-keys `neon_gotham_sheet.png`, labels connected sprites, 3x box-downsamples + quantises them into `assets/sprites/neon/neon_<tower|roof|bridge|platform|prop|window|fx|sky>_<n>.png`, then composes five parallax layers in `assets/sprites/city_bg/` (sky 256x144 with moon, clouds 512x70, and far/mid/near building strips 144 tall). Towers are stretched (shaft band repeated) so buildings fill the full screen height; deeper layers are hazed toward fog green. Layers are drawn at an integer 5x with nearest filtering (256x144 * 5 = 1280x720) - never scale fractionally or they blur. `node tools/preview_bg.js out.png [scrollX]` composites them for a quick look.
 4. `node tools/contact_sheet.js <group> out.png` - visual check. Write to a new filename each time (image viewers cache).
 5. `node tools/gen_assets.js` - floor/wall tiles, backgrounds and legacy props in `assets/` (still used by Ema's level).
 6. `python assets/extract_glizzy.py` - rebuilds `assets/glizzy_atlas.png` and `assets/glizzy_frames.tres` from the copied Glizzy source; requires Pillow. Explicit crops, polygon exclusions, and per-pose feet anchors preserve source pixels without neighboring poses.
@@ -37,6 +37,6 @@ When a sheet changes, adjust the boxes/regions in the slicer rather than editing
 - `scripts/sprite_lib.gd` (`SpriteLib`): `build(group, anims)` makes `SpriteFrames` from frame suffixes; `make_sprite(frames, feet_y)` places the sprite so the canvas bottom sits at the feet; `texture(group, suffix)`.
 - Yeral (`boss_yeral.gd`): body 60x90, sprite feet at y=+45, spawn y `FLOOR_Y - 52`. The first health depletion switches to `glizzy_frames.tres`: character canvases 512x384, feet (256,352), scale 0.38, non-centered offset (-256,-352), still at y=+45. Transform and death animations finish before combat resumes or the stage clears; attacks use the sheet's condiment and sauce art.
 - Robot minions (`bug.gd`, `robot = true`, Yeral level only): body 44x72, `warn` then `shoot` fires the bolt, `dead` then `boom`, then freed. Dead robots count as cleared for gates.
-- Background: `_build_city_background` in `main.gd` stacks the three `city_bg` layers in a `ParallaxBackground` (Yeral level only; Ema keeps `bg_*.png`).
+- Background: `_build_city_background` in `main.gd` stacks the five `city_bg` layers (sky, drifting clouds, far/mid/near buildings) at 5x in a `ParallaxBackground` (Yeral level only; Ema keeps `bg_*.png`).
 - Lair props and platforms: `_build_yeral_props` and `_add_platform_sprite` in `main.gd`. Ema's level keeps the older generated art.
 - Pixel art uses `TEXTURE_FILTER_NEAREST` for tiles/props.

@@ -19,6 +19,7 @@ var gates: Array = []
 var hp_bar: ProgressBar
 var meter_bar: ProgressBar
 var boss_bar: ProgressBar
+var cloud_layer: ParallaxLayer
 
 func _ready() -> void:
 	InputSetup.setup()
@@ -77,20 +78,28 @@ func _add_prop(path: String, pos: Vector2, px_scale := 2.0, z := -1) -> void:
 	s.z_index = z
 	add_child(s)
 
-# Yeral's night city (sprites sliced from art/sheets/city_sheet.png by tools/slice_city.js).
+# Yeral's night city: five full-height layers built from art/sheets/neon_gotham_sheet.png by tools/slice_neon.js.
 func _build_city_background(pb: ParallaxBackground) -> void:
-	# [file, scroll speed, y offset from the top of the 720px screen]
-	var layers := [["city_bg_far", 0.05, 0.0], ["city_bg_mid", 0.25, 361.0], ["city_bg_near", 0.5, 335.0]]
+	# [file, scroll speed, y offset from the top of the 720px screen, tint, pixel scale]
+	# Layers are stored at game-pixel size; one integer scale keeps pixels crisp (256x144 * 5 = 1280x720).
+	# Far to near, buildings reach the top of the screen; deeper layers scroll slower. Clouds also drift on their own.
+	var layers := [["city_bg_sky", 0.02, 0.0, Color.WHITE, 5], ["city_bg_clouds", 0.06, 20.0, Color(1, 1, 1, 0.85), 5],
+			["city_bg_far", 0.08, 0.0, Color.WHITE, 5], ["city_bg_mid", 0.18, 0.0, Color.WHITE, 5],
+			["city_bg_near", 0.32, 0.0, Color(0.85, 0.9, 0.85), 5]]
 	for l in layers:
 		var tex: Texture2D = load("res://assets/sprites/city_bg/%s.png" % l[0])
 		var pl := ParallaxLayer.new()
 		pl.motion_scale = Vector2(l[1], 0.0)
-		pl.motion_mirroring = Vector2(tex.get_width(), 0)
+		pl.motion_mirroring = Vector2(tex.get_width() * l[4], 0)
+		if l[0] == "city_bg_clouds":
+			cloud_layer = pl
 		var spr := Sprite2D.new()
 		spr.texture = tex
 		spr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 		spr.centered = false
+		spr.scale = Vector2(l[4], l[4])
 		spr.position = Vector2(0, l[2])
+		spr.modulate = l[3]
 		pl.add_child(spr)
 		pb.add_child(pl)
 
@@ -303,6 +312,8 @@ func _update_hud() -> void:
 	hud_label.add_theme_font_size_override("font_size", 14)
 
 func _process(delta: float) -> void:
+	if cloud_layer:
+		cloud_layer.motion_offset.x -= 14.0 * delta
 	if dialogue_time > 0.0:
 		dialogue_time -= delta
 		if dialogue_time <= 0.0:

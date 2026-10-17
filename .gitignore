@@ -1,3 +1,32 @@
+# Godot 4 generated cache (imported textures, shader cache, editor state)
 .godot/
-*.translation
+
+# Godot mono build output
+.mono/
+data_*/
+mono_crash.*.json
+
+# Export output (export_presets.cfg stays tracked so everyone exports the same way)
 build/
+export/
+export_credentials.cfg
+*.apk
+*.aab
+*.exe
+*.pck
+*.dmg
+
+# Translations compiled from .po/.csv
+*.translation
+
+# Editor, OS and tooling files
+.vs/
+*.tmp
+*.swp
+.DS_Store
+Thumbs.db
+Desktop.ini
+node_modules/
+
+# Keep *.import and *.uid files tracked: they hold import settings and stable resource UIDs.
+# Only the .godot/ cache is regenerated.
