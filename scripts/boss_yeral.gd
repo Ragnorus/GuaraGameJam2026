@@ -103,7 +103,6 @@ func _announce() -> void:
 	var real: String = attacks[randi() % attacks.size()]
 	var lie_chance := 0.2 + 0.2 * (phase - 1)
 	var roll := randf()
-	var said := real
 	var done := real
 	if roll < lie_chance * 0.5:
 		done = "nothing"
@@ -114,12 +113,10 @@ func _announce() -> void:
 		"charge": ["Next, I charge. Straight at you!", "Spoiler: I'm about to ram you."],
 		"trap": ["The floor beneath you will explode!", "Spoiler: don't stand there."],
 	}
-	var l: Array = lines[said]
+	var l: Array = lines[real]
 	speech.emit(l[randi() % l.size()], 2.0)
 	pending = done
 	pending_time = 1.0 if done != "nothing" else 1.2
-	if done == "trap" and said != "trap":
-		pending_time = 1.0
 
 func _execute(a: String) -> void:
 	match a:
