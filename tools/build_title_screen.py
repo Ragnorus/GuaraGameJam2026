@@ -1,16 +1,38 @@
-"""Rebuild the title screen subtitle "A GOTHAM ADVENTURE" as "A GUARA ADVENTURE".
+"""Build the title screen from the supplied art.
 
-Reuses the art's own pixel letters (G, U, A, R are all on that line), so the font, fill and outline match.
+1. Subtitle "A GOTHAM ADVENTURE" -> "A GUARA ADVENTURE", reusing the art's own pixel letters
+   (G, U, A, R are all on that line) so the font, fill and outline match.
+2. The bat in the spotlight signal -> a black Guara red hawk head (the Guaras' symbol), traced by hand
+   from art/sheets/guara_hawk.png as a polygon stencil.
 Source:  art/sheets/title_screen_original.png (unaltered, as supplied)
 Output:  assets/ui/title_screen.png
-Run:     python tools/retitle_subtitle.py   (requires Pillow)
+Run:     python tools/build_title_screen.py   (requires Pillow)
 """
+import math
 from pathlib import Path
-from PIL import Image
+from PIL import Image, ImageDraw
 
 ROOT = Path(__file__).resolve().parent.parent
 SRC = ROOT / "art" / "sheets" / "title_screen_original.png"
+HAWK = ROOT / "art" / "sheets" / "guara_hawk.png"  # reference the stencil was traced from
 OUT = ROOT / "assets" / "ui" / "title_screen.png"
+
+# Spotlight disc in the title art.
+DISC_CENTER = (249.5, 394.0)
+DISC_RX, DISC_RY = 30.0, 27.0
+DISC_COLOR = (238, 230, 166)
+LOGO_SIZE = 42                  # logo height in px
+LOGO_COLOR = (10, 10, 14)
+SS = 8                          # supersampling for the stencil
+# Hawk head facing right, in the icon's 81x84 pixel space: crest/back feathers, hooked beak, throat, neck feathers.
+HAWK_OUTLINE = [
+    (22, 17), (31, 20), (40, 19), (48, 21), (55, 25), (60, 31), (64, 37), (67, 43), (68, 50),
+    (66, 56), (63, 60), (62, 54), (59, 49), (53, 48), (49, 51), (46, 55), (47, 62), (45, 69),
+    (39, 64), (34, 70), (30, 63), (24, 67), (22, 58), (15, 62), (16, 52), (9, 54), (14, 45),
+    (7, 42), (14, 37), (9, 31), (17, 29), (13, 23), (23, 23),
+]
+HAWK_MOUTH = [(52, 46), (60, 45), (62, 48), (58, 47)]  # notch separating beak from jaw
+HAWK_EYE = (47, 34, 2.2)                                 # x, y, radius (cut out)
 
 TOP, BOTTOM = 136, 154          # letter rows (fill)
 CLEAN_TOP, CLEAN_BOTTOM = 132, 158  # rows just outside the outline, used to repaint the background
@@ -26,7 +48,7 @@ def lum(p):
     return sum(p[:3]) / 3.0
 
 
-def main() -> None:
+def retitle() -> Image.Image:
     src = Image.open(SRC).convert("RGB")
     sp = src.load()
     # Letter columns: runs of bright fill along the line.
@@ -79,9 +101,54 @@ def main() -> None:
         for (gx, gy) in mask:
             op[gx + shift, gy] = sp[gx, gy]
 
+    return out
+
+
+def hawk_silhouette(height: int) -> Image.Image:
+    """Anti-aliased hawk mask ("L"), traced from the Guara red hawk icon and supersampled."""
+    xs = [p[0] for p in HAWK_OUTLINE]
+    ys = [p[1] for p in HAWK_OUTLINE]
+    x0, y0 = min(xs), min(ys)
+    scale = height / (max(ys) - y0)
+    w = round((max(xs) - x0) * scale)
+    big = Image.new("L", (w * SS, height * SS), 0)
+    d = ImageDraw.Draw(big)
+    tf = lambda pts: [((x - x0) * scale * SS, (y - y0) * scale * SS) for x, y in pts]
+    d.polygon(tf(HAWK_OUTLINE), fill=255)
+    d.polygon(tf(HAWK_MOUTH), fill=0)
+    (ex, ey), er = tf([HAWK_EYE[:2]])[0], HAWK_EYE[2] * scale * SS
+    d.ellipse((ex - er * 1.4, ey - er, ex + er * 1.4, ey + er), fill=0)
+    return big.resize((w, height), Image.LANCZOS)
+
+
+def hawk_signal(img: Image.Image) -> None:
+    """Replace the bat in the spotlight disc with a black Guara hawk."""
+    p = img.load()
+    cx, cy = DISC_CENTER
+    # Relight the inside of the disc (removes the bat), feathering into the original rim.
+    for y in range(int(cy - DISC_RY - 2), int(cy + DISC_RY + 3)):
+        for x in range(int(cx - DISC_RX - 2), int(cx + DISC_RX + 3)):
+            r = math.hypot((x - cx) / DISC_RX, (y - cy) / DISC_RY)
+            if r > 1.03:
+                continue
+            a = 1.0 if r < 0.97 else (1.03 - r) / 0.06
+            shade = 1.0 - 0.08 * r * r
+            c = tuple(min(255, round(v * shade)) for v in DISC_COLOR)
+            o = p[x, y]
+            p[x, y] = tuple(round(o[i] * (1 - a) + c[i] * a) for i in range(3))
+    mask = hawk_silhouette(LOGO_SIZE)
+    ox = round(cx - mask.width / 2)
+    oy = round(cy - mask.height / 2)
+    ink = Image.new("RGB", mask.size, LOGO_COLOR)
+    img.paste(ink, (ox, oy), mask)
+
+
+def main() -> None:
+    out = retitle()
+    hawk_signal(out)
     OUT.parent.mkdir(parents=True, exist_ok=True)
     out.save(OUT)
-    print("wrote", OUT, "subtitle", TEXT, "x", left, "..", left + width)
+    print("wrote", OUT)
 
 
 if __name__ == "__main__":
