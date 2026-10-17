@@ -21,6 +21,7 @@ Debugging:
 |---|---|
 | Move | A/D or arrows |
 | Jump | Space / W / Up |
+| Dash | Shift |
 | Controller Smash (shoot) | J / Left click |
 | Shadow Spawn (summon minion) | K |
 | Recall minions | L |

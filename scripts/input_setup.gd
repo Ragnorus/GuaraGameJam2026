@@ -12,6 +12,7 @@ static func setup() -> void:
 	_add_key("move_left", [KEY_A, KEY_LEFT])
 	_add_key("move_right", [KEY_D, KEY_RIGHT])
 	_add_key("jump", [KEY_SPACE, KEY_W, KEY_UP])
+	_add_key("dash", [KEY_SHIFT])
 	_add_key("shoot", [KEY_J])
 	_add_key("summon", [KEY_K])
 	_add_key("recall", [KEY_L])

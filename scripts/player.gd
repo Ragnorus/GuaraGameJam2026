@@ -7,6 +7,10 @@ signal stats_changed
 const SPEED := 260.0
 const JUMP_VELOCITY := -520.0
 const GRAVITY := 1500.0
+const MAX_JUMPS := 2
+const DASH_SPEED := 700.0
+const DASH_DURATION := 0.16
+const DASH_COOLDOWN := 0.7
 const MAX_MINIONS := 4
 
 var max_health := 10
@@ -20,6 +24,10 @@ var meter_max := 100.0
 var minions: Array = []
 var max_minions := MAX_MINIONS
 var dead := false
+var jumps_remaining := MAX_JUMPS
+var dash_time := 0.0
+var dash_cooldown := 0.0
+var dash_direction := 1
 
 func _ready() -> void:
 	add_to_group("player")
@@ -35,14 +43,26 @@ func _physics_process(delta: float) -> void:
 	shoot_cd = maxf(0.0, shoot_cd - delta)
 	summon_cd = maxf(0.0, summon_cd - delta)
 	invuln = maxf(0.0, invuln - delta)
+	dash_cooldown = maxf(0.0, dash_cooldown - delta)
+	dash_time = maxf(0.0, dash_time - delta)
+	if is_on_floor():
+		jumps_remaining = MAX_JUMPS
 	if not is_on_floor():
 		velocity.y += GRAVITY * delta
 	var dir := Input.get_axis("move_left", "move_right")
-	velocity.x = dir * SPEED
 	if dir != 0.0:
 		facing = 1 if dir > 0.0 else -1
-	if Input.is_action_just_pressed("jump") and is_on_floor():
+	if Input.is_action_just_pressed("dash") and dash_cooldown <= 0.0:
+		dash_time = DASH_DURATION
+		dash_cooldown = DASH_COOLDOWN
+		dash_direction = facing
+	if dash_time > 0.0:
+		velocity.x = dash_direction * DASH_SPEED
+	else:
+		velocity.x = dir * SPEED
+	if Input.is_action_just_pressed("jump") and jumps_remaining > 0:
 		velocity.y = JUMP_VELOCITY
+		jumps_remaining -= 1
 	move_and_slide()
 	if Input.is_action_pressed("shoot") and shoot_cd <= 0.0:
 		_shoot()
