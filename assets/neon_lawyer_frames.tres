@@ -1,0 +1,112 @@
+[gd_resource type="SpriteFrames" load_steps=13 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/neon_lawyer_atlas.png" id="1"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_idle_a"]
+atlas = ExtResource("1")
+region = Rect2(0, 0, 512, 256)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_idle_b"]
+atlas = ExtResource("1")
+region = Rect2(512, 0, 512, 256)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_run_a"]
+atlas = ExtResource("1")
+region = Rect2(1024, 0, 512, 256)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_run_b"]
+atlas = ExtResource("1")
+region = Rect2(1536, 0, 512, 256)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_jump"]
+atlas = ExtResource("1")
+region = Rect2(0, 256, 512, 256)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_point"]
+atlas = ExtResource("1")
+region = Rect2(512, 256, 512, 256)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_blast"]
+atlas = ExtResource("1")
+region = Rect2(1024, 256, 512, 256)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_shield"]
+atlas = ExtResource("1")
+region = Rect2(1536, 256, 512, 256)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_hurt"]
+atlas = ExtResource("1")
+region = Rect2(0, 512, 512, 256)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_crawl"]
+atlas = ExtResource("1")
+region = Rect2(512, 512, 512, 256)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_collapse"]
+atlas = ExtResource("1")
+region = Rect2(1024, 512, 512, 256)
+
+[resource]
+animations = [{
+"frames": [
+{"duration": 1.0, "texture": SubResource("AtlasTexture_idle_a")},
+{"duration": 1.0, "texture": SubResource("AtlasTexture_idle_b")}
+],
+"loop": true,
+"name": &"idle",
+"speed": 3.0
+}, {
+"frames": [
+{"duration": 1.0, "texture": SubResource("AtlasTexture_run_a")},
+{"duration": 1.0, "texture": SubResource("AtlasTexture_run_b")}
+],
+"loop": true,
+"name": &"run",
+"speed": 7.0
+}, {
+"frames": [
+{"duration": 1.0, "texture": SubResource("AtlasTexture_jump")}
+],
+"loop": true,
+"name": &"jump",
+"speed": 5.0
+}, {
+"frames": [
+{"duration": 1.0, "texture": SubResource("AtlasTexture_point")}
+],
+"loop": false,
+"name": &"point",
+"speed": 5.0
+}, {
+"frames": [
+{"duration": 1.0, "texture": SubResource("AtlasTexture_blast")}
+],
+"loop": false,
+"name": &"blast",
+"speed": 5.0
+}, {
+"frames": [
+{"duration": 1.0, "texture": SubResource("AtlasTexture_shield")}
+],
+"loop": false,
+"name": &"shield",
+"speed": 5.0
+}, {
+"frames": [
+{"duration": 1.0, "texture": SubResource("AtlasTexture_hurt")}
+],
+"loop": false,
+"name": &"hurt",
+"speed": 5.0
+}, {
+"frames": [
+{"duration": 1.0, "texture": SubResource("AtlasTexture_hurt")},
+{"duration": 1.0, "texture": SubResource("AtlasTexture_crawl")},
+{"duration": 1.0, "texture": SubResource("AtlasTexture_collapse")},
+{"duration": 1.0, "texture": SubResource("AtlasTexture_collapse")},
+{"duration": 1.0, "texture": SubResource("AtlasTexture_collapse")}
+],
+"loop": false,
+"name": &"dead",
+"speed": 3.0
+}]

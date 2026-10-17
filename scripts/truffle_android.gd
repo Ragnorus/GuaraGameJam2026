@@ -3,6 +3,7 @@ extends Bug
 
 const SCALE := 0.42
 const SIZE := Vector2(48, 80)
+const FRAMES := preload("res://assets/money_minion_frames.tres")
 
 var dying := false
 
@@ -10,18 +11,13 @@ func _ready() -> void:
 	super._ready()
 	speed = 75.0
 	(cs.shape as RectangleShape2D).size = SIZE
-	sprite = SpriteLib.make_sprite(SpriteLib.build("truffle_android", {
-		"idle": [["idle_0", "idle_1"], 4.0, true],
-		"run": [["run_0", "run_1"], 6.0, true],
-		"warn": [["warn_0"], 1.0, false],
-		"shoot": [["shoot_0"], 1.0, false],
-		"hurt": [["hurt_0"], 1.0, false],
-		"dead": [["dead_0", "dead_1", "dead_2", "dead_3"], 8.0, false],
-	}), 0.0)
+	sprite = AnimatedSprite2D.new()
+	sprite.sprite_frames = FRAMES
 	sprite.scale = Vector2(SCALE, SCALE)
 	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	# Canvas is 228x210 with the feet 4px above its bottom edge.
-	sprite.position.y = SIZE.y / 2.0 + 4.0 * SCALE - 210.0 * SCALE / 2.0
+	sprite.centered = false
+	sprite.offset = Vector2(-192, -240)
+	sprite.position.y = SIZE.y / 2.0
 	add_child(sprite)
 	sprite.animation_finished.connect(_on_animation_finished)
 	sprite.play(&"run")
@@ -33,10 +29,8 @@ func _physics_process(delta: float) -> void:
 	anim_lock = maxf(0.0, anim_lock - delta)
 	sprite.flip_h = dir < 0
 	shoot_cd -= delta
-	if anim_lock > 0.0:
+	if anim_lock > 0.0 or (sprite.animation == &"hurt" and sprite.is_playing()):
 		velocity.x = 0.0
-		if shoot_cd <= 0.0 and sprite.animation == &"warn":
-			_fire()
 		return
 	if shoot_cd <= 0.0 and is_instance_valid(target) \
 			and absf(target.global_position.x - global_position.x) < 400.0:
@@ -45,7 +39,7 @@ func _physics_process(delta: float) -> void:
 		get_tree().create_timer(0.5).timeout.connect(_fire)
 		return
 	var want := &"run" if absf(velocity.x) > 1.0 else &"idle"
-	if sprite.animation != want and sprite.animation != &"hurt":
+	if sprite.animation != want:
 		sprite.play(want)
 
 func _fire() -> void:
@@ -60,6 +54,8 @@ func _fire() -> void:
 	p.radius = 8.0
 	p.position = global_position + Vector2(dir * 34, -8)
 	p.velocity = Vector2(dir * 320.0, 0.0)
+	if is_in_group("evil_genius_attacks"):
+		p.add_to_group("evil_genius_attacks")
 	get_parent().add_child(p)
 
 func take_damage(amount: int) -> void:
@@ -82,8 +78,11 @@ func take_damage(amount: int) -> void:
 		sprite.play(&"hurt")
 
 func _on_animation_finished() -> void:
-	if dying:
+	if dying and sprite.animation == &"dead":
 		queue_free()
+	elif sprite.animation == &"hurt":
+		anim_lock = 0.0
+		sprite.play(&"run" if absf(velocity.x) > 1.0 else &"idle")
 
 func _draw() -> void:
 	pass

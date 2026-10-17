@@ -27,7 +27,7 @@ func _run() -> void:
 		_fail("No player in " + path)
 		return
 	player.health = 10000
-	player.global_position.x = 2200.0
+	player.global_position.x = float(scene.get("boss_trigger_x")) + 100.0
 	await create_timer(1.0).timeout
 	var boss: Node
 	for enemy in get_nodes_in_group("enemies"):
@@ -40,10 +40,18 @@ func _run() -> void:
 	print("SMOKE boss: ", boss)
 	var defeats := [0]
 	var transforms := [0]
-	var yeral := boss is BossYeral
 	boss.defeated.connect(func() -> void: defeats[0] += 1)
-	if yeral:
-		boss.transformed.connect(func() -> void: transforms[0] += 1)
+	boss.transformed.connect(func() -> void:
+		transforms[0] += 1
+		var second_form: bool = boss.glizzy if boss is BossYeral else boss.costume_form
+		if not second_form or not boss.transforming or boss.health != boss.max_health or scene.get("finished"):
+			_fail("First health pool did not enter a protected, refilled second form")
+			return
+		var health: int = boss.health
+		boss.take_damage(health)
+		if boss.health != health or boss.dying:
+			_fail("Transformation did not protect the second health pool")
+	)
 	for i in range(600):
 		if defeats[0] > 0:
 			break
@@ -55,8 +63,8 @@ func _run() -> void:
 	if defeats[0] != 1 or not scene.get("finished") or player.dead:
 		_fail("Boss did not produce exactly one live-player stage clear")
 		return
-	if yeral and transforms[0] != 1:
-		_fail("Yeral did not transform before the final defeat")
+	if transforms[0] != 1:
+		_fail("Boss did not transform exactly once before the final defeat")
 		return
-	print("SMOKE PASS: ", path, " defeated; forms=", 2 if yeral else 1)
+	print("SMOKE PASS: ", path, " defeated; forms=2")
 	quit(0)

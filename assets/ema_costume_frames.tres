@@ -1,0 +1,154 @@
+[gd_resource type="SpriteFrames" load_steps=19 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/ema_costume_atlas.png" id="1"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_transform_a"]
+atlas = ExtResource("1")
+region = Rect2(0, 0, 512, 256)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_transform_b"]
+atlas = ExtResource("1")
+region = Rect2(512, 0, 512, 256)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_transform_c"]
+atlas = ExtResource("1")
+region = Rect2(1024, 0, 512, 256)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_transform_d"]
+atlas = ExtResource("1")
+region = Rect2(1536, 0, 512, 256)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_transform_e"]
+atlas = ExtResource("1")
+region = Rect2(0, 256, 512, 256)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_idle_a"]
+atlas = ExtResource("1")
+region = Rect2(512, 256, 512, 256)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_idle_b"]
+atlas = ExtResource("1")
+region = Rect2(1024, 256, 512, 256)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_run_a"]
+atlas = ExtResource("1")
+region = Rect2(1536, 256, 512, 256)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_run_b"]
+atlas = ExtResource("1")
+region = Rect2(0, 512, 512, 256)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_jump"]
+atlas = ExtResource("1")
+region = Rect2(512, 512, 512, 256)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_point"]
+atlas = ExtResource("1")
+region = Rect2(1024, 512, 512, 256)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_blast"]
+atlas = ExtResource("1")
+region = Rect2(1536, 512, 512, 256)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_shield"]
+atlas = ExtResource("1")
+region = Rect2(0, 768, 512, 256)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_hurt"]
+atlas = ExtResource("1")
+region = Rect2(512, 768, 512, 256)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_fall"]
+atlas = ExtResource("1")
+region = Rect2(1024, 768, 512, 256)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_collapse"]
+atlas = ExtResource("1")
+region = Rect2(1536, 768, 512, 256)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_pink_bolt"]
+atlas = ExtResource("1")
+region = Rect2(0, 1024, 192, 64)
+
+[resource]
+animations = [{
+"frames": [
+{"duration": 1.0, "texture": SubResource("AtlasTexture_transform_a")},
+{"duration": 1.0, "texture": SubResource("AtlasTexture_transform_b")},
+{"duration": 1.0, "texture": SubResource("AtlasTexture_transform_c")},
+{"duration": 1.0, "texture": SubResource("AtlasTexture_transform_d")},
+{"duration": 1.0, "texture": SubResource("AtlasTexture_transform_e")}
+],
+"loop": false,
+"name": &"transform",
+"speed": 4.0
+}, {
+"frames": [
+{"duration": 1.0, "texture": SubResource("AtlasTexture_idle_a")},
+{"duration": 1.0, "texture": SubResource("AtlasTexture_idle_b")}
+],
+"loop": true,
+"name": &"idle",
+"speed": 3.0
+}, {
+"frames": [
+{"duration": 1.0, "texture": SubResource("AtlasTexture_run_a")},
+{"duration": 1.0, "texture": SubResource("AtlasTexture_run_b")}
+],
+"loop": true,
+"name": &"run",
+"speed": 7.0
+}, {
+"frames": [
+{"duration": 1.0, "texture": SubResource("AtlasTexture_jump")}
+],
+"loop": true,
+"name": &"jump",
+"speed": 5.0
+}, {
+"frames": [
+{"duration": 1.0, "texture": SubResource("AtlasTexture_point")}
+],
+"loop": false,
+"name": &"point",
+"speed": 5.0
+}, {
+"frames": [
+{"duration": 1.0, "texture": SubResource("AtlasTexture_blast")}
+],
+"loop": false,
+"name": &"blast",
+"speed": 5.0
+}, {
+"frames": [
+{"duration": 1.0, "texture": SubResource("AtlasTexture_shield")}
+],
+"loop": false,
+"name": &"shield",
+"speed": 5.0
+}, {
+"frames": [
+{"duration": 1.0, "texture": SubResource("AtlasTexture_hurt")}
+],
+"loop": false,
+"name": &"hurt",
+"speed": 5.0
+}, {
+"frames": [
+{"duration": 1.0, "texture": SubResource("AtlasTexture_hurt")},
+{"duration": 1.0, "texture": SubResource("AtlasTexture_fall")},
+{"duration": 1.0, "texture": SubResource("AtlasTexture_collapse")},
+{"duration": 1.0, "texture": SubResource("AtlasTexture_collapse")},
+{"duration": 1.0, "texture": SubResource("AtlasTexture_collapse")}
+],
+"loop": false,
+"name": &"dead",
+"speed": 3.0
+}, {
+"frames": [
+{"duration": 1.0, "texture": SubResource("AtlasTexture_pink_bolt")}
+],
+"loop": true,
+"name": &"pink_bolt",
+"speed": 6.0
+}]

@@ -1,10 +1,11 @@
 class_name WingedMob
 extends Bug
 
-# Flying mob: a small robot (Yeral's level) or truffle android (Bichema's World) on painted
-# bat-like mechanical wings. Hovers above its post, then telegraphs and swoops at the player.
+# Flying mob: a winged robot in Yeral's level or a helicopter money minion in Bichema's World.
+# Hovers above its post, then telegraphs and swoops at the player.
 
 const ROBOT_FRAMES := preload("res://assets/robot_frames.tres")
+const MONEY_FRAMES := preload("res://assets/money_minion_frames.tres")
 const HOVER_HEIGHT := 210.0
 const SWOOP_SPEED := 430.0
 const RETURN_SPEED := 170.0
@@ -40,18 +41,13 @@ func _ready() -> void:
 	(cs.shape as RectangleShape2D).size = Vector2(44, 40)
 	hover_y = position.y
 	if bichema:
-		membrane = Color8(74, 14, 18, 235)
-		rib = Color8(255, 60, 48)
-		glow = Color8(255, 40, 30, 60)
-		tip = Color8(217, 154, 40)
-		sprite = SpriteLib.make_sprite(SpriteLib.build("truffle_android", {
-			"idle": [["idle_0", "idle_1"], 6.0, true],
-			"warn": [["warn_0"], 1.0, false],
-			"hurt": [["hurt_0"], 1.0, false],
-		}), 0.0)
+		sprite = AnimatedSprite2D.new()
+		sprite.sprite_frames = MONEY_FRAMES
 		sprite.scale = Vector2(0.32, 0.32)
-		sprite.position.y = -4.0
-		sprite.play(&"idle")
+		sprite.centered = false
+		sprite.offset = Vector2(-192, -240)
+		sprite.position.y = 20.0
+		sprite.play(&"fly")
 	else:
 		membrane = Color8(41, 68, 42, 235)
 		rib = Color8(112, 237, 24)
@@ -93,7 +89,7 @@ func _physics_process(delta: float) -> void:
 					and absf(target.global_position.x - global_position.x) < 320.0:
 				state = "warn"
 				state_time = 0.55 / aggro
-				sprite.play(&"warn" if bichema else &"hurt")
+				sprite.play(&"fly_warn" if bichema else &"hurt")
 		"warn":
 			position.y = hover_y + sin(time * 30.0) * 3.0
 			if state_time <= 0.0:
@@ -101,6 +97,8 @@ func _physics_process(delta: float) -> void:
 				state_time = 1.4
 				var aim: Vector2 = (target.global_position if is_instance_valid(target) else global_position + Vector2(0, 200))
 				swoop_dir = (aim - global_position).normalized()
+				if bichema:
+					sprite.play(&"fly")
 		"swoop":
 			position += swoop_dir * SWOOP_SPEED * aggro * delta
 			if state_time <= 0.0 or position.y > target_floor_y() - 30.0:
@@ -111,7 +109,7 @@ func _physics_process(delta: float) -> void:
 			if absf(position.y - hover_y) < 2.0:
 				state = "hover"
 				shoot_cd = randf_range(1.6, 2.6)
-				sprite.play(&"idle")
+				sprite.play(&"fly" if bichema else &"idle")
 	_clamp_to_zone()
 	sprite.flip_h = (swoop_dir.x if state == "swoop" else float(dir)) < 0.0
 	_touch_damage()
@@ -143,6 +141,8 @@ func _wing_points(side: float, flap: float) -> PackedVector2Array:
 	return pts
 
 func _draw() -> void:
+	if bichema:
+		return
 	var beat := 30.0 if state == "swoop" else 16.0
 	var flap := sin(time * beat) * 0.55 - (0.5 if state == "swoop" else 0.0)
 	for side in [-1.0, 1.0]:

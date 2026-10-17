@@ -6,6 +6,13 @@ const FLOOR_Y := 600.0
 const PLATFORM_LAYER := 4
 const VIEW_WIDTH := 1280.0
 const CAMERA_LIMIT_SPEED := 900.0
+const BICHEMA_GROUND := [628.0, 688.0, 533.0]
+const BICHEMA_PLATFORMS := [
+	[Rect2(260, 500, 150, 16), Rect2(1300, 430, 150, 16), Rect2(1680, 500, 160, 16)],
+	[Rect2(122, 379, 429, 16), Rect2(648, 429, 282, 16), Rect2(321, 559, 295, 16),
+		Rect2(1016, 559, 239, 16), Rect2(1356, 412, 429, 16)],
+	[Rect2(0, 378, 374, 16), Rect2(377, 433, 370, 16)],
+]
 
 @export var bichema_level := false
 
@@ -18,6 +25,13 @@ var message: ComicBox
 var message_timer: Timer
 var boss_started := false
 var glizzy_form := false
+var costume_form := false
+var bichema_background: Sprite2D
+var bichema_rooms: Array[Dictionary] = []
+var bichema_background_index := -1
+var boss_gate_x := LEVEL_END - 340.0
+var boss_trigger_x := LEVEL_END - 300.0
+var boss_spawn_x := LEVEL_END + 600.0
 var finished := false
 var gates: Array = []
 var hp_bar: ProgressBar
@@ -50,14 +64,11 @@ func _ready() -> void:
 		message.text = "BICHEMA'S WORLD"
 		message_timer.start(2.0)
 
-# Bichema's World uses the red set in assets/bichema; Yeral's level keeps the green set in assets.
-func _asset(file: String) -> String:
-	return ("res://assets/bichema/%s" if bichema_level else "res://assets/%s") % file
-
 func _tiled(path: String, pos: Vector2, size: Vector2, px_scale := 1.0) -> TextureRect:
 	var tr := TextureRect.new()
 	tr.texture = load(path)
 	tr.stretch_mode = TextureRect.STRETCH_TILE
+	tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	tr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	tr.scale = Vector2(px_scale, px_scale)
 	tr.size = size / px_scale
@@ -65,7 +76,7 @@ func _tiled(path: String, pos: Vector2, size: Vector2, px_scale := 1.0) -> Textu
 	return tr
 
 # kind: "floor", "platform" or "wall"
-func _add_block(rect: Rect2, kind := "wall") -> void:
+func _add_block(rect: Rect2, kind := "wall", painted := false) -> void:
 	var body := StaticBody2D.new()
 	body.position = rect.position + rect.size / 2.0
 	var shape := RectangleShape2D.new()
@@ -76,19 +87,19 @@ func _add_block(rect: Rect2, kind := "wall") -> void:
 	var origin := -rect.size / 2.0
 	match kind:
 		"floor":
-			body.add_child(_tiled(_asset("tile_floor_mesh.png"), origin, rect.size))
-			body.add_child(_tiled(_asset("tile_floor_top.png"), origin, Vector2(rect.size.x, 32), 2.0))
+			if not painted:
+				body.add_child(_tiled("res://assets/tile_floor_mesh.png", origin, rect.size))
+				body.add_child(_tiled("res://assets/tile_floor_top.png", origin, Vector2(rect.size.x, 32), 2.0))
 		"platform":
 			# Own physics layer: only the player stands on platforms (bosses and mobs pass behind them),
 			# and they are one-way so the player can jump up through them.
 			body.collision_layer = PLATFORM_LAYER
 			cs.one_way_collision = true
-			if bichema_level:
-				body.add_child(_tiled(_asset("tile_platform.png"), origin, rect.size))
-			else:
+			if not painted:
 				_add_platform_sprite(body, rect)
 		_:
-			body.add_child(_tiled(_asset("tile_wall.png"), origin, rect.size))
+			if not painted:
+				body.add_child(_tiled("res://assets/tile_wall.png", origin, rect.size))
 	add_child(body)
 
 func _add_prop(path: String, pos: Vector2, px_scale := 2.0, z := -1) -> void:
@@ -150,47 +161,70 @@ func _build_city_background(pb: ParallaxBackground) -> void:
 	pl.add_child(fade_rect)
 	pb.add_child(pl)
 
+# Complete paintings are world-sized rooms; the camera never sees beyond the active image.
+func _build_bichema_background() -> void:
+	var start := 0.0
+	var titles := ["GOLDEN TREASURY PLAZA", "LUCKY IRISH ROCK BAR", "NEON CROWN CASH FACTORY"]
+	for panel in ["plaza", "pub", "factory"]:
+		var index := bichema_rooms.size()
+		var tex: Texture2D = load("res://assets/backgrounds/bichema/%s.png" % panel)
+		# Two pixels of vertical bleed keep fractional floor alignment inside the painting.
+		var k := 722.0 / tex.get_height()
+		var rect := Rect2(start, FLOOR_Y - BICHEMA_GROUND[index] * k, floorf(tex.get_width() * k), 722)
+		var platforms: Array[Rect2] = []
+		for pixels: Rect2 in BICHEMA_PLATFORMS[index]:
+			platforms.append(Rect2(rect.position + pixels.position * k, pixels.size * k))
+		bichema_rooms.append({"name": titles[index], "texture": tex, "rect": rect,
+			"scale": k, "ground": BICHEMA_GROUND[index], "platforms": platforms})
+		start = rect.end.x
+	arena_right = start
+	boss_gate_x = arena_right - VIEW_WIDTH
+	boss_trigger_x = boss_gate_x + 120.0
+	boss_spawn_x = arena_right - 260.0
+	bichema_background = Sprite2D.new()
+	bichema_background.centered = false
+	bichema_background.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	bichema_background.z_index = -10
+	add_child(bichema_background)
+
+func _update_bichema_background() -> void:
+	if not is_instance_valid(camera) or not is_instance_valid(player):
+		return
+	var index := 0
+	for i in range(1, bichema_rooms.size()):
+		if player.position.x >= (bichema_rooms[i]["rect"] as Rect2).position.x:
+			index = i
+	if index == bichema_background_index:
+		return
+	bichema_background_index = index
+	var room: Dictionary = bichema_rooms[index]
+	var rect: Rect2 = room["rect"]
+	bichema_background.texture = room["texture"]
+	bichema_background.position = rect.position
+	bichema_background.scale = Vector2.ONE * float(room["scale"])
+	cam_left = maxf(rect.position.x, boss_gate_x) if boss_started else rect.position.x
+	cam_right = _camera_right_target()
+	camera.limit_left = int(cam_left)
+	camera.limit_right = int(cam_right)
+	camera.limit_top = ceili(rect.position.y)
+	camera.limit_bottom = camera.limit_top + 720
+	camera.reset_smoothing()
+	camera.force_update_scroll()
+	if is_instance_valid(message) and not finished and not player.dead:
+		message.text = room["name"]
+		message_timer.start(1.8)
+
 func _build_background() -> void:
+	if bichema_level:
+		_build_bichema_background()
+		return
 	var pb := ParallaxBackground.new()
 	add_child(pb)
-	if not bichema_level:
-		_build_city_background(pb)
-		return
-	var layers := [[_asset("bg_far.png"), 0.08], [_asset("bg_mid.png"), 0.25],
-			[_asset("bg_near.png"), 0.5]]
-	for l in layers:
-		var pl := ParallaxLayer.new()
-		pl.motion_scale = Vector2(l[1], 0.0)
-		pl.motion_mirroring = Vector2(1024, 0)
-		var spr := Sprite2D.new()
-		spr.texture = load(l[0])
-		spr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-		spr.centered = false
-		spr.scale = Vector2(2, 2)
-		pl.add_child(spr)
-		pb.add_child(pl)
+	_build_city_background(pb)
 
 func _build_props() -> void:
 	if not bichema_level:
 		_build_yeral_props()
-		return
-	_add_prop(_asset("prop_door.png"), Vector2(60, FLOOR_Y), 2.0)
-	_add_prop(_asset("prop_sign_billboard.png"), Vector2(420, 330), 3.0, -2)
-	_add_prop(_asset("prop_sign_vertical.png"), Vector2(980, 380), 3.0, -2)
-	_add_prop(_asset("prop_neon_lamp.png"), Vector2(1700, 420), 3.0, -2)
-	_add_prop(_asset("prop_sign_billboard.png"), Vector2(LEVEL_END + 250, 300), 4.0, -2)
-	_add_prop(_asset("prop_neon_lamp.png"), Vector2(LEVEL_END - 80, 400), 3.0, -2)
-	for x in [250.0, 700.0, 1180.0, 1480.0, 1900.0, 2150.0]:
-		_add_prop(_asset("prop_bollard.png"), Vector2(x, FLOOR_Y), 2.0)
-	for x in [560.0, 1320.0, 2000.0]:
-		_add_prop(_asset("prop_crate.png"), Vector2(x, FLOOR_Y), 2.0)
-	# Red hologram panels cut from the Evil Genius sheet, hanging behind the action.
-	var holos := ["chart", "capitol", "sports", "chip", "debate", "globe", "graph", "sports2", "bars", "chip2"]
-	for i in range(holos.size()):
-		var hy := 250.0 + 50.0 * (i % 3)
-		_add_prop("res://assets/sprites/bichema/bichema_holo_%s.png" % holos[i], Vector2(200.0 + 230.0 * i, hy), 1.8, -2)
-	_add_prop("res://assets/sprites/bichema/bichema_holo_debate.png", Vector2(LEVEL_END + 100, 330), 3.0, -2)
-	_add_prop("res://assets/sprites/bichema/bichema_holo_globe.png", Vector2(LEVEL_END + 420, 330), 3.0, -2)
 
 func _lair(name: String) -> String:
 	return "res://assets/sprites/lair/lair_%s.png" % name
@@ -219,7 +253,11 @@ func _build_yeral_props() -> void:
 
 func _add_platform_sprite(body: Node2D, rect: Rect2) -> void:
 	var s := Sprite2D.new()
-	s.texture = load(_lair("platform_long"))
+	if bichema_level:
+		var name := "platform_long" if rect.size.x >= 150.0 else "platform_short"
+		s.texture = load("res://assets/sprites/capital/%s.png" % name)
+	else:
+		s.texture = load(_lair("platform_long"))
 	s.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	s.centered = false
 	var k := rect.size.x / s.texture.get_width()
@@ -232,35 +270,38 @@ func _build_world() -> void:
 		arena_right = LEVEL_END + 1000.0
 	_build_background()
 	_build_props()
-	if bichema_level:
-		var tint := CanvasModulate.new()
-		tint.color = Color(1.0, 0.88, 0.88)
-		add_child(tint)
-	_add_block(Rect2(-100, FLOOR_Y, arena_right + 100, 100), "floor")
-	_add_block(Rect2(-140, -800, 40, 1500))
-	_add_block(Rect2(arena_right, -800, 40, 1500))
+	var world_left := 0.0 if bichema_level else LEVEL_LEFT
+	_add_block(Rect2(world_left, FLOOR_Y, arena_right - world_left, 100), "floor", bichema_level)
+	_add_block(Rect2(world_left - 40, -800, 40, 1500), "wall", bichema_level)
+	_add_block(Rect2(arena_right, -800, 40, 1500), "wall", bichema_level)
 	var platforms: Array = [
 		Rect2(350, 480, 140, 20), Rect2(600, 400, 140, 20),
 		Rect2(850, 480, 140, 20), Rect2(1100, 380, 160, 20),
 		Rect2(1400, 470, 140, 20),
 	]
 	if bichema_level:
-		platforms = [
-			Rect2(300, 490, 170, 20), Rect2(560, 405, 150, 20),
-			Rect2(790, 495, 170, 20), Rect2(1030, 385, 170, 20),
-			Rect2(1300, 475, 160, 20), Rect2(1580, 385, 170, 20),
-			Rect2(1820, 475, 170, 20),
-		]
+		platforms = []
+		for i in range(bichema_rooms.size()):
+			for rect: Rect2 in bichema_rooms[i]["platforms"]:
+				_add_block(rect, "platform", i != 0)
+		# Complete the plaza's short water crossing with visible stone, not invisible floor.
+		var plaza_scale: float = bichema_rooms[0]["scale"]
+		var bridge_x := 1950.0 * plaza_scale
+		_add_block(Rect2(bridge_x, FLOOR_Y, (bichema_rooms[0]["rect"] as Rect2).end.x - bridge_x, 20), "platform")
 	var bug_positions := [500.0, 800.0, 1000.0, 1250.0, 1550.0, 1800.0]
 	var flyer_positions := [700.0, 1350.0, 1900.0]
 	var gate_xs := [900.0, 1400.0, 2000.0]
 	if bichema_level:
-		bug_positions = [420.0, 660.0, 900.0, 1120.0, 1350.0, 1590.0, 1810.0, 1980.0]
-		flyer_positions = [600.0, 1150.0, 1600.0, 2050.0]
-		gate_xs = [800.0, 1250.0, 1700.0, 2100.0]
-	platforms.append_array(_random_platforms(platforms, gate_xs))
-	for r in platforms:
-		_add_block(r, "platform")
+		var pub_x: float = (bichema_rooms[1]["rect"] as Rect2).position.x
+		var factory_x: float = (bichema_rooms[2]["rect"] as Rect2).position.x
+		bug_positions = [420.0, 900.0, 1500.0, 1900.0, pub_x + 350.0, pub_x + 950.0,
+			pub_x + 1500.0, factory_x + 250.0, factory_x + 520.0, factory_x + 770.0]
+		flyer_positions = [700.0, 1650.0, pub_x + 650.0, pub_x + 1300.0, factory_x + 600.0]
+		gate_xs = [1100.0, pub_x - 32.0, pub_x + 900.0, factory_x - 32.0, boss_gate_x]
+	else:
+		platforms.append_array(_random_platforms(platforms, gate_xs))
+		for rect: Rect2 in platforms:
+			_add_block(rect, "platform")
 	player = Player.new()
 	player.collision_mask |= PLATFORM_LAYER
 	player.position = Vector2(100, FLOOR_Y - 60)
@@ -268,12 +309,14 @@ func _build_world() -> void:
 	player.died.connect(_on_player_died)
 	player.stats_changed.connect(_update_hud)
 	camera = Camera2D.new()
-	camera.limit_left = int(LEVEL_LEFT)
+	camera.limit_left = int(world_left)
 	camera.limit_bottom = int(FLOOR_Y + 100)
 	player.add_child(camera)
 	for gx in gate_xs:
 		gates.append({"x": gx, "wall": _add_gate(gx), "bugs": []})
-	cam_left = LEVEL_LEFT
+	cam_left = world_left
+	if bichema_level:
+		_update_bichema_background()
 	cam_right = _camera_right_target()
 	camera.limit_right = int(cam_right)
 	var mobs: Array = []
@@ -288,9 +331,9 @@ func _build_world() -> void:
 		mobs.append(w)
 	for b in mobs:
 		b.target = player
-		b.points = clampi(1 + int(5.0 * b.position.x / LEVEL_END), GameSettings.MOB_POINTS_MIN, GameSettings.MOB_POINTS_MAX)
-		b.zone_min = LEVEL_LEFT
-		b.zone_max = LEVEL_END - 340.0
+		b.points = clampi(1 + int(5.0 * b.position.x / (arena_right if bichema_level else LEVEL_END)), GameSettings.MOB_POINTS_MIN, GameSettings.MOB_POINTS_MAX)
+		b.zone_min = world_left
+		b.zone_max = boss_gate_x
 		for gx in gate_xs:
 			if b.position.x < gx:
 				b.zone_max = gx
@@ -374,6 +417,9 @@ func _update_gates() -> void:
 
 func _camera_right_target() -> float:
 	var right: float = gates[0]["x"] if not gates.is_empty() else arena_right
+	if bichema_level:
+		var room: Rect2 = bichema_rooms[bichema_background_index]["rect"]
+		return clampf(right, cam_left + VIEW_WIDTH, room.end.x)
 	return clampf(right, cam_left + VIEW_WIDTH, arena_right)
 
 func _update_camera_limits(delta: float) -> void:
@@ -382,7 +428,7 @@ func _update_camera_limits(delta: float) -> void:
 	var step := CAMERA_LIMIT_SPEED * delta
 	cam_right = move_toward(cam_right, _camera_right_target(), step)
 	camera.limit_right = int(cam_right)
-	camera.limit_left = int(move_toward(camera.limit_left, cam_left, step))
+	camera.limit_left = int(cam_left) if bichema_level else int(move_toward(camera.limit_left, cam_left, step))
 
 func _make_bar(pos: Vector2, size: Vector2, fill: Color) -> ProgressBar:
 	var bar := ProgressBar.new()
@@ -437,6 +483,10 @@ func _build_hud() -> void:
 	score_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	score_label.add_theme_font_size_override("font_size", 18)
 	layer.add_child(score_label)
+	if bichema_level:
+		for label: Label in [hud_label, boss_label, dialogue, help, score_label]:
+			label.add_theme_color_override("font_outline_color", Color.BLACK)
+			label.add_theme_constant_override("outline_size", 4)
 
 func _update_hud() -> void:
 	if not is_instance_valid(player) or not is_instance_valid(hud_label):
@@ -461,30 +511,38 @@ func _process(delta: float) -> void:
 			push_error("Could not restart level: %s" % error_string(error))
 		return
 	_update_gates()
+	if bichema_level:
+		_update_bichema_background()
 	_update_camera_limits(delta)
-	if not finished and not boss_started and is_instance_valid(player) and not player.dead and player.position.x > LEVEL_END - 300.0:
+	if not finished and not boss_started and is_instance_valid(player) and not player.dead and player.position.x > boss_trigger_x:
 		_start_boss()
 
 func _start_boss() -> void:
 	boss_started = true
-	_add_block(Rect2(LEVEL_END - 340, -200, 30, FLOOR_Y + 200))
-	# Lock the view to the arena (the arena may be narrower than the screen, so keep a full view).
-	cam_left = minf(LEVEL_END - 340.0, arena_right - VIEW_WIDTH)
+	_add_block(Rect2(boss_gate_x, -200, 30, FLOOR_Y + 200), "wall", bichema_level)
+	cam_left = arena_right - VIEW_WIDTH if bichema_level else minf(LEVEL_END - 340.0, arena_right - VIEW_WIDTH)
 	if is_instance_valid(camera):
-		camera.limit_left = int(minf(cam_left, camera.get_screen_center_position().x - VIEW_WIDTH / 2.0))
+		if bichema_level:
+			cam_right = arena_right
+			camera.limit_left = int(cam_left)
+			camera.limit_right = int(cam_right)
+			camera.force_update_scroll()
+		else:
+			camera.limit_left = int(minf(cam_left, camera.get_screen_center_position().x - VIEW_WIDTH / 2.0))
 	if bichema_level:
 		var genius := BossEvilGenius.new()
-		genius.position = Vector2(LEVEL_END + 250, FLOOR_Y - 112)
+		genius.position = Vector2(boss_spawn_x, FLOOR_Y - 112)
 		genius.target = player
 		add_child(genius)
 		genius.health_changed.connect(_on_boss_health)
 		genius.defeated.connect(_on_boss_defeated)
+		genius.transformed.connect(_on_ema_transformed)
 		genius.speech.connect(_say)
 		genius.activate()
 		message.text = "THE EVIL GENIUS"
 	else:
 		var yeral := BossYeral.new()
-		yeral.position = Vector2(LEVEL_END + 600, FLOOR_Y - 96)
+		yeral.position = Vector2(boss_spawn_x, FLOOR_Y - 96)
 		yeral.target = player
 		yeral.floor_y = FLOOR_Y
 		yeral.arena_min = LEVEL_END - 280.0
@@ -504,8 +562,14 @@ func _on_yeral_transformed() -> void:
 	message.text = "YERAL'S TRUE FORM\nGLIZZY GOBLER"
 	message_timer.start(3.0)
 
+func _on_ema_transformed() -> void:
+	costume_form = true
+	boss_label.text = "EMA — SECOND FORM"
+	message.text = "EMA'S TRUE FORM\nTHE PINK SUIT"
+	message_timer.start(3.0)
+
 func _on_boss_health(current: int, maximum: int) -> void:
-	boss_label.text = "EVIL GENIUS" if bichema_level else ("GLIZZY GOBLER" if glizzy_form else "YERAL")
+	boss_label.text = ("EMA — SECOND FORM" if costume_form else "EVIL GENIUS") if bichema_level else ("GLIZZY GOBLER" if glizzy_form else "YERAL")
 	boss_bar.visible = true
 	boss_bar.max_value = maximum
 	boss_bar.value = current

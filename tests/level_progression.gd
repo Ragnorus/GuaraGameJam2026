@@ -12,7 +12,7 @@ func _frames(count: int) -> void:
 func _enter_boss(stage: Node) -> Node:
 	var player := stage.get("player") as Player
 	player.health = 1000
-	player.position = Vector2(2200, 576)
+	player.position = Vector2(float(stage.get("boss_trigger_x")) + 100.0, 576)
 	await _frames(3)
 	for enemy in get_nodes_in_group("enemies"):
 		if enemy is BossYeral or enemy is BossEvilGenius:
@@ -49,11 +49,28 @@ func _wait_for_transform(boss: BossYeral) -> void:
 		await _frames(1)
 	assert(not boss.transforming and boss.is_in_group("enemies"), "The real transformation animation must resume combat")
 
+func _transform_ema(boss: BossEvilGenius, stage: Node) -> void:
+	var score := GameSettings.score
+	boss.take_damage(boss.health)
+	assert(boss.costume_form and boss.transforming and boss.active)
+	assert(boss.health == GameSettings.scale_health(72) and boss.phase == 1, "Ema's first depletion must refill the difficulty-scaled costume pool")
+	assert(not stage.get("finished") and current_scene == stage and GameSettings.score == score, "Ema transformation must not award boss points or clear the stage")
+	var health := boss.health
+	boss.take_damage(health)
+	assert(boss.health == health and not boss.dying, "Ema's actual transformation must ignore damage")
+
+func _wait_for_ema_transform(boss: BossEvilGenius) -> void:
+	for i in range(240):
+		if not boss.transforming:
+			break
+		await _frames(1)
+	assert(not boss.transforming and boss.is_in_group("enemies"), "Ema's nonlooping transformation must return to combat")
+
 func _run() -> void:
 	assert(change_scene_to_file("res://scenes/main.tscn") == OK)
 	await _frames(2)
 	var old_stage := current_scene
-	(old_stage.get("player") as Player).position = Vector2(2200, 576)
+	(old_stage.get("player") as Player).position = Vector2(float(old_stage.get("boss_trigger_x")) + 100.0, 576)
 	await _restart()
 	assert(current_scene != old_stage and not current_scene.get("boss_started"))
 	assert((current_scene.get("player") as Player).position.x == 100.0)
@@ -87,11 +104,35 @@ func _run() -> void:
 	assert(current_scene.scene_file_path == "res://scenes/bichema_level.tscn")
 
 	var ema_stage := current_scene
-	var ema := await _enter_boss(ema_stage)
-	assert(ema is BossEvilGenius)
+	var ema := await _enter_boss(ema_stage) as BossEvilGenius
+	assert(ema != null and not ema.costume_form and ema.health == GameSettings.scale_health(60))
 	_check_phases(ema)
+	_transform_ema(ema, ema_stage)
+	await _restart()
+	assert(current_scene != ema_stage and current_scene.scene_file_path == "res://scenes/bichema_level.tscn", "Restart during Ema transformation must reset the encounter")
+	ema_stage = current_scene
+	ema = await _enter_boss(ema_stage) as BossEvilGenius
+	assert(ema != null and not ema.costume_form and not ema.transforming and ema.phase == 1 and ema.health == ema.max_health)
+	_transform_ema(ema, ema_stage)
+	await _wait_for_ema_transform(ema)
+	assert(current_scene == ema_stage and not ema_stage.get("finished"))
+	_check_phases(ema)
+	await _restart()
+	assert(current_scene != ema_stage, "Restart in Ema costume form must restore the original form")
+	ema_stage = current_scene
+	ema = await _enter_boss(ema_stage) as BossEvilGenius
+	assert(ema != null and not ema.costume_form and ema.phase == 1 and ema.health == GameSettings.scale_health(60))
+	_transform_ema(ema, ema_stage)
+	await _wait_for_ema_transform(ema)
+	var final_score := GameSettings.score
 	ema.take_damage(ema.health)
-	await _frames(240)
+	assert(ema.dying and not ema_stage.get("finished") and GameSettings.score == final_score, "Ema must complete the final collapse before score or stage clear")
+	await _frames(1)
+	assert(current_scene == ema_stage and not ema_stage.get("finished"))
+	for i in range(360):
+		if current_scene != ema_stage:
+			break
+		await _frames(1)
 	assert(current_scene.scene_file_path == "res://scenes/level_select.tscn", "The last available stage must return to level selection")
 
 	assert(change_scene_to_file("res://scenes/main.tscn") == OK)
@@ -113,13 +154,16 @@ func _run() -> void:
 	assert(change_scene_to_file("res://scenes/bichema_level.tscn") == OK)
 	await _frames(2)
 	var dead_stage := current_scene
-	var dead_boss := await _enter_boss(dead_stage)
+	var dead_boss := await _enter_boss(dead_stage) as BossEvilGenius
+	_transform_ema(dead_boss, dead_stage)
+	await _wait_for_ema_transform(dead_boss)
+	dead_boss.take_damage(dead_boss.health)
+	assert(dead_boss.dying and not dead_stage.get("finished"))
 	var dead_player := dead_stage.get("player") as Player
 	dead_player.invuln = 0.0
 	dead_player.take_damage(dead_player.health)
-	dead_boss.take_damage(dead_boss.health)
-	await _frames(240)
-	assert(current_scene == dead_stage and not dead_stage.get("finished"), "Death before a boss defeat must not advance the level")
+	await _frames(360)
+	assert(current_scene == dead_stage and not dead_stage.get("finished"), "Player death during Ema's costume collapse must block final-stage clear")
 	await _restart()
 	assert(current_scene != dead_stage and current_scene.scene_file_path == "res://scenes/bichema_level.tscn")
 	assert(not (current_scene.get("player") as Player).dead)

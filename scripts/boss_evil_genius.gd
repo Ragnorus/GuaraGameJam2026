@@ -2,11 +2,14 @@ class_name BossEvilGenius
 extends CharacterBody2D
 
 signal defeated
+signal transformed
 signal health_changed(current: int, maximum: int)
 signal speech(text: String, duration: float)
 
 const GRAVITY := 1500.0
-const SCALE := 0.55
+const SCALE := 1.5
+const FRAMES := preload("res://assets/neon_lawyer_frames.tres")
+const COSTUME_FRAMES := preload("res://assets/ema_costume_frames.tres")
 const BODY := Vector2(120, 220)
 const MAX_MINIONS := 5
 const LINES_BLAST := ["Citation needed.", "I have the data on that.", "Actually... you're wrong.", "Let me fact-check you."]
@@ -25,6 +28,8 @@ var pose_time := 0.0
 var pose := &""
 var active := false
 var dying := false
+var costume_form := false
+var transforming := false
 var flash := 0.0
 var sprite: AnimatedSprite2D
 
@@ -37,21 +42,15 @@ func _ready() -> void:
 	var cs := CollisionShape2D.new()
 	cs.shape = shape
 	add_child(cs)
-	var frames := SpriteLib.build("evil_genius", {
-		"idle": [["idle", "staff"], 2.0, true],
-		"run": [["run"], 1.0, true],
-		"jump": [["jump"], 1.0, true],
-		"point": [["point"], 1.0, true],
-		"blast": [["blast"], 1.0, true],
-		"shield": [["shield"], 1.0, true],
-		"hurt": [["hurt"], 1.0, true],
-	})
-	sprite = SpriteLib.make_sprite(frames, 0.0)
+	sprite = AnimatedSprite2D.new()
+	sprite.sprite_frames = FRAMES
 	sprite.scale = Vector2(SCALE, SCALE)
-	# Canvas is 662x439 with the boots 4px above its bottom edge.
-	sprite.position.y = BODY.y / 2.0 + 4.0 * SCALE - 439.0 * SCALE / 2.0
+	sprite.centered = false
+	sprite.offset = Vector2(-256, -240)
+	sprite.position.y = BODY.y / 2.0
 	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	add_child(sprite)
+	sprite.animation_finished.connect(_on_animation_finished)
 	sprite.play(&"idle")
 
 func activate() -> void:
@@ -62,16 +61,18 @@ func _say(lines: Array) -> void:
 	speech.emit(lines[randi() % lines.size()], 2.0)
 
 func _physics_process(delta: float) -> void:
+	if dying:
+		return
 	flash = maxf(0.0, flash - delta)
 	pose_time = maxf(0.0, pose_time - delta)
 	if not is_on_floor():
 		velocity.y += GRAVITY * delta
-	if not active or dying or not is_instance_valid(target):
+	if not active or transforming or not is_instance_valid(target):
 		velocity.x = move_toward(velocity.x, 0.0, 1200.0 * delta)
 		move_and_slide()
 		_update_art()
 		return
-	var mult := (1.0 + 0.5 * (phase - 1)) * GameSettings.aggro()
+	var mult := (1.0 + 0.5 * (phase - 1)) * GameSettings.aggro() * (1.1 if costume_form else 1.0)
 	if charge_windup > 0.0:
 		charge_windup -= delta
 		velocity.x = 0.0
@@ -97,7 +98,11 @@ func _physics_process(delta: float) -> void:
 
 func _update_art() -> void:
 	var next := &"idle"
-	if dying or (pose_time > 0.0 and pose == &"hurt"):
+	if dying:
+		next = &"dead"
+	elif transforming:
+		next = &"transform"
+	elif pose_time > 0.0 and pose == &"hurt":
 		next = &"hurt"
 	elif charge_windup > 0.0:
 		next = &"shield"
@@ -107,13 +112,18 @@ func _update_art() -> void:
 		next = pose
 	elif not is_on_floor():
 		next = &"jump"
-	if is_instance_valid(target) and not dying:
-		sprite.flip_h = target.global_position.x < global_position.x
+	if not dying and not transforming:
+		if charge_time > 0.0 or charge_windup > 0.0:
+			sprite.flip_h = charge_dir < 0
+		elif is_instance_valid(target):
+			sprite.flip_h = target.global_position.x < global_position.x
 	if sprite.animation != next:
 		sprite.play(next)
-	sprite.modulate = Color(1.0, 0.45, 0.45) if flash > 0.0 else Color.WHITE
+	sprite.modulate = Color(1.0, 0.45, 0.45) if flash > 0.0 and not transforming else Color.WHITE
 
 func _pick_attack() -> void:
+	if not active or transforming or dying or not is_instance_valid(target):
+		return
 	var r := randi() % 3
 	if r == 0:
 		_blast()
@@ -125,6 +135,8 @@ func _pick_attack() -> void:
 		_say(LINES_CHARGE)
 
 func _blast() -> void:
+	if not active or transforming or dying or not is_instance_valid(target):
+		return
 	pose = &"blast"
 	pose_time = 0.5
 	_say(LINES_BLAST)
@@ -138,9 +150,14 @@ func _blast() -> void:
 		p.position = global_position + Vector2(dir * 70.0, -40.0)
 		var aim := (target.global_position - p.position).normalized()
 		p.velocity = aim.rotated((i - (count - 1) / 2.0) * 0.25) * 340.0
+		if costume_form:
+			p.texture = COSTUME_FRAMES.get_frame_texture(&"pink_bolt", 0)
+		p.add_to_group("evil_genius_attacks")
 		get_parent().add_child(p)
 
 func _summon() -> void:
+	if not active or transforming or dying:
+		return
 	pose = &"point"
 	pose_time = 0.6
 	_say(LINES_SUMMON)
@@ -154,10 +171,11 @@ func _summon() -> void:
 		b.health = 1
 		b.patrol = 300.0
 		b.position = global_position + Vector2(randf_range(-120, 120), -30)
+		b.add_to_group("evil_genius_attacks")
 		get_parent().add_child(b)
 
 func take_damage(amount: int) -> void:
-	if not active or dying:
+	if not active or transforming or dying:
 		return
 	var old_phase := phase
 	health = maxi(0, health - amount)
@@ -165,19 +183,58 @@ func take_damage(amount: int) -> void:
 	phase = 1 if health > max_health * 2.0 / 3.0 else (2 if health > max_health / 3.0 else 3)
 	health_changed.emit(health, max_health)
 	if health <= 0:
-		_die()
+		if costume_form:
+			_die()
+		else:
+			_transform()
 	elif phase != old_phase:
 		pose = &"hurt"
 		pose_time = 0.5
 		attack_cd = maxf(attack_cd, 1.0)
 
+func _clear_attacks() -> void:
+	for attack in get_tree().get_nodes_in_group("evil_genius_attacks"):
+		attack.process_mode = Node.PROCESS_MODE_DISABLED
+		attack.remove_from_group("enemies")
+		if attack is TruffleAndroid:
+			attack.dying = true
+			attack.dead = true
+			attack.collision_layer = 0
+			attack.collision_mask = 0
+		attack.queue_free()
+
+func _transform() -> void:
+	costume_form = true
+	transforming = true
+	charge_time = 0.0
+	charge_windup = 0.0
+	pose_time = 0.0
+	velocity = Vector2.ZERO
+	flash = 0.0
+	remove_from_group("enemies")
+	_clear_attacks()
+	max_health = GameSettings.scale_health(72)
+	health = max_health
+	phase = 1
+	sprite.sprite_frames = COSTUME_FRAMES
+	sprite.play(&"transform")
+	transformed.emit()
+	health_changed.emit(health, max_health)
+	speech.emit("Behold my final argument!", 2.0)
+
 # His only weakness: a girl boss lawyer objects, and the Evil Genius collapses.
 func _die() -> void:
+	if dying or transforming or not costume_form:
+		return
 	dying = true
 	active = false
 	charge_time = 0.0
 	charge_windup = 0.0
 	remove_from_group("enemies")
+	pose_time = 0.0
+	_clear_attacks()
+	collision_layer = 0
+	collision_mask = 0
 	velocity = Vector2.ZERO
 	speech.emit("Objection! ...Sustained?!", 2.0)
 	var lawyer := Sprite2D.new()
@@ -191,6 +248,14 @@ func _die() -> void:
 	add_child(lawyer)
 	create_tween().tween_property(lawyer, "modulate:a", 1.0, 0.3)
 	_update_art()
-	await get_tree().create_timer(0.6).timeout
-	defeated.emit()
-	queue_free()
+
+func _on_animation_finished() -> void:
+	if transforming and sprite.animation == &"transform":
+		transforming = false
+		add_to_group("enemies")
+		attack_cd = 1.2
+		sprite.play(&"idle")
+	elif dying and sprite.animation == &"dead":
+		set_physics_process(false)
+		defeated.emit()
+		queue_free()

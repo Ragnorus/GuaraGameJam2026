@@ -1,0 +1,131 @@
+[gd_resource type="SpriteFrames" load_steps=16 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/money_minion_atlas.png" id="1"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_idle_a"]
+atlas = ExtResource("1")
+region = Rect2(0, 0, 384, 256)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_idle_b"]
+atlas = ExtResource("1")
+region = Rect2(384, 0, 384, 256)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_run_a"]
+atlas = ExtResource("1")
+region = Rect2(768, 0, 384, 256)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_run_b"]
+atlas = ExtResource("1")
+region = Rect2(1152, 0, 384, 256)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_warn"]
+atlas = ExtResource("1")
+region = Rect2(1536, 0, 384, 256)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_shoot"]
+atlas = ExtResource("1")
+region = Rect2(0, 256, 384, 256)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_hurt"]
+atlas = ExtResource("1")
+region = Rect2(384, 256, 384, 256)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_fall"]
+atlas = ExtResource("1")
+region = Rect2(768, 256, 384, 256)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_dead_a"]
+atlas = ExtResource("1")
+region = Rect2(1152, 256, 384, 256)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_dead_b"]
+atlas = ExtResource("1")
+region = Rect2(1536, 256, 384, 256)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_fly_a"]
+atlas = ExtResource("1")
+region = Rect2(0, 512, 384, 256)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_fly_b"]
+atlas = ExtResource("1")
+region = Rect2(384, 512, 384, 256)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_fly_warn"]
+atlas = ExtResource("1")
+region = Rect2(768, 512, 384, 256)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_money_bolt"]
+atlas = ExtResource("1")
+region = Rect2(1152, 512, 128, 96)
+
+[resource]
+animations = [{
+"frames": [
+{"duration": 1.0, "texture": SubResource("AtlasTexture_idle_a")},
+{"duration": 1.0, "texture": SubResource("AtlasTexture_idle_b")}
+],
+"loop": true,
+"name": &"idle",
+"speed": 3.0
+}, {
+"frames": [
+{"duration": 1.0, "texture": SubResource("AtlasTexture_run_a")},
+{"duration": 1.0, "texture": SubResource("AtlasTexture_run_b")}
+],
+"loop": true,
+"name": &"run",
+"speed": 8.0
+}, {
+"frames": [
+{"duration": 1.0, "texture": SubResource("AtlasTexture_warn")}
+],
+"loop": false,
+"name": &"warn",
+"speed": 5.0
+}, {
+"frames": [
+{"duration": 1.0, "texture": SubResource("AtlasTexture_shoot")}
+],
+"loop": false,
+"name": &"shoot",
+"speed": 7.0
+}, {
+"frames": [
+{"duration": 1.0, "texture": SubResource("AtlasTexture_hurt")}
+],
+"loop": false,
+"name": &"hurt",
+"speed": 6.0
+}, {
+"frames": [
+{"duration": 1.0, "texture": SubResource("AtlasTexture_fall")},
+{"duration": 1.0, "texture": SubResource("AtlasTexture_dead_a")},
+{"duration": 1.0, "texture": SubResource("AtlasTexture_dead_b")},
+{"duration": 1.0, "texture": SubResource("AtlasTexture_dead_b")}
+],
+"loop": false,
+"name": &"dead",
+"speed": 6.0
+}, {
+"frames": [
+{"duration": 1.0, "texture": SubResource("AtlasTexture_fly_a")},
+{"duration": 1.0, "texture": SubResource("AtlasTexture_fly_b")}
+],
+"loop": true,
+"name": &"fly",
+"speed": 6.0
+}, {
+"frames": [
+{"duration": 1.0, "texture": SubResource("AtlasTexture_fly_warn")}
+],
+"loop": true,
+"name": &"fly_warn",
+"speed": 5.0
+}, {
+"frames": [
+{"duration": 1.0, "texture": SubResource("AtlasTexture_money_bolt")}
+],
+"loop": true,
+"name": &"money_bolt",
+"speed": 6.0
+}]

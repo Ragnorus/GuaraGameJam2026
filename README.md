@@ -25,14 +25,14 @@ Replace `godot` below with the path to your Godot 4.5 executable if it is not on
 **Preview a level in the editor**
 1. Open the project (`godot --editor --path .`) and let it finish importing. After changing anything in `assets/`, focus the editor window so it reimports.
 2. Press **F5** to play from the main menu, or open `scenes/main.tscn` (Yeral) or `scenes/bichema_level.tscn` (Bichema's World) and press **F6** to run just that scene (menu settings are only loaded when you start from the main menu).
-3. Reach the far end of the level (x ≈ 2100+) to trigger the boss. Enable **Debug > Visible Collision Shapes** to check hitboxes.
+3. Reach the far end to trigger the boss: x > 2100 for Yeral, x > 4977 in the final factory for Ema. Enable **Debug > Visible Collision Shapes** to check hitboxes.
 
 **Preview without the editor**
 - Yeral level: `godot --path . res://scenes/main.tscn`
 - Bichema's World: `godot --path . res://scenes/bichema_level.tscn`
 
-**Regenerate level art** (after editing `tools/gen_assets.js`)
-1. Run `node tools/gen_assets.js` (no dependencies).
+**Regenerate level art**
+1. Yeral's generated tiles: `node tools/gen_assets.js` (no dependencies). Stage-two complete paintings: `python tools/slice_bichema.py`; plaza platforms: `python tools/slice_capital.py` (Pillow required).
 2. Refocus the Godot editor so it reimports the PNGs, then press **F6** to preview.
 
 **Re-slice character and prop sprites** (Yeral, robot minions, lair props; sources in `art/sheets/`, ignored by Godot via `art/.gdignore`)
@@ -40,11 +40,11 @@ Replace `godot` below with the path to your Godot 4.5 executable if it is not on
 2. `node tools/contact_sheet.js <group> out.png` lays a group's frames out for a quick visual check.
 3. Open the project once in Godot so it creates the `.import` files for the new PNGs, and commit them.
 
-**Headless scene smoke test** (loads the actual scene, keeps the player survivable, and damages the boss through both Yeral forms until the final animated defeat; missing bosses or a missing defeat fail within a bounded run)
+**Headless scene smoke test** (loads the actual scene, keeps the player survivable, and damages either boss through both forms until the final animated defeat; missing transformations/bosses or a missing defeat fail within a bounded run)
 - Yeral: `godot --headless --path . -s tools/smoke_test.gd -- res://scenes/main.tscn`
 - Bichema's World: `godot --headless --path . -s tools/smoke_test.gd -- res://scenes/bichema_level.tscn`
 
-Look for `SMOKE boss:` followed by `SMOKE PASS:`; success requires exactly one defeat signal and a live-player stage clear, plus Yeral's transformation when applicable. A non-zero exit code or any `SCRIPT ERROR` means something broke; `SMOKE FAILED:` explains explicit smoke failures. If it fails with missing class names on a fresh clone, run `godot --headless --path . --import` once first.
+Look for `SMOKE boss:` followed by `SMOKE PASS:`; success requires exactly one transformation, exactly one final defeat signal and a live-player stage clear. A non-zero exit code or any `SCRIPT ERROR` means something broke; `SMOKE FAILED:` explains explicit smoke failures. If it fails with missing class names on a fresh clone, run `godot --headless --path . --import` once first.
 
 **Preview the Web build** (what Railway serves)
 1. Export: `godot --headless --export-release "Web" build/web/index.html` (needs the Web export templates).
@@ -63,7 +63,7 @@ Look for `SMOKE boss:` followed by `SMOKE PASS:`; success requires exactly one d
 | GUARA ARMY (ultimate, needs full meter) | U |
 | Restart | R |
 
-The main character uses the full supplied sprite sheet: animated idle/run, jump/double-jump, fall/landing, firing, dash, summon/recall, ultimate, hurt, and death. Energy shots and flying friendly shadow minions use the sheet's effect frames. The ultimate's beam/flock are visual effects; its damage still comes from the temporary minions. Yeral's first form uses the supplied neon-green rogue art for idle, announcements, charge/run-up, firing, trap casting, fake-out taunts, and energy orbs. Glizzy Gobler uses the supplied transparent hot-dog warlock sheet for transformation, movement, casts, condiment shots, floor sauce, hurt, and final collapse. Both forms retain identical honest/fake warning poses and health-based combat phases; the second form adds alternating ketchup/mustard volleys and jumpable sauce puddles (0.85-second safe warning, then 1.8 seconds active). Damage hints are truthful even when attack announcements lie. Yeral's hostile mobs use the supplied neon CRT robot art; Bichema's World uses the red Evil Genius art: the boss from `art/sheets/evil_genius_sheet.png` (unaltered, background-keyed) and truffle-android mobs derived from it.
+The main character uses the full supplied sprite sheet: animated idle/run, jump/double-jump, fall/landing, firing, dash, summon/recall, ultimate, hurt, and death. Energy shots and flying friendly shadow minions use the sheet's effect frames. The ultimate's beam/flock are visual effects; its damage still comes from the temporary minions. Yeral's first form uses the supplied neon-green rogue art for idle, announcements, charge/run-up, firing, trap casting, fake-out taunts, and energy orbs. Glizzy Gobler uses the supplied transparent hot-dog warlock sheet for transformation, movement, casts, condiment shots, floor sauce, hurt, and final collapse. Both forms retain identical honest/fake warning poses and health-based combat phases; the second form adds alternating ketchup/mustard volleys and jumpable sauce puddles (0.85-second safe warning, then 1.8 seconds active). Damage hints are truthful even when attack announcements lie. Yeral's hostile mobs use the supplied neon CRT robot art; Bichema's World uses the supplied black-suited businessman boss and pink money-minion art.
 
 Animation data lives in `assets/character_frames.tres`, backed by `assets/character_atlas.png`. To rebuild from the original 1536×1024 RGBA sheet, run `python assets/extract_character.py "path/to/Nerdy Bat Vigilante Sprite Sheet.png"` (requires Pillow for asset rebuilding only, not for the game).
 
@@ -71,17 +71,23 @@ Yeral's resources are `assets/yeral_frames.tres` and `assets/yeral_atlas.png`. R
 
 Glizzy's resources are `assets/glizzy_frames.tres` and `assets/glizzy_atlas.png`. Rebuild with `python assets/extract_glizzy.py art/sheets/glizzy_sheet.png` (Pillow required; the source path is optional and defaults to that supplied sheet). The builder crops the irregular transparent source without rescaling its pixels, aligning character poses on 512×384 canvases with foot anchor (256, 352); projectiles use 128×96 canvases, and puddles use 320×128. Refocus the Godot editor or run `godot --headless --path . --import` after rebuilding.
 
-Robot resources are `assets/robot_frames.tres` and `assets/robot_atlas.png`. Rebuild with `python assets/extract_robot.py "path/to/Neon CRT Robot Sprite Sheet.png"` (Pillow required). The original transparent PNG is 1774×887, not a regular grid. Its 27 idle/walk/hurt/death poses are cropped individually and aligned by hips and feet into shared atlas cells, preserving source pixels and transparency. In-game scaling uses nearest-neighbor filtering. `Robot` reuses `Bug` patrol/chase/contact combat only in Yeral's stage; firing poses/projectile effects are deliberately unused because these mobs do not shoot. Defeated robots immediately lose targeting, collision, and contact damage, then finish their collapse animation before despawning. Friendly summoned shadows are unchanged; Bichema's World uses `TruffleAndroid` (which shoots red bolts) instead.
+Robot resources are `assets/robot_frames.tres` and `assets/robot_atlas.png`. Rebuild with `python assets/extract_robot.py "path/to/Neon CRT Robot Sprite Sheet.png"` (Pillow required). The original transparent PNG is 1774×887, not a regular grid. Its 27 idle/walk/hurt/death poses are cropped individually and aligned by hips and feet into shared atlas cells, preserving source pixels and transparency. In-game scaling uses nearest-neighbor filtering. `Robot` reuses `Bug` patrol/chase/contact combat only in Yeral's stage; firing poses/projectile effects are deliberately unused because these mobs do not shoot. Defeated robots immediately lose targeting, collision, and contact damage, then finish their collapse animation before despawning. Friendly summoned shadows are unchanged; Bichema's World uses shooting money minions (the existing `TruffleAndroid` actor class) instead.
 
 Robot sprites place their shared foot anchor at the collision shape's bottom, keeping their feet on floors and platforms without changing hitboxes.
 
+Bichema's World characters rebuild with `python assets/extract_bichema.py` (Pillow required). Unaltered sources live in `art/sheets/neon_lawyer_sheet.png` and `money_minion_sheet.png`. Normal and pink-costume boss resources are `assets/neon_lawyer_frames.tres` and `assets/ema_costume_frames.tres`, each with an atlas and 512×256 character canvases anchored at (256,240); minions use `money_minion_frames.tres`, 384×256 canvases anchored at (192,240). First depletion starts the supplied protected costume transformation, clears his attacks/summons, refills a difficulty-scaled 72-HP pool, and resets the health-based phases. Combat resumes after the animation; the costume keeps fan/charge/summon attacks with pink-green projectile art and a 1.1× speed/rate multiplier. Only the costume's final collapse awards boss points and clears the stage; the lawyer cameo remains on that final defeat. Restarting either form restores the normal encounter. Flying enemies retain helicopter poses.
+
+Stage two is one 6137 px level with three complete, separate rooms: Golden Treasury Plaza (2166 px), Lucky Irish Rock Bar (1805 px), and Neon Crown Cash Factory (2166 px). Unaltered sources are `art/sheets/plaza_stage.png` (2172×724), `pub_stage.png` (1983×793), and `factory_stage.png` (2172×724); `python tools/slice_bichema.py` validates and copies them byte-for-byte to `assets/backgrounds/bichema/`. Each painting scales proportionally to 722 px high, with two pixels of edge bleed around the fixed 720 px view. Horizontal world scrolling reveals its full width; jumping never exposes missing scenery, filler bands, or another room's painting. Source floor anchors `[628,688,533]` align to the same playable floor. Pub ledges and dry factory conveyors use invisible one-way collision aligned with the baked art, without duplicate platform/prop overlays; the plaza retains three small capital platforms and a visible bridge across its short water crossing. Five mob gates span the longer route; Ema's two-form encounter occupies the factory's final 1280 px. Room changes use existing comic captions; boss dialogue, transformations, score, restart and progression remain intact.
+
 Run the action regression self-check with `Godot --headless --path . --fixed-fps 60 --script res://tests/player_actions.gd`. It exercises movement, facing, airborne shooting, complete firing/dash sequences, shadow attacks/recall, ultimate effects, invulnerability, and the final death pose.
 
-Run the progression regression with `Godot --headless --path . --fixed-fps 60 --script res://tests/level_progression.gd`. It covers boss-entrance restart, both forms' phase boundaries, refill/transformation immunity without a stage clear, restarting during transformation and second-form combat, final animated collapse → Ema → level selection, and player death blocking victory (including during the collapse).
+Run the progression regression with `Godot --headless --path . --fixed-fps 60 --script res://tests/level_progression.gd`. It covers both bosses' health pools, phase boundaries, protected transformations, restart during transformation and second-form combat, final animated stage advancement, and player death blocking victory.
 
 Run Yeral's art/combat regression with `Godot --headless --path . --fixed-fps 60 --script res://tests/yeral_actions.gd`. It retains first-form facing, honest/fake tells, committed charge and sustained dash pose, idle recovery, real orb damage, and damage-highlight checks. Second-form checks cover phase boundaries, indistinguishable fake warnings, charge contact damage, real ketchup/mustard collisions, safe sauce warnings, jumping clear of active floor damage, transformation immunity/attack cleanup, and exactly one defeat only after the final collapse.
 
-Run the robot regression with `Godot --headless --path . --fixed-fps 60 --script res://tests/robot_actions.gd`. It covers movement-facing, visible foot contact while walking and idle, blocked idle, contact/projectile/shadow damage, hurt recovery, immediate corpse safety, death-animation completion, and Bichema's World mobs being truffle androids.
+Run the robot regression with `Godot --headless --path . --fixed-fps 60 --script res://tests/robot_actions.gd`. It covers movement-facing, visible foot contact while walking and idle, blocked idle, contact/projectile/shadow damage, hurt recovery, immediate corpse safety, death-animation completion, and stage-two actor separation. `tests/bichema_actions.gd` checks Ema's two health pools, protected transition/targeting/attack cleanup, costume attacks, exactly one final defeat, and minion hurt/death completion.
+
+Run `Godot --headless --path . --fixed-fps 60 --script res://tests/bichema_background.gd` for actual viewport coverage at both image edges and double-jump extremes, proportional scale, painted floor contact, real pub ledge landing, bidirectional room crossings, all-mob gates, and the final factory boss entrance.
 
 ## Menus, difficulty and score
 
@@ -95,10 +101,10 @@ Run the robot regression with `Godot --headless --path . --fixed-fps 60 --script
 ## Level layout and mobs
 
 - Zones are separated by **invisible** barriers; walking into one before its mobs are dead shows "Defeat the mobs nearby to keep moving!". They block only the player (shots pass through).
-- Floating platforms: a fixed set plus extra platforms placed at random each run (`_random_platforms` in `main.gd`), kept clear of barriers and within double-jump reach. Platforms are one-way (jump up through them) on their own physics layer (`PLATFORM_LAYER`), so only the player stands on them and projectiles pass through.
+- Floating platforms are one-way (jump up through them) on their own physics layer (`PLATFORM_LAYER`), so only the player stands on them and projectiles pass through. Yeral keeps a fixed set plus extra random platforms each run (`_random_platforms` in `main.gd`). Stage two instead uses fixed geometry aligned to each painting, without random overlays obscuring its details.
 - Yeral's lair (boss arena) is 500 px wider than before (`arena_right`), and Yeral spawns further in.
 - Mobs deal contact damage whenever their body touches the player (`Bug._touch_damage`).
-- `WingedMob` (`scripts/winged_mob.gd`): flying mob with code-drawn bat-like wings in the level palette (green/lime/gold with a mini robot for Yeral, crimson with a truffle android for Bichema's World). Hovers, flashes a warning, swoops at the player, then returns. Ignores walls/barriers and never body-blocks.
+- `WingedMob` (`scripts/winged_mob.gd`): flying mob with green/lime/gold code-drawn wings and a mini robot for Yeral, or the supplied money-minion helicopter art for Bichema's World. Hovers, flashes a warning, swoops at the player, then returns. Ignores walls/barriers and never body-blocks.
 - Jump height raised (`Player.JUMP_VELOCITY` -590).
 - Yeral's vertical floor attack ("Spoiler Pillar", `TrapZone` in `boss_yeral.gd`) is drawn in his palette: a pulsing gold "?" rune telegraph, then a lime energy column with crackling arcs and rising question marks.
 
@@ -113,4 +119,4 @@ To deploy: create a Railway project from this GitHub repo and deploy; it picks u
 
 To export locally, use a standard (non-.NET) Godot 4.5 editor with the web export templates installed: `godot --headless --export-release "Web" build/web/index.html`, then serve `build/web` over HTTP (browsers won't run it from `file://`). The .NET editor build cannot export to Web.
 
-The generated forest-green, toxic-lime, and gold pixel-art level assets in `assets/` are produced by `node tools/gen_assets.js` (no dependencies); edit that script and rerun it to tweak the art, then let Godot reimport. Yeral, the robot minions and the Yeral lair props use sprites sliced from the sheets in `art/sheets/`; Bichema's World uses the red set from `node tools/gen_assets.js bichema` (`assets/bichema/`) plus sprites from `node tools/slice_evil_genius.js`; other characters still use placeholder shapes.
+The generated forest-green, toxic-lime, and gold pixel-art level assets in `assets/` are produced by `node tools/gen_assets.js` (no dependencies). Bichema's World uses `python tools/slice_bichema.py` to validate/copy its complete room paintings, `python tools/slice_capital.py` for plaza platforms, and `python assets/extract_bichema.py` for both boss forms and minion atlases. Original art remains in `art/sheets/`; let Godot reimport after rebuilding. The older Evil Genius sheet is still the source of the lawyer weakness cameo.
