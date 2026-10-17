@@ -47,8 +47,12 @@ func _build_text() -> String:
 		lines.append("  - %s: %d" % [GameSettings.DIFFICULTIES[i]["name"], GameSettings.high_scores[i]])
 	lines.append("")
 	lines.append("CONTROLS")
-	lines.append("Move A/D, Jump Space, Controller Smash J, Summon shadow minions K, Recall L, Ultimate GUARA ARMY U (needs a full meter), Restart R, Pause Esc.")
+	lines.append("Move A/D or arrows / Left Stick or D-pad; Jump Space/W/Up or A; Dash Shift or LB; Controller Smash J/left click or X.")
+	lines.append("Summon minions K or Y; Recall L or RB; GUARA ARMY U or R3 (full meter); Restart R; Pause Esc/B/Start. Menus: D-pad/Left Stick, A to accept, B/Start to go back.")
 	lines.append("")
 	lines.append("MENU")
 	lines.append("Start Game begins at the first level. Level Select replays a specific level. Settings has difficulty, resolution, fullscreen, music and sound.")
 	return "\n".join(lines)
+
+func _unhandled_input(event: InputEvent) -> void:
+	MenuKit.handle_back(event, self)

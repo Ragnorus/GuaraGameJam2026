@@ -493,7 +493,7 @@ func _build_hud() -> void:
 	dialogue.add_theme_font_size_override("font_size", 22)
 	layer.add_child(dialogue)
 	var help := Label.new()
-	help.text = "Move A/D  Jump Space  Smash J  Summon K  Recall L  Ultimate U  Restart R  Pause Esc"
+	help.text = "Move A/D/LS/D-pad  Jump Space/A  Smash J/X  Dash Shift/LB  Summon K/Y  Recall L/RB  Army U/R3  Pause Esc/B/Start  Restart R"
 	help.position = Vector2(16, 690)
 	layer.add_child(help)
 	score_label = Label.new()

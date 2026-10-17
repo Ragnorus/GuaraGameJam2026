@@ -42,3 +42,8 @@ static func go(from: Node, scene_path: String) -> void:
 	var error := from.get_tree().change_scene_to_file(scene_path)
 	if error != OK:
 		push_error("Could not open %s: %s" % [scene_path, error_string(error)])
+
+static func handle_back(event: InputEvent, from: Node) -> void:
+	if event.is_action_pressed("ui_cancel"):
+		from.get_viewport().set_input_as_handled()
+		go(from, "res://scenes/main_menu.tscn")

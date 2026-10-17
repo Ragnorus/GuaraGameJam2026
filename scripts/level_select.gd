@@ -18,3 +18,6 @@ func _ready() -> void:
 func _open_level(scene_path: String) -> void:
 	GameSettings.begin_run()
 	MenuKit.go(self, scene_path)
+
+func _unhandled_input(event: InputEvent) -> void:
+	MenuKit.handle_back(event, self)

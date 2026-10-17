@@ -10,6 +10,7 @@ var started := false
 static var title_seen := false
 
 func _ready() -> void:
+	InputSetup.setup()
 	GameSettings.load_settings()
 	GameAudio.start_music(get_tree())
 	MenuKit.backdrop(self)
@@ -70,12 +71,14 @@ func _menu_button(row: HBoxContainer, caption: String, callback: Callable) -> Bu
 	b.custom_minimum_size = Vector2(200.0, 54.0)
 	return b
 
-# The art says PRESS START: any key, button or click opens the menu over it.
+# The art says PRESS START: any key, button, click or stick movement opens the menu.
 func _input(event: InputEvent) -> void:
 	if started:
 		return
 	var pressed := (event is InputEventKey or event is InputEventJoypadButton or event is InputEventMouseButton) \
 			and event.is_pressed() and not event.is_echo()
+	if event is InputEventJoypadMotion:
+		pressed = absf(event.axis_value) > 0.5
 	if not pressed:
 		return
 	get_viewport().set_input_as_handled()

@@ -115,3 +115,6 @@ func _on_sfx_volume(value: float) -> void:
 	GameSettings.sfx_volume = value
 	GameSettings.save()
 	GameAudio.apply()
+
+func _unhandled_input(event: InputEvent) -> void:
+	MenuKit.handle_back(event, self)

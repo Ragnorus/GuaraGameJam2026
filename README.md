@@ -52,16 +52,18 @@ Look for `SMOKE boss:` followed by `SMOKE PASS:`; success requires exactly one t
 
 **Controls**
 
-| Action | Keys |
-|---|---|
-| Move | A/D or arrows |
-| Jump | Space / W / Up |
-| Dash | Shift |
-| Controller Smash (shoot) | J / Left click |
-| Shadow Spawn (summon minion) | K |
-| Recall minions | L |
-| GUARA ARMY (ultimate, needs full meter) | U |
-| Restart | R |
+| Action | Keyboard / mouse | Controller |
+|---|---|---|
+| Move | A/D or arrows | Left stick or D-pad |
+| Jump | Space / W / Up | A (Cross) |
+| Dash | Shift | LB (L1) |
+| Controller Smash (shoot) | J / Left click | X (Square) |
+| Shadow Spawn (summon minion) | K | Y (Triangle) |
+| Recall minions | L | RB (R1) |
+| GUARA ARMY (ultimate, needs full meter) | U | Right-stick click (R3) |
+| Pause / cancel | Esc | B / Start |
+| Restart level | R | Pause menu: Restart Level |
+| Menu navigation | Arrows / Enter | D-pad or left stick; A confirms; B/Start goes back |
 
 The main character uses the full supplied sprite sheet: animated idle/run, jump/double-jump, fall/landing, firing, dash, summon/recall, ultimate, hurt, and death. Energy shots and flying friendly shadow minions use the sheet's effect frames. The ultimate's beam/flock are visual effects; its damage still comes from the temporary minions. Yeral's first form uses the supplied neon-green rogue art for idle, announcements, charge/run-up, firing, trap casting, fake-out taunts, and energy orbs. Glizzy Gobler uses the supplied transparent hot-dog warlock sheet for transformation, movement, casts, condiment shots, floor sauce, hurt, and final collapse. Both forms retain identical honest/fake warning poses and health-based combat phases; the second form adds alternating ketchup/mustard volleys and jumpable sauce puddles (0.85-second safe warning, then 1.8 seconds active). Damage hints are truthful even when attack announcements lie. Yeral's hostile mobs use the supplied neon CRT robot art; Bichema's World uses the supplied black-suited businessman boss and pink money-minion art.
 
@@ -83,6 +85,8 @@ Stage two is one 6137 px level with three complete, separate rooms: Golden Treas
 
 Run the action regression self-check with `Godot --headless --path . --fixed-fps 60 --script res://tests/player_actions.gd`. It exercises movement, facing, airborne shooting, complete firing/dash sequences, shadow attacks/recall, ultimate effects, invulnerability, and the final death pose.
 
+Run the controller input regression with `Godot --headless --path . --fixed-fps 60 --script res://tests/controller_input.gd`; it checks controller gameplay, navigation, cancel bindings, and repeated setup.
+
 Run the progression regression with `Godot --headless --path . --fixed-fps 60 --script res://tests/level_progression.gd`. It covers both bosses' health pools, phase boundaries, protected transformations, restart during transformation and second-form combat, final animated stage advancement, and player death blocking victory.
 
 Run Yeral's art/combat regression with `Godot --headless --path . --fixed-fps 60 --script res://tests/yeral_actions.gd`. It retains first-form facing, honest/fake tells, committed charge and sustained dash pose, idle recovery, real orb damage, and damage-highlight checks. Second-form checks cover phase boundaries, indistinguishable fake warnings, charge contact damage, real ketchup/mustard collisions, safe sauce warnings, jumping clear of active floor damage, transformation immunity/attack cleanup, and exactly one defeat only after the final collapse.
@@ -93,8 +97,9 @@ Run `Godot --headless --path . --fixed-fps 60 --script res://tests/bichema_backg
 
 ## Menus, difficulty and score
 
-- Main menu (`scenes/main_menu.tscn`, the project's main scene) opens on the "The Night Unc" title art (`assets/ui/title_screen.png`, unaltered, scaled to cover the window); any key, button or click at **PRESS START** reveals a button strip along the bottom (returning from a sub-menu skips the title). Buttons: **Start Game** (opening story, then first level, fresh score), **Level Select** (replay one level), **Settings**, **Game Info** (the rules screen for reviewers, generated from the live difficulty values), and Quit (hidden on web). **Esc** pauses a level (Resume / Restart Level / Main Menu).
-- Every **Start Game** plays `scenes/story_intro.tscn`: the supplied origin story scrolls upward in gold perspective text over a starfield and fades into the horizon before opening Yeral's stage. **Enter / Space / Esc**, controller accept/cancel, or the visible **Skip Intro** button skips with a short fade. Level Select and level restarts bypass the crawl. The original story wording is kept in `scripts/story_intro.gd`; the projection uses `scripts/story_crawl.gdshader`, with no external art or music dependencies and the existing audio settings.
+- Main menu (`scenes/main_menu.tscn`, the project's main scene) opens on the "The Night Unc" title art (`assets/ui/title_screen.png`, unaltered, scaled to cover the window); any key, button, click or left-stick/D-pad movement at **PRESS START** reveals a button strip along the bottom (returning from a sub-menu skips the title). Buttons: **Start Game** (opening story, then first level, fresh score), **Level Select** (replay one level), **Settings**, **Game Info** (the rules screen for reviewers, generated from the live difficulty values), and Quit (hidden on web).
+- Menus use D-pad/left stick to navigate and A to activate. B/Start returns from Level Select, Settings and Game Info; Esc/B/Start pauses or resumes a level (Resume / Restart Level / Main Menu).
+- Every **Start Game** plays `scenes/story_intro.tscn`: the supplied origin story scrolls upward in gold perspective text over a starfield and fades into the horizon before opening Yeral's stage. **Enter / Space / Esc**, controller A/B/Start, or the visible **Skip Intro** button skips with a short fade. Level Select and level restarts bypass the crawl. The original story wording is kept in `scripts/story_intro.gd`; the projection uses `scripts/story_crawl.gdshader`, with no external art or music dependencies and the existing audio settings.
 - Story regression: `Godot --headless --path . --fixed-fps 60 --script res://tests/story_intro.gd` checks story layout/scrolling, resizing, skip inputs, automatic completion, replay, fresh score and Level Select bypass.
 - In-level announcements (stage title, boss intro, transformation, victory, death) pop up in a yellow comic-style caption box at the top right (`scripts/comic_box.gd`, `ComicBox`), under the score; boss dialogue and hints stay at the bottom.
 - Settings (`scripts/settings_menu.gd`): difficulty, resolution (desktop only), fullscreen, music on/off + volume, sound on/off + volume. Saved to `user://settings.cfg` (browser storage on web) by `GameSettings`. Music and sound effects are generated in code by `GameAudio` (no audio files) and routed through `Music`/`SFX` buses.
