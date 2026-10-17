@@ -16,3 +16,4 @@ Tabs, typed GDScript, `class_name` per script, bosses emit `defeated`/`health_ch
 - Do not generate boss art when told another person owns it. Decline sexualized depictions of real people.
 - Update README / skills when behavior changes. Commit trailer: `Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>`.
 - Pushing to `main` redeploys the web build on Railway (a few minutes); hard-reload to test.
+- After a successful push to `main`, automatically open https://guaragamejam2026-production.up.railway.app/ in VS Code's integrated browser (Simple Browser), reusing an existing tab when possible. Also open it when asked to preview or play the deployed game. Use the browser tools when available; if unavailable, tell the user rather than claiming it opened. Opening the page does not confirm the new deployment is ready; remind the user Railway may take a few minutes and a reload may be needed.
