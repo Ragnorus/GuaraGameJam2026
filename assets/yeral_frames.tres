@@ -1,0 +1,104 @@
+[gd_resource type="SpriteFrames" load_steps=11 format=3 uid="uid://b3wb5txd3uy67"]
+
+[ext_resource type="Texture2D" uid="uid://banhll46vpll" path="res://assets/yeral_atlas.png" id="1"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_announce"]
+atlas = ExtResource("1")
+region = Rect2(1536, 0, 512, 512)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_run"]
+atlas = ExtResource("1")
+region = Rect2(1024, 0, 512, 512)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_dash"]
+atlas = ExtResource("1")
+region = Rect2(1536, 512, 512, 512)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_idle"]
+atlas = ExtResource("1")
+region = Rect2(0, 0, 512, 512)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_smug"]
+atlas = ExtResource("1")
+region = Rect2(512, 0, 512, 512)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_projectile"]
+atlas = ExtResource("1")
+region = Rect2(0, 1024, 192, 128)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_taunt"]
+atlas = ExtResource("1")
+region = Rect2(512, 512, 512, 512)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_trap"]
+atlas = ExtResource("1")
+region = Rect2(1024, 512, 512, 512)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_volley"]
+atlas = ExtResource("1")
+region = Rect2(0, 512, 512, 512)
+
+[resource]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_announce")
+}],
+"loop": false,
+"name": &"announce",
+"speed": 1.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_run")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_dash")
+}],
+"loop": false,
+"name": &"charge",
+"speed": 8.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_idle")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_smug")
+}],
+"loop": true,
+"name": &"idle",
+"speed": 2.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_projectile")
+}],
+"loop": false,
+"name": &"projectile",
+"speed": 1.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_taunt")
+}],
+"loop": false,
+"name": &"taunt",
+"speed": 1.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_trap")
+}],
+"loop": false,
+"name": &"trap",
+"speed": 1.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_volley")
+}],
+"loop": false,
+"name": &"volley",
+"speed": 1.0
+}]
