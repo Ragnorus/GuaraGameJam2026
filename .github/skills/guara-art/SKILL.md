@@ -39,6 +39,7 @@ Yeral the Spoilerman palette (level, UI, projectiles, traps):
 When a sheet changes, adjust the boxes/regions in the slicer rather than editing PNGs by hand.
 
 ## Godot integration
+- Player visibility: `player_outline.gdshader` adds a 1.5-screen-pixel warm-gold outline with a faint 3.5-pixel halo at the existing 0.5 sprite scale, without recoloring source pixels. `Player._update_outline_frame` updates atlas UV bounds on frame/animation changes to avoid sampling adjacent poses; animation-change signals can precede frame reset, so clamp the temporary frame index. Applied only to the main sprite in both stages, keeping invulnerability blinking, effects and collision geometry unchanged. `tests/player_actions.gd` checks frame bounds alongside combat/animation behavior.
 - `scripts/sprite_lib.gd` (`SpriteLib`): `build(group, anims)` makes `SpriteFrames` from frame suffixes; `make_sprite(frames, feet_y)` places the sprite so the canvas bottom sits at the feet; `texture(group, suffix)`.
 - Yeral (`boss_yeral.gd`): body 126x188 (sprite scale 0.5), sprite feet at y=+94, spawn y `FLOOR_Y - 96`. The first health depletion switches to `glizzy_frames.tres`: character canvases 512x384, feet (256,352), scale 0.8, non-centered offset (-256,-352), still at y=+94. Transform and death animations finish before combat resumes or the stage clears; attacks use the sheet's condiment and sauce art.
 - Robot minions (`bug.gd`, `robot = true`, Yeral level only): body 44x72, `warn` then `shoot` fires the bolt, `dead` then `boom`, then freed. Dead robots count as cleared for gates.

@@ -23,6 +23,17 @@ func _run() -> void:
 		enemy.queue_free()
 	await _frames(60)
 	assert(player.is_on_floor() and player.player_sprite.animation == &"idle")
+	var outline := player.player_sprite.material as ShaderMaterial
+	assert(outline != null and outline.shader == Player.OUTLINE_SHADER)
+	for animation in [&"idle", &"run", &"jump", &"dash", &"shoot", &"hurt", &"death"]:
+		player.player_sprite.animation = animation
+		for frame in range(Player.CHARACTER_FRAMES.get_frame_count(animation)):
+			player.player_sprite.frame = frame
+			var texture := Player.CHARACTER_FRAMES.get_frame_texture(animation, frame) as AtlasTexture
+			var bounds: Vector4 = outline.get_shader_parameter("frame_uv")
+			assert(is_equal_approx(bounds.x, (texture.region.position.x + 0.5) / texture.atlas.get_width()))
+			assert(is_equal_approx(bounds.w, (texture.region.end.y - 0.5) / texture.atlas.get_height()))
+	player.player_sprite.play(&"idle")
 	var idle_frame := player.player_sprite.frame
 	await _frames(12)
 	assert(player.player_sprite.frame != idle_frame, "Idle must actually animate")

@@ -13,6 +13,7 @@ const DASH_DURATION := 0.16
 const DASH_COOLDOWN := 0.7
 const MAX_MINIONS := 4
 const CHARACTER_FRAMES := preload("res://assets/character_frames.tres")
+const OUTLINE_SHADER := preload("res://scripts/player_outline.gdshader")
 
 var player_sprite: AnimatedSprite2D
 var ultimate_beam: AnimatedSprite2D
@@ -43,8 +44,14 @@ func _ready() -> void:
 	player_sprite.scale = Vector2(0.5, 0.5)
 	player_sprite.offset = Vector2(0, -72)
 	player_sprite.position.y = 36.0
+	var outline := ShaderMaterial.new()
+	outline.shader = OUTLINE_SHADER
+	player_sprite.material = outline
+	player_sprite.frame_changed.connect(_update_outline_frame)
+	player_sprite.animation_changed.connect(_update_outline_frame)
 	add_child(player_sprite)
 	player_sprite.play(&"idle")
+	_update_outline_frame()
 	ultimate_beam = AnimatedSprite2D.new()
 	ultimate_beam.sprite_frames = CHARACTER_FRAMES
 	ultimate_beam.centered = false
@@ -64,6 +71,15 @@ func _ready() -> void:
 	var cs := CollisionShape2D.new()
 	cs.shape = shape
 	add_child(cs)
+
+func _update_outline_frame() -> void:
+	# animation_changed can arrive before the previous animation's frame is reset.
+	var frame := mini(player_sprite.frame, CHARACTER_FRAMES.get_frame_count(player_sprite.animation) - 1)
+	var texture := CHARACTER_FRAMES.get_frame_texture(player_sprite.animation, frame) as AtlasTexture
+	var atlas_size := texture.atlas.get_size()
+	var start := (texture.region.position + Vector2(0.5, 0.5)) / atlas_size
+	var end := (texture.region.end - Vector2(0.5, 0.5)) / atlas_size
+	(player_sprite.material as ShaderMaterial).set_shader_parameter("frame_uv", Vector4(start.x, start.y, end.x, end.y))
 
 func _physics_process(delta: float) -> void:
 	action_time = maxf(0.0, action_time - delta)
