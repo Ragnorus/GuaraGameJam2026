@@ -4,6 +4,7 @@
    (G, U, A, R are all on that line) so the font, fill and outline match.
 2. The bat in the spotlight signal -> a black Guara red hawk head (the Guaras' symbol), traced by hand
    from art/sheets/guara_hawk.png as a polygon stencil.
+3. The "(c) 1993 PIXELWORKS ... LICENSED BY DC COMICS" credit lines are removed.
 Source:  art/sheets/title_screen_original.png (unaltered, as supplied)
 Output:  assets/ui/title_screen.png
 Run:     python tools/build_title_screen.py   (requires Pillow)
@@ -33,6 +34,8 @@ HAWK_OUTLINE = [
 ]
 HAWK_MOUTH = [(52, 46), (60, 45), (62, 48), (58, 47)]  # notch separating beak from jaw
 HAWK_EYE = (47, 34, 2.2)                                 # x, y, radius (cut out)
+CREDIT_BOX = (270, 431, 758, 480)                        # "(c) 1993 PIXELWORKS..." lines, removed
+CREDIT_SAMPLE_TOP = 419                                  # clean facade rows 419..430 refill the block
 
 TOP, BOTTOM = 136, 154          # letter rows (fill)
 CLEAN_TOP, CLEAN_BOTTOM = 132, 158  # rows just outside the outline, used to repaint the background
@@ -143,8 +146,31 @@ def hawk_signal(img: Image.Image) -> None:
     img.paste(ink, (ox, oy), mask)
 
 
+def remove_credits(img: Image.Image, src: Image.Image) -> None:
+    """Erase the "(c) 1993 PIXELWORKS ... LICENSED BY DC COMICS" lines, inpainting from the surrounding art."""
+    x0, y0, x1, y1 = CREDIT_BOX
+    p = img.load()
+    # Clear the whole block by reflecting the clean facade band just above it back and forth (between the
+    # art's PRESS START and the credits; keeps the pixel texture crisp), then blend the last rows into the
+    # street below so the pedestrians and police car are not stretched.
+    band = y0 - CREDIT_SAMPLE_TOP
+    blend = 8
+    for y in range(y0, y1 + 1 - blend):
+        k = (y - y0) % (2 * band)
+        sy = y0 - 1 - k if k < band else CREDIT_SAMPLE_TOP + (k - band)
+        for x in range(x0, x1 + 1):
+            p[x, y] = src.getpixel((x, sy))
+    top = y1 - blend
+    for y in range(top + 1, y1 + 1):
+        t = (y - top) / (blend + 1)
+        for x in range(x0, x1 + 1):
+            a, b = p[x, top], src.getpixel((x, y1 + 1))
+            p[x, y] = tuple(round(a[i] * (1 - t) + b[i] * t) for i in range(3))
+
+
 def main() -> None:
     out = retitle()
+    remove_credits(out, Image.open(SRC).convert("RGB"))
     hawk_signal(out)
     OUT.parent.mkdir(parents=True, exist_ok=True)
     out.save(OUT)
