@@ -4,6 +4,7 @@ server {
     index index.html;
 
     types {
+        include /etc/nginx/mime.types;
         application/wasm wasm;
     }
 
