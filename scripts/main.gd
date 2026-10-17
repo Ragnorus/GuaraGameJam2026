@@ -18,7 +18,18 @@ func _ready() -> void:
 	_build_world()
 	_build_hud()
 
-func _add_block(rect: Rect2) -> void:
+func _tiled(path: String, pos: Vector2, size: Vector2, px_scale := 1.0) -> TextureRect:
+	var tr := TextureRect.new()
+	tr.texture = load(path)
+	tr.stretch_mode = TextureRect.STRETCH_TILE
+	tr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	tr.scale = Vector2(px_scale, px_scale)
+	tr.size = size / px_scale
+	tr.position = pos
+	return tr
+
+# kind: "floor", "platform" or "wall"
+func _add_block(rect: Rect2, kind := "wall") -> void:
 	var body := StaticBody2D.new()
 	body.position = rect.position + rect.size / 2.0
 	var shape := RectangleShape2D.new()
@@ -26,27 +37,66 @@ func _add_block(rect: Rect2) -> void:
 	var cs := CollisionShape2D.new()
 	cs.shape = shape
 	body.add_child(cs)
-	var vis := ColorRect.new()
-	vis.size = rect.size
-	vis.position = -rect.size / 2.0
-	vis.color = Color(0.15, 0.2, 0.3)
-	body.add_child(vis)
+	var origin := -rect.size / 2.0
+	match kind:
+		"floor":
+			body.add_child(_tiled("res://assets/tile_floor_mesh.png", origin, rect.size))
+			body.add_child(_tiled("res://assets/tile_floor_top.png", origin, Vector2(rect.size.x, 32), 2.0))
+		"platform":
+			body.add_child(_tiled("res://assets/tile_platform.png", origin, rect.size))
+		_:
+			body.add_child(_tiled("res://assets/tile_wall.png", origin, rect.size))
 	add_child(body)
 
+func _add_prop(path: String, pos: Vector2, px_scale := 2.0, z := -1) -> void:
+	var s := Sprite2D.new()
+	s.texture = load(path)
+	s.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	s.scale = Vector2(px_scale, px_scale)
+	s.centered = false
+	s.position = pos - Vector2(s.texture.get_width(), s.texture.get_height()) * px_scale * Vector2(0.5, 1.0)
+	s.z_index = z
+	add_child(s)
+
+func _build_background() -> void:
+	var pb := ParallaxBackground.new()
+	add_child(pb)
+	var layers := [["res://assets/bg_far.png", 0.08], ["res://assets/bg_mid.png", 0.25],
+			["res://assets/bg_near.png", 0.5]]
+	for l in layers:
+		var pl := ParallaxLayer.new()
+		pl.motion_scale = Vector2(l[1], 0.0)
+		pl.motion_mirroring = Vector2(1024, 0)
+		var spr := Sprite2D.new()
+		spr.texture = load(l[0])
+		spr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		spr.centered = false
+		spr.scale = Vector2(2, 2)
+		pl.add_child(spr)
+		pb.add_child(pl)
+
+func _build_props() -> void:
+	_add_prop("res://assets/prop_door.png", Vector2(60, FLOOR_Y), 2.0)
+	_add_prop("res://assets/prop_sign_billboard.png", Vector2(420, 330), 3.0, -2)
+	_add_prop("res://assets/prop_sign_vertical.png", Vector2(980, 380), 3.0, -2)
+	_add_prop("res://assets/prop_neon_lamp.png", Vector2(1700, 420), 3.0, -2)
+	_add_prop("res://assets/prop_sign_billboard.png", Vector2(LEVEL_END + 250, 300), 4.0, -2)
+	_add_prop("res://assets/prop_neon_lamp.png", Vector2(LEVEL_END - 80, 400), 3.0, -2)
+	for x in [250.0, 700.0, 1180.0, 1480.0, 1900.0, 2150.0]:
+		_add_prop("res://assets/prop_bollard.png", Vector2(x, FLOOR_Y), 2.0)
+	for x in [560.0, 1320.0, 2000.0]:
+		_add_prop("res://assets/prop_crate.png", Vector2(x, FLOOR_Y), 2.0)
+
 func _build_world() -> void:
-	var bg := ColorRect.new()
-	bg.color = Color(0.05, 0.03, 0.1)
-	bg.position = Vector2(-1000, -600)
-	bg.size = Vector2(LEVEL_END + 2000, 1800)
-	bg.z_index = -10
-	add_child(bg)
-	_add_block(Rect2(-100, FLOOR_Y, LEVEL_END + 600, 100))
+	_build_background()
+	_build_props()
+	_add_block(Rect2(-100, FLOOR_Y, LEVEL_END + 600, 100), "floor")
 	_add_block(Rect2(-140, -200, 40, 900))
 	_add_block(Rect2(LEVEL_END + 500, -200, 40, 900))
 	for r in [Rect2(350, 480, 140, 20), Rect2(600, 400, 140, 20),
 			Rect2(850, 480, 140, 20), Rect2(1100, 380, 160, 20),
 			Rect2(1400, 470, 140, 20)]:
-		_add_block(r)
+		_add_block(r, "platform")
 	player = Player.new()
 	player.position = Vector2(100, FLOOR_Y - 40)
 	add_child(player)
