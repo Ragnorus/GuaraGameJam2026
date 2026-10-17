@@ -35,7 +35,7 @@ Replace `godot` below with the path to your Godot 4.5 executable if it is not on
 2. Refocus the Godot editor so it reimports the PNGs, then press **F6** to preview.
 
 **Re-slice character and prop sprites** (Yeral, robot minions, lair props; sources in `art/sheets/`, ignored by Godot via `art/.gdignore`)
-1. `node tools/slice_sheets.js` writes `assets/sprites/yeral*`, `robot*`; `node tools/slice_lair.js` writes `assets/sprites/lair`.
+1. `node tools/slice_lair.js` writes `assets/sprites/lair`; `node tools/slice_city.js` builds the city background layers (`assets/sprites/city_bg`) and cut-out towers/bridges/platforms/props/windows/ground (`assets/sprites/city`) from `art/sheets/city_sheet.png`. `node tools/slice_sheets.js` writes `yeral*` and `robot*`.
 2. `node tools/contact_sheet.js <group> out.png` lays a group's frames out for a quick visual check.
 3. Open the project once in Godot so it creates the `.import` files for the new PNGs, and commit them.
 

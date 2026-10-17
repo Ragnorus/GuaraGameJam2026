@@ -76,9 +76,29 @@ func _add_prop(path: String, pos: Vector2, px_scale := 2.0, z := -1) -> void:
 	s.z_index = z
 	add_child(s)
 
+# Yeral's night city (sprites sliced from art/sheets/city_sheet.png by tools/slice_city.js).
+func _build_city_background(pb: ParallaxBackground) -> void:
+	# [file, scroll speed, y offset from the top of the 720px screen]
+	var layers := [["city_bg_far", 0.05, 0.0], ["city_bg_mid", 0.25, 361.0], ["city_bg_near", 0.5, 335.0]]
+	for l in layers:
+		var tex: Texture2D = load("res://assets/sprites/city_bg/%s.png" % l[0])
+		var pl := ParallaxLayer.new()
+		pl.motion_scale = Vector2(l[1], 0.0)
+		pl.motion_mirroring = Vector2(tex.get_width(), 0)
+		var spr := Sprite2D.new()
+		spr.texture = tex
+		spr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		spr.centered = false
+		spr.position = Vector2(0, l[2])
+		pl.add_child(spr)
+		pb.add_child(pl)
+
 func _build_background() -> void:
 	var pb := ParallaxBackground.new()
 	add_child(pb)
+	if not ema_level:
+		_build_city_background(pb)
+		return
 	var layers := [["res://assets/bg_far.png", 0.08], ["res://assets/bg_mid.png", 0.25],
 			["res://assets/bg_near.png", 0.5]]
 	for l in layers:

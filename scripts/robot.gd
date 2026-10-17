@@ -3,7 +3,6 @@ extends Bug
 
 const ROBOT_FRAMES := preload("res://assets/robot_frames.tres")
 
-var sprite: AnimatedSprite2D
 var dying := false
 
 func _ready() -> void:
@@ -38,6 +37,7 @@ func take_damage(amount: int) -> void:
 	health -= amount
 	if health <= 0:
 		dying = true
+		dead = true
 		remove_from_group("enemies")
 		set_physics_process(false)
 		velocity = Vector2.ZERO
