@@ -16,6 +16,8 @@ description: Development workflow and accumulated session knowledge for Guara Sl
 - **Yeral level** (Gotham-style city, "Spoiler Man" sheet): background built in `main.gd::_build_city_background` (panorama scale `PX=1.25`, linear filter, bottom-aligned, sky-colored gradient fade over the skyline top). `tools/preview_bg.js` mirrors this layout for Node previews. Boss `boss_yeral.gd`, mobs `robot.gd`/`bug.gd`.
 - **Bichema's World** (red tones, formerly Ema's green infected level): boss `boss_evil_genius.gd` (sprites named by Evil Genius convention), mobs `truffle_android.gd` (truffle/mushroom androids). Evil Genius = last boss, "alpha and omega".
 - Player, mobs enlarged; bosses much larger for visibility. See `guara-art` for sprite pipeline.
+- Gates between zones are invisible (group `gates`); floating platforms are one-way, on `PLATFORM_LAYER` (4), with extra random ones each run. `WingedMob` is the flying mob (both levels). Yeral's arena extends to `arena_right` = LEVEL_END + 1000. Mob contact damage is `Bug._touch_damage` (box overlap + margin).
+- Tests: `tests/*.gd` (run with `--fixed-fps 60 --script`) and `tools/smoke_test.gd`. A failing `assert` makes Godot wait in the debugger, so wrap runs in a timeout. A portable Godot can be downloaded to a scratch folder for validation.
 
 ## Menus, difficulty, score
 - Scripts: `game_settings.gd` (static settings, save/load to `user://settings.cfg`), `menu_kit.gd` (UI helpers), `main_menu.gd`, `level_select.gd`, `settings_menu.gd` (resolution, music/SFX on+volume, difficulty), `game_info.gd` (judge-facing explanation), `pause_menu.gd`.

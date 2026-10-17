@@ -91,6 +91,16 @@ Run the robot regression with `Godot --headless --path . --fixed-fps 60 --script
 - Score: a mob gives 1-5 points (more the deeper it is in the level; boss-summoned minions give 1), a boss gives 10. Score carries Yeral -> Bichema's World in one run; dying or restarting reverts to the score the level began with. The high score is kept per difficulty and recorded on death or boss defeat. The HUD shows score, high score and difficulty.
 - Regression: `Godot --headless --path . --fixed-fps 60 --script res://tests/difficulty_score.gd`.
 
+## Level layout and mobs
+
+- Zones are separated by **invisible** barriers; walking into one before its mobs are dead shows "Defeat the mobs nearby to keep moving!". They block only the player (shots pass through).
+- Floating platforms: a fixed set plus extra platforms placed at random each run (`_random_platforms` in `main.gd`), kept clear of barriers and within double-jump reach. Platforms are one-way (jump up through them) on their own physics layer (`PLATFORM_LAYER`), so only the player stands on them and projectiles pass through.
+- Yeral's lair (boss arena) is 500 px wider than before (`arena_right`), and Yeral spawns further in.
+- Mobs deal contact damage whenever their body touches the player (`Bug._touch_damage`).
+- `WingedMob` (`scripts/winged_mob.gd`): flying mob with code-drawn bat-like wings in the level palette (green/lime/gold with a mini robot for Yeral, crimson with a truffle android for Bichema's World). Hovers, flashes a warning, swoops at the player, then returns. Ignores walls/barriers and never body-blocks.
+- Jump height raised (`Player.JUMP_VELOCITY` -590).
+- Yeral's vertical floor attack ("Spoiler Pillar", `TrapZone` in `boss_yeral.gd`) is drawn in his palette: a pulsing gold "?" rune telegraph, then a lime energy column with crackling arcs and rising question marks.
+
 ## Deploy to Railway
 
 Railway's default builder (Railpack) can't build Godot projects, so the repo ships a `Dockerfile` and `railway.json` that Railway uses instead:

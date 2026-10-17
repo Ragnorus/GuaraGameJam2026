@@ -2,6 +2,7 @@ extends Node2D
 
 const LEVEL_END := 2400.0
 const FLOOR_Y := 600.0
+const PLATFORM_LAYER := 4
 
 @export var bichema_level := false
 
@@ -20,6 +21,9 @@ var hp_bar: ProgressBar
 var meter_bar: ProgressBar
 var boss_bar: ProgressBar
 var score_label: Label
+var gate_hint_cd := 0.0
+# Right edge of the boss arena; Yeral's lair is wider so the fight has room to move.
+var arena_right := LEVEL_END + 500.0
 
 func _ready() -> void:
 	InputSetup.setup()
@@ -68,6 +72,10 @@ func _add_block(rect: Rect2, kind := "wall") -> void:
 			body.add_child(_tiled(_asset("tile_floor_mesh.png"), origin, rect.size))
 			body.add_child(_tiled(_asset("tile_floor_top.png"), origin, Vector2(rect.size.x, 32), 2.0))
 		"platform":
+			# Own physics layer: only the player stands on platforms (bosses and mobs pass behind them),
+			# and they are one-way so the player can jump up through them.
+			body.collision_layer = PLATFORM_LAYER
+			cs.one_way_collision = true
 			if bichema_level:
 				body.add_child(_tiled(_asset("tile_platform.png"), origin, rect.size))
 			else:
@@ -194,9 +202,13 @@ func _build_yeral_props() -> void:
 	_add_prop(_lair("terminal"), Vector2(1800, FLOOR_Y), 1.0)
 	_add_prop(_lair("vat"), Vector2(2100, FLOOR_Y), 1.0)
 	_add_prop(_lair("pillar_glow"), Vector2(LEVEL_END - 80, FLOOR_Y), 1.0, -2)
-	_add_prop(_lair("crown_screen"), Vector2(LEVEL_END + 250, 300), 1.5, -2)
-	_add_prop(_lair("command_desk"), Vector2(LEVEL_END + 120, FLOOR_Y), 1.0, -1)
-	_add_prop(_lair("crown_hologram"), Vector2(LEVEL_END + 400, FLOOR_Y), 1.0, -1)
+	_add_prop(_lair("crown_screen"), Vector2(LEVEL_END + 500, 300), 1.5, -2)
+	_add_prop(_lair("command_desk"), Vector2(LEVEL_END + 300, FLOOR_Y), 1.0, -1)
+	_add_prop(_lair("crown_hologram"), Vector2(LEVEL_END + 760, FLOOR_Y), 1.0, -1)
+	_add_prop(_lair("pillar_glow"), Vector2(LEVEL_END + 940, FLOOR_Y), 1.0, -2)
+	for x in [LEVEL_END + 150.0, LEVEL_END + 850.0]:
+		_add_prop(_lair("banner_a"), Vector2(x, 250), 1.0, -2)
+	_add_prop(_lair("lamp_b"), Vector2(LEVEL_END + 620, 160), 1.0, -2)
 
 func _add_platform_sprite(body: Node2D, rect: Rect2) -> void:
 	var s := Sprite2D.new()
@@ -209,15 +221,17 @@ func _add_platform_sprite(body: Node2D, rect: Rect2) -> void:
 	body.add_child(s)
 
 func _build_world() -> void:
+	if not bichema_level:
+		arena_right = LEVEL_END + 1000.0
 	_build_background()
 	_build_props()
 	if bichema_level:
 		var tint := CanvasModulate.new()
 		tint.color = Color(1.0, 0.88, 0.88)
 		add_child(tint)
-	_add_block(Rect2(-100, FLOOR_Y, LEVEL_END + 600, 100), "floor")
-	_add_block(Rect2(-140, -200, 40, 900))
-	_add_block(Rect2(LEVEL_END + 500, -200, 40, 900))
+	_add_block(Rect2(-100, FLOOR_Y, arena_right + 100, 100), "floor")
+	_add_block(Rect2(-140, -800, 40, 1500))
+	_add_block(Rect2(arena_right, -800, 40, 1500))
 	var platforms: Array = [
 		Rect2(350, 480, 140, 20), Rect2(600, 400, 140, 20),
 		Rect2(850, 480, 140, 20), Rect2(1100, 380, 160, 20),
@@ -230,51 +244,98 @@ func _build_world() -> void:
 			Rect2(1300, 475, 160, 20), Rect2(1580, 385, 170, 20),
 			Rect2(1820, 475, 170, 20),
 		]
+	var bug_positions := [500.0, 800.0, 1000.0, 1250.0, 1550.0, 1800.0]
+	var flyer_positions := [700.0, 1350.0, 1900.0]
+	var gate_xs := [900.0, 1400.0, 2000.0]
+	if bichema_level:
+		bug_positions = [420.0, 660.0, 900.0, 1120.0, 1350.0, 1590.0, 1810.0, 1980.0]
+		flyer_positions = [600.0, 1150.0, 1600.0, 2050.0]
+		gate_xs = [800.0, 1250.0, 1700.0, 2100.0]
+	platforms.append_array(_random_platforms(platforms, gate_xs))
 	for r in platforms:
 		_add_block(r, "platform")
 	player = Player.new()
+	player.collision_mask |= PLATFORM_LAYER
 	player.position = Vector2(100, FLOOR_Y - 60)
 	add_child(player)
 	player.died.connect(_on_player_died)
 	player.stats_changed.connect(_update_hud)
 	var cam := Camera2D.new()
 	cam.limit_left = -100
-	cam.limit_right = int(LEVEL_END + 500)
+	cam.limit_right = int(arena_right)
 	cam.limit_bottom = int(FLOOR_Y + 100)
 	player.add_child(cam)
-	var bug_positions := [500.0, 800.0, 1000.0, 1250.0, 1550.0, 1800.0]
-	var gate_xs := [900.0, 1400.0, 2000.0]
-	if bichema_level:
-		bug_positions = [420.0, 660.0, 900.0, 1120.0, 1350.0, 1590.0, 1810.0, 1980.0]
-		gate_xs = [800.0, 1250.0, 1700.0, 2100.0]
 	for gx in gate_xs:
 		gates.append({"x": gx, "wall": _add_gate(gx), "bugs": []})
+	var mobs: Array = []
 	for x in bug_positions:
 		var b: Bug = TruffleAndroid.new() if bichema_level else Robot.new()
 		b.position = Vector2(x, FLOOR_Y - (40 if bichema_level else 38))
+		mobs.append(b)
+	for x in flyer_positions:
+		var w := WingedMob.new()
+		w.bichema = bichema_level
+		w.position = Vector2(x, FLOOR_Y - WingedMob.HOVER_HEIGHT)
+		mobs.append(w)
+	for b in mobs:
 		b.target = player
-		b.points = clampi(1 + int(5.0 * x / LEVEL_END), GameSettings.MOB_POINTS_MIN, GameSettings.MOB_POINTS_MAX)
+		b.points = clampi(1 + int(5.0 * b.position.x / LEVEL_END), GameSettings.MOB_POINTS_MIN, GameSettings.MOB_POINTS_MAX)
 		add_child(b)
 		for g in gates:
-			if x < g["x"]:
+			if b.position.x < g["x"]:
 				g["bugs"].append(b)
 				break
 	_update_hud()
 
-# Energy barrier that blocks the player until its zone's mobs are dead.
+# Extra platforms at random spots each run (gaps between the fixed ones, plus a few in the boss arena).
+# Heights stay within a double jump of the floor or a neighbouring platform.
+func _random_platforms(fixed: Array, gate_xs: Array) -> Array:
+	var rng := RandomNumberGenerator.new()
+	rng.randomize()
+	var placed: Array = []
+	var taken: Array = fixed.duplicate()
+	var x := 260.0
+	while x < LEVEL_END - 420.0:
+		var w := rng.randf_range(110.0, 170.0)
+		var r := Rect2(x, rng.randf_range(300.0, 500.0), w, 20.0)
+		if _platform_fits(r, taken, gate_xs):
+			placed.append(r)
+			taken.append(r)
+		x += rng.randf_range(170.0, 300.0)
+	var arena_x := LEVEL_END - 260.0
+	while arena_x < arena_right - 260.0:
+		var r := Rect2(arena_x, rng.randf_range(400.0, 480.0), rng.randf_range(120.0, 170.0), 20.0)
+		if _platform_fits(r, taken, gate_xs):
+			placed.append(r)
+			taken.append(r)
+		arena_x += rng.randf_range(300.0, 420.0)
+	return placed
+
+func _platform_fits(r: Rect2, taken: Array, gate_xs: Array) -> bool:
+	for gx in gate_xs:
+		if gx > r.position.x - 40.0 and gx < r.end.x + 40.0:
+			return false
+	for t in taken:
+		if r.grow_individual(50.0, 70.0, 50.0, 70.0).intersects(t):
+			return false
+	# Platforms floating too high need a lower step nearby, otherwise they are unreachable.
+	if r.position.y < 380.0:
+		for t in taken:
+			if t.position.y >= 380.0 and absf(t.get_center().x - r.get_center().x) < 300.0:
+				return true
+		return false
+	return true
+
+# Invisible energy barrier that blocks the player until its zone's mobs are dead.
 func _add_gate(x: float) -> StaticBody2D:
 	var body := StaticBody2D.new()
-	body.position = Vector2(x, FLOOR_Y - 300)
+	body.add_to_group("gates")
+	body.position = Vector2(x, FLOOR_Y - 700)
 	var shape := RectangleShape2D.new()
-	shape.size = Vector2(16, 600)
+	shape.size = Vector2(16, 1400)
 	var cs := CollisionShape2D.new()
 	cs.shape = shape
 	body.add_child(cs)
-	var vis := ColorRect.new()
-	vis.size = Vector2(16, 600)
-	vis.position = Vector2(-8, -300)
-	vis.color = Color(1.0, 0.2, 0.15, 0.35) if bichema_level else Color(0.4, 1.0, 0.1, 0.35)
-	body.add_child(vis)
 	add_child(body)
 	return body
 
@@ -289,6 +350,11 @@ func _update_gates() -> void:
 			g["wall"].queue_free()
 			gates.erase(g)
 			_say("Path cleared!", 1.5)
+	gate_hint_cd = maxf(0.0, gate_hint_cd - get_process_delta_time())
+	if not gates.is_empty() and gate_hint_cd <= 0.0 and is_instance_valid(player) \
+			and player.position.x > gates[0]["x"] - 50.0:
+		gate_hint_cd = 4.0
+		_say("Defeat the mobs nearby to keep moving!", 2.0)
 
 func _make_bar(pos: Vector2, size: Vector2, fill: Color) -> ProgressBar:
 	var bar := ProgressBar.new()
@@ -387,9 +453,11 @@ func _start_boss() -> void:
 		message.text = "THE EVIL GENIUS"
 	else:
 		var yeral := BossYeral.new()
-		yeral.position = Vector2(LEVEL_END + 250, FLOOR_Y - 96)
+		yeral.position = Vector2(LEVEL_END + 600, FLOOR_Y - 96)
 		yeral.target = player
 		yeral.floor_y = FLOOR_Y
+		yeral.arena_min = LEVEL_END - 280.0
+		yeral.arena_max = arena_right - 60.0
 		add_child(yeral)
 		yeral.health_changed.connect(_on_boss_health)
 		yeral.defeated.connect(_on_boss_defeated)

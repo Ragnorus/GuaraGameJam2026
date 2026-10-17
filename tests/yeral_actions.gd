@@ -64,8 +64,8 @@ func _run() -> void:
 			else:
 				child.queue_free()
 	# The art must leave enemy projectile collision/damage intact.
-	shot.position = player.position + Vector2(60, -6)
-	shot.velocity = Vector2(-300, 0)
+	shot.position = player.position + Vector2(-60, -6)
+	shot.velocity = Vector2(300, 0)
 	player.invuln = 0.0
 	var health := player.health
 	await _frames(24)
@@ -164,8 +164,8 @@ func _second_form(boss: BossYeral, player: Player) -> void:
 		assert(shot != null and shot.target_group == "player")
 		var damage := shot.damage
 		condiments.append(shot.sprite.animation)
-		shot.position = player.position + Vector2(60, -6)
-		shot.velocity = Vector2(-300, 0)
+		shot.position = player.position + Vector2(-60, -6)
+		shot.velocity = Vector2(300, 0)
 		player.invuln = 0.0
 		health = player.health
 		await _frames(24)

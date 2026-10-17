@@ -15,7 +15,7 @@ var sprite: AnimatedSprite2D
 
 func _ready() -> void:
 	collision_layer = 0
-	collision_mask = 0xFFFFFFFF
+	collision_mask = 0xFFFFFFFF & ~4  # pass through floating platforms (main.gd PLATFORM_LAYER)
 	var shape := CircleShape2D.new()
 	shape.radius = radius
 	var cs := CollisionShape2D.new()
@@ -50,5 +50,5 @@ func _on_body_entered(body: Node) -> void:
 	if body.is_in_group(target_group) and body.has_method("take_damage"):
 		body.take_damage(damage)
 		queue_free()
-	elif body is StaticBody2D:
+	elif body is StaticBody2D and not body.is_in_group("gates"):
 		queue_free()

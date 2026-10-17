@@ -25,13 +25,18 @@ func _run() -> void:
 	root.add_child(stage)
 	var player := stage.get("player") as Player
 	var robot: Robot
+	var fliers := 0
 	for enemy in get_nodes_in_group("enemies"):
-		assert(enemy is Robot, "Every first-stage hostile mob must use robot art")
+		if enemy is WingedMob:
+			fliers += 1
+			enemy.queue_free()
+			continue
+		assert(enemy is Robot, "Every first-stage ground mob must use robot art")
 		if robot == null:
 			robot = enemy as Robot
 		else:
 			enemy.queue_free()
-	player.set_physics_process(false)
+	assert(fliers > 0, "The first stage must include winged flying mobs")
 	player.collision_layer = 0
 	player.collision_mask = 0
 	robot.position = Vector2(780, stage.FLOOR_Y - 10)
@@ -111,7 +116,7 @@ func _run() -> void:
 	var ema_stage := preload("res://scenes/bichema_level.tscn").instantiate()
 	root.add_child(ema_stage)
 	for enemy in get_nodes_in_group("enemies"):
-		assert(enemy is TruffleAndroid and not enemy is Robot, "Bichema's World mobs must be truffle androids")
+		assert(enemy is WingedMob or (enemy is TruffleAndroid and not enemy is Robot), "Bichema's World ground mobs must be truffle androids")
 	ema_stage.queue_free()
 	await _frames(1)
 	print("PASS: first-stage robots, locomotion/facing, blocked idle, contact/projectile/shadow damage, hurt recovery, corpse safety, death completion, truffle androids")

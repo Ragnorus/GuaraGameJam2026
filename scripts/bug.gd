@@ -2,6 +2,8 @@ class_name Bug
 extends CharacterBody2D
 
 const GRAVITY := 1500.0
+const PLAYER_HALF := Vector2(21, 36)
+const TOUCH_MARGIN := 6.0
 
 var health := 3
 var speed := 70.0
@@ -15,8 +17,6 @@ var shoot_cd := 2.0
 var anim_lock := 0.0
 var sprite: AnimatedSprite2D
 var cs: CollisionShape2D
-var reach_x := 30.0
-var reach_y := 46.0
 var points := 1
 
 func _ready() -> void:
@@ -54,13 +54,19 @@ func _physics_process(delta: float) -> void:
 	if robot:
 		_robot_update(delta)
 	move_and_slide()
-	var reach := reach_x if not robot else 36.0
-	if is_instance_valid(target) and target.has_method("take_damage") \
-			and absf(target.global_position.x - global_position.x) < reach \
-			and absf(target.global_position.y - global_position.y) < (reach_y if not robot else 58.0):
-		target.take_damage(1)
+	_touch_damage()
 	if not robot:
 		queue_redraw()
+
+# Contact damage: hurts the player whenever the two bodies touch (box overlap plus a small margin,
+# since physics keeps them from actually overlapping).
+func _touch_damage() -> void:
+	if dead or not is_instance_valid(target) or not target.has_method("take_damage"):
+		return
+	var half := (cs.shape as RectangleShape2D).size / 2.0
+	var d := (target.global_position - (global_position + cs.position)).abs()
+	if d.x < half.x + PLAYER_HALF.x + TOUCH_MARGIN and d.y < half.y + PLAYER_HALF.y + TOUCH_MARGIN:
+		target.take_damage(1)
 
 func _robot_update(delta: float) -> void:
 	anim_lock = maxf(0.0, anim_lock - delta)

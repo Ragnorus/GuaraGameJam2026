@@ -11,15 +11,23 @@ const HINT_COOLDOWN := 3.0
 const YERAL_FRAMES := preload("res://assets/yeral_frames.tres")
 const GLIZZY_FRAMES := preload("res://assets/glizzy_frames.tres")
 
-# Trap column: shows a warning, then becomes deadly for a moment.
+# Spoiler Pillar: a gold "?" telegraph on the floor, then a column of toxic-lime spoiler energy
+# with rising question marks, drawn in Yeral's palette (forest green, lime glow, gold trim).
 class TrapZone extends Node2D:
+	const DARK := Color8(8, 13, 10)
+	const FOREST := Color8(41, 68, 42)
+	const LIME := Color8(112, 237, 24)
+	const BRIGHT := Color8(156, 255, 34)
+	const GOLD := Color8(217, 154, 40)
 	var width := 90.0
 	var height := 400.0
 	var warn := 1.0
 	var live := 0.6
+	var t := 0.0
 	var target: Node2D
 
 	func _process(delta: float) -> void:
+		t += delta
 		if warn > 0.0:
 			warn -= delta
 		else:
@@ -32,9 +40,63 @@ class TrapZone extends Node2D:
 				queue_free()
 		queue_redraw()
 
+	func _glyph(pos: Vector2, size: int, color: Color) -> void:
+		var font := ThemeDB.fallback_font
+		var w := font.get_string_size("?", HORIZONTAL_ALIGNMENT_LEFT, -1, size).x
+		draw_string_outline(font, pos - Vector2(w / 2.0, 0), "?", HORIZONTAL_ALIGNMENT_LEFT, -1, size, 6, DARK)
+		draw_string(font, pos - Vector2(w / 2.0, 0), "?", HORIZONTAL_ALIGNMENT_LEFT, -1, size, color)
+
 	func _draw() -> void:
-		var c := Color(1, 0.9, 0.2, 0.25) if warn > 0.0 else Color(1, 0.2, 0.9, 0.7)
-		draw_rect(Rect2(-width / 2.0, -height, width, height), c)
+		var hw := width / 2.0
+		if warn > 0.0:
+			# Telegraph: pulsing gold rune ring on the floor, dashed guide rails and a big "?".
+			var pulse := 0.5 + 0.5 * sin(t * 14.0)
+			var ring := PackedVector2Array()
+			for i in 25:
+				var a := TAU * i / 24.0
+				ring.append(Vector2(cos(a) * (hw + 8.0), sin(a) * 9.0 - 4.0))
+			draw_colored_polygon(ring, Color(GOLD, 0.18 + 0.2 * pulse))
+			draw_polyline(ring, Color(GOLD, 0.9), 2.5, true)
+			var y := 0.0
+			while y > -height * 0.8:
+				var a2 := 0.55 * (1.0 + y / height) * (0.4 + 0.6 * pulse)
+				draw_line(Vector2(-hw, y), Vector2(-hw, y - 14.0), Color(GOLD, a2), 2.0)
+				draw_line(Vector2(hw, y), Vector2(hw, y - 14.0), Color(GOLD, a2), 2.0)
+				y -= 26.0
+			_glyph(Vector2(0, -24.0 - 6.0 * pulse), 44, Color(GOLD, 0.7 + 0.3 * pulse))
+			return
+		# Live pillar: layered glow, forest-green shell, lime body, bright core, faded top.
+		var k := clampf(live / 0.6, 0.0, 1.0)
+		var flicker := 1.0 + 0.08 * sin(t * 60.0)
+		var layers := [[hw + 16.0, Color(BRIGHT, 0.18)], [hw, Color(FOREST, 0.9)],
+				[hw * 0.72, Color(LIME, 0.85)], [hw * 0.38 * flicker, Color(BRIGHT, 0.95)],
+				[hw * 0.12 * flicker, Color(0.95, 1.0, 0.85, 0.95)]]
+		for l in layers:
+			var lw: float = l[0]
+			var c: Color = l[1]
+			c.a *= k
+			var top := Color(c, 0.0)
+			draw_polygon(PackedVector2Array([Vector2(-lw, 0), Vector2(lw, 0), Vector2(lw, -height), Vector2(-lw, -height)]),
+					PackedColorArray([c, c, top, top]))
+		# Crackling arcs along the column.
+		for side in [-1.0, 1.0]:
+			var pts := PackedVector2Array()
+			var yy := 0.0
+			var i := 0
+			while yy > -height * 0.9:
+				pts.append(Vector2(side * hw * (0.45 + 0.35 * sin(t * 40.0 + i * 1.7 + side)), yy))
+				yy -= 22.0
+				i += 1
+			draw_polyline(pts, Color(0.95, 1.0, 0.8, 0.8 * k), 1.5, true)
+		# Rising question marks and a gold splash ring at the base.
+		for q in 3:
+			var qy := -fmod(t * 420.0 + q * height / 3.0, height * 0.85) - 20.0
+			_glyph(Vector2((q - 1) * hw * 0.35, qy), 28 + 6 * q, Color(DARK, 0.75 * k))
+		var splash := PackedVector2Array()
+		for i2 in 25:
+			var a3 := TAU * i2 / 24.0
+			splash.append(Vector2(cos(a3) * (hw + 22.0 * (1.0 - k) + 6.0), sin(a3) * 10.0 - 3.0))
+		draw_polyline(splash, Color(GOLD, k), 3.0, true)
 
 # Ground-only sauce: the glowing strip is safe until the splash appears.
 class SaucePuddle extends Node2D:
@@ -89,6 +151,8 @@ var hint_cd := 0.0
 var hint_index := 0
 var hints: Array = []
 var floor_y := 600.0
+var arena_min := 2100.0
+var arena_max := 2850.0
 var sprite: AnimatedSprite2D
 var pose_time := 0.0
 var glizzy := false
@@ -250,7 +314,7 @@ func _trap() -> void:
 			var puddle := SaucePuddle.new()
 			puddle.target = target
 			var x := target.global_position.x + i * 210.0 * (1 if target.global_position.x < global_position.x else -1)
-			puddle.position = Vector2(clampf(x, 2100.0, 2850.0), floor_y)
+			puddle.position = Vector2(clampf(x, arena_min, arena_max), floor_y)
 			puddle.add_to_group("yeral_attacks")
 			get_parent().add_child(puddle)
 		return

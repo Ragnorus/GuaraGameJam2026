@@ -8,8 +8,6 @@ var dying := false
 func _ready() -> void:
 	super._ready()
 	(cs.shape as RectangleShape2D).size = Vector2(54, 72)
-	reach_x = 45.0
-	reach_y = 68.0
 	sprite = AnimatedSprite2D.new()
 	sprite.sprite_frames = ROBOT_FRAMES
 	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST

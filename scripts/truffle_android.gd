@@ -10,8 +10,6 @@ func _ready() -> void:
 	super._ready()
 	speed = 75.0
 	(cs.shape as RectangleShape2D).size = SIZE
-	reach_x = 40.0
-	reach_y = 60.0
 	sprite = SpriteLib.make_sprite(SpriteLib.build("truffle_android", {
 		"idle": [["idle_0", "idle_1"], 4.0, true],
 		"run": [["run_0", "run_1"], 6.0, true],

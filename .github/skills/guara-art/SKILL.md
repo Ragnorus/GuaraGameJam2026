@@ -43,3 +43,4 @@ When a sheet changes, adjust the boxes/regions in the slicer rather than editing
 - Background: `_build_city_background` in `main.gd` draws `city_bg_panorama.png` zoomed out at 1.25x with smooth (linear) filtering, bottom-aligned under the floor, its top edge feathered into the sky colour (a flipped copy beside it makes the loop seamless) over the `city_bg_sky.png` backstop (Yeral level only; Bichema's World uses `assets/bichema/bg_*.png` via `_asset()`).
 - Lair props and platforms: `_build_yeral_props` and `_add_platform_sprite` in `main.gd`. Bichema's World uses `assets/bichema/*` plus holo panels.
 - Pixel art uses `TEXTURE_FILTER_NEAREST` for tiles/props.
+- Code-drawn effects (no PNG): `WingedMob` wings (`_draw`, palette per level) and Yeral's `TrapZone` "Spoiler Pillar" (gold "?" telegraph, lime column, question marks) - keep these in the level palette.
