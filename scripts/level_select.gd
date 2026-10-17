@@ -1,7 +1,7 @@
 extends Control
 
 const YERAL_SCENE := "res://scenes/main.tscn"
-const EMA_SCENE := "res://scenes/ema_level.tscn"
+const BICHEMA_SCENE := "res://scenes/bichema_level.tscn"
 
 func _ready() -> void:
 	var backdrop := ColorRect.new()
@@ -36,7 +36,7 @@ func _ready() -> void:
 	stack.add_child(prompt)
 
 	var yeral_button := _add_level_button(stack, "Yeral — The Spoilerman", YERAL_SCENE)
-	_add_level_button(stack, "The Infested Zone — Ema, the Bug Queen", EMA_SCENE)
+	_add_level_button(stack, "Bichema's World — The Evil Genius", BICHEMA_SCENE)
 	yeral_button.grab_focus()
 
 func _add_level_button(stack: VBoxContainer, caption: String, scene_path: String) -> Button:

@@ -24,7 +24,7 @@ Nerd with glasses, hoodie, magical controller. Abilities (implemented in `script
 ## Boss roster (name - theme; mechanics; reward)
 Each boss needs a distinct look, gimmick and unlockable reward.
 0. **YERAL - The Spoilerman / Glizzy Gobler** (demo boss, `scripts/boss_yeral.gd`) - Riddler. Announces attacks before doing them, plants fake telegraphs, puzzle-platforming traps; player can't tell if a warning is true. Depleting his first health pool triggers a protected green transformation into Glizzy Gobler with a fresh health pool, ketchup/mustard spreads, faster bun charges, and warned, jumpable floor sauce. Only the transformed form's final collapse clears the stage. Reward: Future Spoiler - briefly reveals enemy attack patterns. Says truthful hints when hit.
-1. **EMA - The Bug Queen** (`scripts/boss_ema.gd`) - giant insect with armor, razor legs, bug swarm. Wall crawling, acid projectiles, bug swarms, faster/aggressive final phase (3 phases). Reward: Swarm Command - summon extra minions briefly.
+1. **THE EVIL GENIUS - The Alpha and the Omega** (final boss, `scripts/boss_evil_genius.gd`, level Bichema's World) - evil android with a huge ego who researches any argument in politics, sports and tech. Red bolt fans, charges, summons truffle/mushroom androids, 3 phases. Only weakness: girl boss lawyers. (Replaces the former Ema, the Bug Queen.)
 2. **PONCE - The Guara Hulk** - Marvel Rivals-style brawler. Ground slams, shockwaves, charges, destructible platforms. Reward: Rage Breaker - ground-pound.
 3. **ZINNA - The Octane Menace** - rocket-powered battle car, Rocket League arena. Boost charges, aerial dives, bouncing projectiles, ricochets. Reward: Rocket Boost - dash through hazards/enemies.
 4. **JAVI - The Ascetic** - Path of Exile monk. Rapid strikes, teleporting attacks, elemental waves, combo chains. Reward: Spirit Dash - short-range teleport.
@@ -37,10 +37,10 @@ Each boss needs a distinct look, gimmick and unlockable reward.
 Full-game idea: every boss drops a collectible Guara Relic that changes minion behavior. Endgame reveal: Ragn0rus controls the Guaras with the forbidden hot dog.
 
 ## Demo scope
-Focus on one polished level and one boss fight. (Implementation currently uses Yeral as the demo boss; Ema's script remains.)
+Focus on one polished level and one boss fight. (Implementation currently uses Yeral as the demo boss; the Evil Genius's script is the second level's boss.)
 1. Tutorial - The Gamer's Awakening: move, jump, attack, first minion.
-2. Level 1 - The Infested Zone: bug mobs, platforms, hidden upgrades, minion targeting.
-3. Mini-boss - The Brood Guardian: small insect introducing Ema's patterns.
+2. Level 1 - Bichema's World: truffle-android mobs, platforms, hidden upgrades, minion targeting.
+3. Mini-boss - The Brood Guardian: small insect introducing the final boss's patterns.
 4. Boss arena: three-phase fight with distinct patterns and a dramatic finish.
 5. Ending - The Controller Awakens: signal reveals other Guaras, cut to black, "The Guara War Has Just Begun".
 

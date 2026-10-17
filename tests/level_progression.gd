@@ -15,7 +15,7 @@ func _enter_boss(stage: Node) -> Node:
 	player.position = Vector2(2200, 576)
 	await _frames(3)
 	for enemy in get_nodes_in_group("enemies"):
-		if enemy is BossYeral or enemy is BossEma:
+		if enemy is BossYeral or enemy is BossEvilGenius:
 			return enemy
 	return null
 
@@ -83,12 +83,12 @@ func _run() -> void:
 	await _frames(1)
 	assert(current_scene == yeral_stage and not yeral_stage.get("finished"))
 	await _frames(360)
-	assert(current_scene != yeral_stage, "The final collapse must open Ema rather than leave a dead-end stage")
-	assert(current_scene.scene_file_path == "res://scenes/ema_level.tscn")
+	assert(current_scene != yeral_stage, "The final collapse must open Bichema's World rather than leave a dead-end stage")
+	assert(current_scene.scene_file_path == "res://scenes/bichema_level.tscn")
 
 	var ema_stage := current_scene
 	var ema := await _enter_boss(ema_stage)
-	assert(ema is BossEma)
+	assert(ema is BossEvilGenius)
 	_check_phases(ema)
 	ema.take_damage(ema.health)
 	await _frames(240)
@@ -110,7 +110,7 @@ func _run() -> void:
 	assert(current_scene != dead_yeral_stage)
 	assert(not (current_scene.get("player") as Player).dead)
 
-	assert(change_scene_to_file("res://scenes/ema_level.tscn") == OK)
+	assert(change_scene_to_file("res://scenes/bichema_level.tscn") == OK)
 	await _frames(2)
 	var dead_stage := current_scene
 	var dead_boss := await _enter_boss(dead_stage)
@@ -121,7 +121,7 @@ func _run() -> void:
 	await _frames(240)
 	assert(current_scene == dead_stage and not dead_stage.get("finished"), "Death before a boss defeat must not advance the level")
 	await _restart()
-	assert(current_scene != dead_stage and current_scene.scene_file_path == "res://scenes/ema_level.tscn")
+	assert(current_scene != dead_stage and current_scene.scene_file_path == "res://scenes/bichema_level.tscn")
 	assert(not (current_scene.get("player") as Player).dead)
-	print("PASS: entrance/transform/second-form restart; both health pools and phases; final collapse -> Ema -> level select; player death blocks victory")
+		print("PASS: entrance/transform/second-form restart; both health pools and phases; final collapse -> Bichema's World -> level select; player death blocks victory")
 	quit()

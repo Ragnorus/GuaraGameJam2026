@@ -25,7 +25,7 @@ func _ready() -> void:
 	if character_art and target_group != "player":
 		sprite = AnimatedSprite2D.new()
 		sprite.sprite_frames = CHARACTER_FRAMES
-		sprite.scale = Vector2(0.34, 0.34)
+		sprite.scale = Vector2(0.5, 0.5)
 		sprite.flip_h = velocity.x < 0.0
 		add_child(sprite)
 		sprite.play(&"projectile")

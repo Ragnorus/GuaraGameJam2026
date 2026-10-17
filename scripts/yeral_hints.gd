@@ -10,12 +10,12 @@ const HINTS := {
 		"Two-thirds health means a faster Gobler. Save your dash for the rush.",
 		"Ketchup and mustard both hurt. Keep moving through the gaps.",
 	],
-	"ema": [
-		"Ema's acid comes in a fan. The more she's hurt, the wider it gets. Keep moving!",
-		"Ema charges in a straight line. Jump over her, don't run from her.",
-		"Her bugs are weak to your minions. Let the Shadows do the dirty work.",
-		"Ema gets faster at two-thirds health, then again at one-third. Brace yourself.",
-		"Fill the army meter on her bugs, then unleash the GUARA ARMY on the queen.",
+	"evil_genius": [
+		"The Evil Genius fires red bolts in a fan. The more he's hurt, the wider it gets. Keep moving!",
+		"He stops and braces before a charge. Jump over him, don't run from him.",
+		"His truffle androids die in one hit. Let the Shadows clear them while you aim at the boss.",
+		"He gets faster at two-thirds health, then again at one-third. Brace yourself.",
+		"His only weakness? A girl boss lawyer. Objection!",
 	],
 	"ponce": [
 		"Ponce slams the ground and sends shockwaves. Jump the wave, then punish.",

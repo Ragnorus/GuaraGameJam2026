@@ -14,7 +14,7 @@ var sprite: AnimatedSprite2D
 func _ready() -> void:
 	sprite = AnimatedSprite2D.new()
 	sprite.sprite_frames = CHARACTER_FRAMES
-	sprite.scale = Vector2(0.34, 0.34)
+	sprite.scale = Vector2(0.5, 0.5)
 	sprite.animation_finished.connect(_on_animation_finished)
 	add_child(sprite)
 	sprite.play(&"shadow_spawn")

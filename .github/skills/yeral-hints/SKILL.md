@@ -20,5 +20,5 @@ Source of truth: the [guara-game-design](../guara-game-design/SKILL.md) skill (b
 6. For a new boss: read its design entry (attacks, phases, weakness, reward), write 4-5 hints, add the key.
 
 ## Current coverage
-- Ema, the Bug Queen: derived from `scripts/boss_ema.gd` (acid fan, charge, bug swarm, 3 phases).
-- All roster bosses have hints. Ema's are based on `scripts/boss_ema.gd`; the rest are inferred from the design's mechanics, so revise them once those bosses are implemented.
+- The Evil Genius (final boss, `scripts/boss_evil_genius.gd`): derived from his attacks (red bolt fan, charge, truffle-android summons, 3 phases, weakness: girl boss lawyers).
+- All roster bosses have hints. The Evil Genius' are based on `scripts/boss_evil_genius.gd`; the rest are inferred from the design's mechanics, so revise them once those bosses are implemented.

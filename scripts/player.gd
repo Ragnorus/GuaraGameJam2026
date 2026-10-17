@@ -40,9 +40,9 @@ var dash_direction := 1
 func _ready() -> void:
 	player_sprite = AnimatedSprite2D.new()
 	player_sprite.sprite_frames = CHARACTER_FRAMES
-	player_sprite.scale = Vector2(0.34, 0.34)
+	player_sprite.scale = Vector2(0.5, 0.5)
 	player_sprite.offset = Vector2(0, -72)
-	player_sprite.position.y = 24.0
+	player_sprite.position.y = 36.0
 	add_child(player_sprite)
 	player_sprite.play(&"idle")
 	ultimate_beam = AnimatedSprite2D.new()
@@ -53,14 +53,14 @@ func _ready() -> void:
 	ultimate_beam.animation_finished.connect(ultimate_beam.hide)
 	army_effect = AnimatedSprite2D.new()
 	army_effect.sprite_frames = CHARACTER_FRAMES
-	army_effect.position.y = -24.0
-	army_effect.scale = Vector2(0.34, 0.34)
+	army_effect.position.y = -36.0
+	army_effect.scale = Vector2(0.5, 0.5)
 	army_effect.hide()
 	add_child(army_effect)
 	army_effect.animation_finished.connect(army_effect.hide)
 	add_to_group("player")
 	var shape := RectangleShape2D.new()
-	shape.size = Vector2(28, 48)
+	shape.size = Vector2(42, 72)
 	var cs := CollisionShape2D.new()
 	cs.shape = shape
 	add_child(cs)
@@ -173,9 +173,9 @@ func _summon() -> void:
 func _ultimate() -> void:
 	meter = 0.0
 	_play_action(&"ultimate")
-	ultimate_beam.position = Vector2(facing * 22, -6)
-	ultimate_beam.position.y -= CHARACTER_FRAMES.get_frame_texture(&"beam", 0).get_height() * 0.34 / 2.0
-	ultimate_beam.scale = Vector2(facing * 0.34, 0.34)
+	ultimate_beam.position = Vector2(facing * 32, -9)
+	ultimate_beam.position.y -= CHARACTER_FRAMES.get_frame_texture(&"beam", 0).get_height() * 0.5 / 2.0
+	ultimate_beam.scale = Vector2(facing * 0.5, 0.5)
 	ultimate_beam.show()
 	ultimate_beam.stop()
 	ultimate_beam.play(&"beam")

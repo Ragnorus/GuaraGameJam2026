@@ -31,7 +31,7 @@ func _run() -> void:
 	await create_timer(1.0).timeout
 	var boss: Node
 	for enemy in get_nodes_in_group("enemies"):
-		if enemy is BossYeral or enemy is BossEma:
+		if enemy is BossYeral or enemy is BossEvilGenius:
 			boss = enemy
 			break
 	if boss == null:

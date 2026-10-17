@@ -3,7 +3,7 @@ extends Node2D
 const LEVEL_END := 2400.0
 const FLOOR_Y := 600.0
 
-@export var ema_level := false
+@export var bichema_level := false
 
 var player: Player
 var dialogue: Label
@@ -30,9 +30,13 @@ func _ready() -> void:
 	_build_world()
 	_build_hud()
 	_update_hud()
-	if ema_level:
-		message.text = "THE INFESTED ZONE"
+	if bichema_level:
+		message.text = "BICHEMA'S WORLD"
 		message_timer.start(2.0)
+
+# Bichema's World uses the red set in assets/bichema; Yeral's level keeps the green set in assets.
+func _asset(file: String) -> String:
+	return ("res://assets/bichema/%s" if bichema_level else "res://assets/%s") % file
 
 func _tiled(path: String, pos: Vector2, size: Vector2, px_scale := 1.0) -> TextureRect:
 	var tr := TextureRect.new()
@@ -56,15 +60,15 @@ func _add_block(rect: Rect2, kind := "wall") -> void:
 	var origin := -rect.size / 2.0
 	match kind:
 		"floor":
-			body.add_child(_tiled("res://assets/tile_floor_mesh.png", origin, rect.size))
-			body.add_child(_tiled("res://assets/tile_floor_top.png", origin, Vector2(rect.size.x, 32), 2.0))
+			body.add_child(_tiled(_asset("tile_floor_mesh.png"), origin, rect.size))
+			body.add_child(_tiled(_asset("tile_floor_top.png"), origin, Vector2(rect.size.x, 32), 2.0))
 		"platform":
-			if ema_level:
-				body.add_child(_tiled("res://assets/tile_platform.png", origin, rect.size))
+			if bichema_level:
+				body.add_child(_tiled(_asset("tile_platform.png"), origin, rect.size))
 			else:
 				_add_platform_sprite(body, rect)
 		_:
-			body.add_child(_tiled("res://assets/tile_wall.png", origin, rect.size))
+			body.add_child(_tiled(_asset("tile_wall.png"), origin, rect.size))
 	add_child(body)
 
 func _add_prop(path: String, pos: Vector2, px_scale := 2.0, z := -1) -> void:
@@ -111,11 +115,11 @@ func _build_city_background(pb: ParallaxBackground) -> void:
 func _build_background() -> void:
 	var pb := ParallaxBackground.new()
 	add_child(pb)
-	if not ema_level:
+	if not bichema_level:
 		_build_city_background(pb)
 		return
-	var layers := [["res://assets/bg_far.png", 0.08], ["res://assets/bg_mid.png", 0.25],
-			["res://assets/bg_near.png", 0.5]]
+	var layers := [[_asset("bg_far.png"), 0.08], [_asset("bg_mid.png"), 0.25],
+			[_asset("bg_near.png"), 0.5]]
 	for l in layers:
 		var pl := ParallaxLayer.new()
 		pl.motion_scale = Vector2(l[1], 0.0)
@@ -129,19 +133,26 @@ func _build_background() -> void:
 		pb.add_child(pl)
 
 func _build_props() -> void:
-	if not ema_level:
+	if not bichema_level:
 		_build_yeral_props()
 		return
-	_add_prop("res://assets/prop_door.png", Vector2(60, FLOOR_Y), 2.0)
-	_add_prop("res://assets/prop_sign_billboard.png", Vector2(420, 330), 3.0, -2)
-	_add_prop("res://assets/prop_sign_vertical.png", Vector2(980, 380), 3.0, -2)
-	_add_prop("res://assets/prop_neon_lamp.png", Vector2(1700, 420), 3.0, -2)
-	_add_prop("res://assets/prop_sign_billboard.png", Vector2(LEVEL_END + 250, 300), 4.0, -2)
-	_add_prop("res://assets/prop_neon_lamp.png", Vector2(LEVEL_END - 80, 400), 3.0, -2)
+	_add_prop(_asset("prop_door.png"), Vector2(60, FLOOR_Y), 2.0)
+	_add_prop(_asset("prop_sign_billboard.png"), Vector2(420, 330), 3.0, -2)
+	_add_prop(_asset("prop_sign_vertical.png"), Vector2(980, 380), 3.0, -2)
+	_add_prop(_asset("prop_neon_lamp.png"), Vector2(1700, 420), 3.0, -2)
+	_add_prop(_asset("prop_sign_billboard.png"), Vector2(LEVEL_END + 250, 300), 4.0, -2)
+	_add_prop(_asset("prop_neon_lamp.png"), Vector2(LEVEL_END - 80, 400), 3.0, -2)
 	for x in [250.0, 700.0, 1180.0, 1480.0, 1900.0, 2150.0]:
-		_add_prop("res://assets/prop_bollard.png", Vector2(x, FLOOR_Y), 2.0)
+		_add_prop(_asset("prop_bollard.png"), Vector2(x, FLOOR_Y), 2.0)
 	for x in [560.0, 1320.0, 2000.0]:
-		_add_prop("res://assets/prop_crate.png", Vector2(x, FLOOR_Y), 2.0)
+		_add_prop(_asset("prop_crate.png"), Vector2(x, FLOOR_Y), 2.0)
+	# Red hologram panels cut from the Evil Genius sheet, hanging behind the action.
+	var holos := ["chart", "capitol", "sports", "chip", "debate", "globe", "graph", "sports2", "bars", "chip2"]
+	for i in range(holos.size()):
+		var hy := 250.0 + 50.0 * (i % 3)
+		_add_prop("res://assets/sprites/bichema/bichema_holo_%s.png" % holos[i], Vector2(200.0 + 230.0 * i, hy), 1.8, -2)
+	_add_prop("res://assets/sprites/bichema/bichema_holo_debate.png", Vector2(LEVEL_END + 100, 330), 3.0, -2)
+	_add_prop("res://assets/sprites/bichema/bichema_holo_globe.png", Vector2(LEVEL_END + 420, 330), 3.0, -2)
 
 func _lair(name: String) -> String:
 	return "res://assets/sprites/lair/lair_%s.png" % name
@@ -177,9 +188,9 @@ func _add_platform_sprite(body: Node2D, rect: Rect2) -> void:
 func _build_world() -> void:
 	_build_background()
 	_build_props()
-	if ema_level:
+	if bichema_level:
 		var tint := CanvasModulate.new()
-		tint.color = Color(0.7, 1.0, 0.75)
+		tint.color = Color(1.0, 0.88, 0.88)
 		add_child(tint)
 	_add_block(Rect2(-100, FLOOR_Y, LEVEL_END + 600, 100), "floor")
 	_add_block(Rect2(-140, -200, 40, 900))
@@ -189,7 +200,7 @@ func _build_world() -> void:
 		Rect2(850, 480, 140, 20), Rect2(1100, 380, 160, 20),
 		Rect2(1400, 470, 140, 20),
 	]
-	if ema_level:
+	if bichema_level:
 		platforms = [
 			Rect2(300, 490, 170, 20), Rect2(560, 405, 150, 20),
 			Rect2(790, 495, 170, 20), Rect2(1030, 385, 170, 20),
@@ -199,7 +210,7 @@ func _build_world() -> void:
 	for r in platforms:
 		_add_block(r, "platform")
 	player = Player.new()
-	player.position = Vector2(100, FLOOR_Y - 40)
+	player.position = Vector2(100, FLOOR_Y - 60)
 	add_child(player)
 	player.died.connect(_on_player_died)
 	player.stats_changed.connect(_update_hud)
@@ -210,14 +221,14 @@ func _build_world() -> void:
 	player.add_child(cam)
 	var bug_positions := [500.0, 800.0, 1000.0, 1250.0, 1550.0, 1800.0]
 	var gate_xs := [900.0, 1400.0, 2000.0]
-	if ema_level:
+	if bichema_level:
 		bug_positions = [420.0, 660.0, 900.0, 1120.0, 1350.0, 1590.0, 1810.0, 1980.0]
 		gate_xs = [800.0, 1250.0, 1700.0, 2100.0]
 	for gx in gate_xs:
 		gates.append({"x": gx, "wall": _add_gate(gx), "bugs": []})
 	for x in bug_positions:
-		var b: Bug = Bug.new() if ema_level else Robot.new()
-		b.position = Vector2(x, FLOOR_Y - 20)
+		var b: Bug = TruffleAndroid.new() if bichema_level else Robot.new()
+		b.position = Vector2(x, FLOOR_Y - (40 if bichema_level else 38))
 		b.target = player
 		add_child(b)
 		for g in gates:
@@ -238,7 +249,7 @@ func _add_gate(x: float) -> StaticBody2D:
 	var vis := ColorRect.new()
 	vis.size = Vector2(16, 600)
 	vis.position = Vector2(-8, -300)
-	vis.color = Color(0.4, 1.0, 0.1, 0.35)
+	vis.color = Color(1.0, 0.2, 0.15, 0.35) if bichema_level else Color(0.4, 1.0, 0.1, 0.35)
 	body.add_child(vis)
 	add_child(body)
 	return body
@@ -333,18 +344,19 @@ func _process(delta: float) -> void:
 func _start_boss() -> void:
 	boss_started = true
 	_add_block(Rect2(LEVEL_END - 340, -200, 30, FLOOR_Y + 200))
-	if ema_level:
-		var ema := BossEma.new()
-		ema.position = Vector2(LEVEL_END + 250, FLOOR_Y - 45)
-		ema.target = player
-		add_child(ema)
-		ema.health_changed.connect(_on_boss_health)
-		ema.defeated.connect(_on_boss_defeated)
-		ema.activate()
-		message.text = "EMA, THE BUG QUEEN"
+	if bichema_level:
+		var genius := BossEvilGenius.new()
+		genius.position = Vector2(LEVEL_END + 250, FLOOR_Y - 112)
+		genius.target = player
+		add_child(genius)
+		genius.health_changed.connect(_on_boss_health)
+		genius.defeated.connect(_on_boss_defeated)
+		genius.speech.connect(_say)
+		genius.activate()
+		message.text = "THE EVIL GENIUS"
 	else:
 		var yeral := BossYeral.new()
-		yeral.position = Vector2(LEVEL_END + 250, FLOOR_Y - 52)
+		yeral.position = Vector2(LEVEL_END + 250, FLOOR_Y - 96)
 		yeral.target = player
 		yeral.floor_y = FLOOR_Y
 		add_child(yeral)
@@ -363,7 +375,7 @@ func _on_yeral_transformed() -> void:
 	message_timer.start(3.0)
 
 func _on_boss_health(current: int, maximum: int) -> void:
-	boss_label.text = "EMA" if ema_level else ("GLIZZY GOBLER" if glizzy_form else "YERAL")
+	boss_label.text = "EVIL GENIUS" if bichema_level else ("GLIZZY GOBLER" if glizzy_form else "YERAL")
 	boss_bar.visible = true
 	boss_bar.max_value = maximum
 	boss_bar.value = current
@@ -381,10 +393,10 @@ func _on_boss_defeated() -> void:
 	boss_bar.visible = false
 	for e in get_tree().get_nodes_in_group("enemies"):
 		e.queue_free()
-	if ema_level:
-		message.text = "Ema defeated! All levels clear.\nReturning to level selection..."
+	if bichema_level:
+		message.text = "The Evil Genius is defeated! All levels clear.\nReturning to level selection..."
 	else:
-		message.text = "Yeral and Glizzy Gobler defeated!\nNext: The Infested Zone"
+		message.text = "Yeral and Glizzy Gobler defeated!\nNext: Bichema's World"
 	message_timer.start(3.0)
 
 func _on_message_timeout() -> void:
@@ -392,7 +404,7 @@ func _on_message_timeout() -> void:
 		if not player.dead:
 			message.text = ""
 		return
-	var next_scene := "res://scenes/level_select.tscn" if ema_level else "res://scenes/ema_level.tscn"
+	var next_scene := "res://scenes/level_select.tscn" if bichema_level else "res://scenes/bichema_level.tscn"
 	var error := get_tree().change_scene_to_file(next_scene)
 	if error != OK:
 		process_mode = Node.PROCESS_MODE_INHERIT

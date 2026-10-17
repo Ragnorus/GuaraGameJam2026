@@ -1,10 +1,19 @@
-// Generates the pixel-art assets into assets/. Run: node tools/gen_assets.js
+// Usage: node tools/gen_assets.js            -> assets/*.png (green city used by Yeral's stage)
+//        node tools/gen_assets.js bichema     -> assets/bichema/*.png (same art in red/crimson tones for Bichema's World)
 const fs = require("fs");
 const path = require("path");
 const zlib = require("zlib");
 
-const OUT = path.join(__dirname, "..", "assets");
+const BICHEMA = process.argv[2] === "bichema";
+const OUT = path.join(__dirname, "..", "assets", BICHEMA ? "bichema" : "");
 fs.mkdirSync(OUT, { recursive: true });
+
+// Green-dominant pixels become red, blue-dominant (purple/navy trim) become crimson; gold and neutrals stay.
+function toRed([r, g, b]) {
+	if (g > r * 1.02 && g >= b) return [Math.min(255, Math.round(g * 1.04)), Math.round(r * 0.45 + b * 0.1), Math.round(b * 0.5)];
+	if (b > r && b > g) return [Math.min(255, Math.round(b * 1.05)), Math.round(g * 0.4), Math.round(r * 0.6)];
+	return [r, g, b];
+}
 
 function crc32(buf) {
 	let c, crc = 0xffffffff;
@@ -64,6 +73,12 @@ class Img {
 		for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) this.px(x + i, y + j, c, a);
 	}
 	save(name) {
+		if (BICHEMA) {
+			for (let i = 0; i < this.d.length; i += 4) {
+				const c = toRed([this.d[i], this.d[i + 1], this.d[i + 2]]);
+				this.d[i] = c[0]; this.d[i + 1] = c[1]; this.d[i + 2] = c[2];
+			}
+		}
 		const rows = [];
 		for (let y = 0; y < this.h; y++) {
 			rows.push(Buffer.from([0]), this.d.subarray(y * this.w * 4, (y + 1) * this.w * 4));

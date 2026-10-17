@@ -108,11 +108,11 @@ func _run() -> void:
 	stage.queue_free()
 	await _frames(1)
 
-	var ema_stage := preload("res://scenes/ema_level.tscn").instantiate()
+	var ema_stage := preload("res://scenes/bichema_level.tscn").instantiate()
 	root.add_child(ema_stage)
 	for enemy in get_nodes_in_group("enemies"):
-		assert(enemy is Bug and not enemy is Robot, "Ema's existing bugs must remain unchanged")
+		assert(enemy is TruffleAndroid and not enemy is Robot, "Bichema's World mobs must be truffle androids")
 	ema_stage.queue_free()
 	await _frames(1)
-	print("PASS: first-stage robots, locomotion/facing, blocked idle, contact/projectile/shadow damage, hurt recovery, corpse safety, death completion, Ema bugs")
+	print("PASS: first-stage robots, locomotion/facing, blocked idle, contact/projectile/shadow damage, hurt recovery, corpse safety, death completion, truffle androids")
 	quit()

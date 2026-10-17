@@ -99,16 +99,16 @@ var mustard_next := false
 func _ready() -> void:
 	add_to_group("enemies")
 	var shape := RectangleShape2D.new()
-	shape.size = Vector2(60, 90)
+	shape.size = Vector2(126, 188)
 	var cs := CollisionShape2D.new()
 	cs.shape = shape
 	add_child(cs)
 	sprite = AnimatedSprite2D.new()
 	sprite.sprite_frames = YERAL_FRAMES
 	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	sprite.scale = Vector2(0.24, 0.24)
+	sprite.scale = Vector2(0.5, 0.5)
 	sprite.offset = Vector2(0, -224)
-	sprite.position.y = 45.0
+	sprite.position.y = 94.0
 	add_child(sprite)
 	sprite.animation_finished.connect(_on_animation_finished)
 	sprite.play(&"idle")
@@ -171,8 +171,8 @@ func _physics_process(delta: float) -> void:
 	if charge_time > 0.0 and is_on_wall():
 		charge_time = 0.0
 	if target.has_method("take_damage") \
-			and absf(target.global_position.x - global_position.x) < 45.0 \
-			and absf(target.global_position.y - global_position.y) < 65.0:
+			and absf(target.global_position.x - global_position.x) < 95.0 \
+			and absf(target.global_position.y - global_position.y) < 130.0:
 		target.take_damage(2)
 
 # Each attack has an announcement; it may be honest, fake, or swapped for another.
@@ -233,7 +233,7 @@ func _volley() -> void:
 		p.velocity = dir.rotated((i - (count - 1) / 2.0) * (0.22 if glizzy else 0.3)) * (340.0 if glizzy else 300.0)
 		p.sprite = AnimatedSprite2D.new()
 		p.sprite.sprite_frames = GLIZZY_FRAMES if glizzy else YERAL_FRAMES
-		p.sprite.scale = Vector2(0.38, 0.38) if glizzy else Vector2(0.24, 0.24)
+		p.sprite.scale = Vector2(0.8, 0.8) if glizzy else Vector2(0.4, 0.4)
 		p.sprite.flip_h = p.velocity.x < 0.0
 		p.add_child(p.sprite)
 		p.sprite.play((&"mustard" if mustard_next else &"ketchup") if glizzy else &"projectile")
@@ -310,7 +310,7 @@ func _transform() -> void:
 	hint_cd = HINT_COOLDOWN
 	sprite.sprite_frames = GLIZZY_FRAMES
 	sprite.centered = false
-	sprite.scale = Vector2(0.38, 0.38)
+	sprite.scale = Vector2(0.8, 0.8)
 	sprite.offset = Vector2(-256, -352)
 	sprite.play(&"transform")
 	transformed.emit()

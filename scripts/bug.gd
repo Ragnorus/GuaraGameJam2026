@@ -15,6 +15,8 @@ var shoot_cd := 2.0
 var anim_lock := 0.0
 var sprite: AnimatedSprite2D
 var cs: CollisionShape2D
+var reach_x := 30.0
+var reach_y := 46.0
 
 func _ready() -> void:
 	add_to_group("enemies")
@@ -50,10 +52,10 @@ func _physics_process(delta: float) -> void:
 	if robot:
 		_robot_update(delta)
 	move_and_slide()
-	var reach := 30.0 if not robot else 36.0
+	var reach := reach_x if not robot else 36.0
 	if is_instance_valid(target) and target.has_method("take_damage") \
 			and absf(target.global_position.x - global_position.x) < reach \
-			and absf(target.global_position.y - global_position.y) < (46.0 if not robot else 58.0):
+			and absf(target.global_position.y - global_position.y) < (reach_y if not robot else 58.0):
 		target.take_damage(1)
 	if not robot:
 		queue_redraw()
