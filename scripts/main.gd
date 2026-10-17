@@ -136,7 +136,7 @@ func _build_world() -> void:
 	if ema_level:
 		bug_positions = [420.0, 660.0, 900.0, 1120.0, 1350.0, 1590.0, 1810.0, 1980.0]
 	for x in bug_positions:
-		var b := Bug.new()
+		var b: Bug = Bug.new() if ema_level else Robot.new()
 		b.position = Vector2(x, FLOOR_Y - 20)
 		b.target = player
 		add_child(b)

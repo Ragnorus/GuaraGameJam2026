@@ -28,17 +28,21 @@ Debugging:
 | GUARA ARMY (ultimate, needs full meter) | U |
 | Restart | R |
 
-The main character uses the full supplied sprite sheet: animated idle/run, jump/double-jump, fall/landing, firing, dash, summon/recall, ultimate, hurt, and death. Energy shots and shadow minions use the sheet's effect frames. The ultimate's beam/flock are visual effects; its damage still comes from the temporary minions. Yeral uses the supplied neon-green rogue art for idle, announcements, charge/run-up, firing, trap casting, fake-out taunts, and energy orbs. His poses share a ground anchor, face the player (or the committed charge direction), and brighten on damage. Honest and fake announcements share the same pose. Controls, hitboxes, damage, and cooldowns are unchanged; other enemies retain placeholder shapes.
+The main character uses the full supplied sprite sheet: animated idle/run, jump/double-jump, fall/landing, firing, dash, summon/recall, ultimate, hurt, and death. Energy shots and shadow minions use the sheet's effect frames. The ultimate's beam/flock are visual effects; its damage still comes from the temporary minions. Yeral uses the supplied neon-green rogue art for idle, announcements, charge/run-up, firing, trap casting, fake-out taunts, and energy orbs. His poses share a ground anchor, face the player (or the committed charge direction), and brighten on damage. Honest and fake announcements share the same pose. Yeral's hostile mobs use the supplied neon CRT robot art; Ema and her bugs retain placeholder shapes. Controls, hitboxes, damage, and cooldowns are unchanged.
 
 Animation data lives in `assets/character_frames.tres`, backed by `assets/character_atlas.png`. To rebuild from the original 1536×1024 RGBA sheet, run `python assets/extract_character.py "path/to/Nerdy Bat Vigilante Sprite Sheet.png"` (requires Pillow for asset rebuilding only, not for the game).
 
 Yeral's resources are `assets/yeral_frames.tres` and `assets/yeral_atlas.png`. Rebuild with `python assets/extract_yeral.py "path/to/Neon Green Rogue Sprite Sheet.png"` (Pillow required). The original PNG is 1774×887 with transparency, not a regular grid; the builder uses explicit crops, removes neighboring-pose intrusions, and aligns feet without rescaling the source pixels. The airborne and melee-sweep illustrations are unused because Yeral has no jump or melee-sweep attack.
+
+Robot resources are `assets/robot_frames.tres` and `assets/robot_atlas.png`. Rebuild with `python assets/extract_robot.py "path/to/Neon CRT Robot Sprite Sheet.png"` (Pillow required). The original transparent PNG is 1774×887, not a regular grid. Its 27 idle/walk/hurt/death poses are cropped individually and aligned by hips and feet into shared atlas cells, preserving source pixels and transparency. In-game scaling uses nearest-neighbor filtering. `Robot` reuses `Bug` patrol/chase/contact combat only in Yeral's stage; firing poses/projectile effects are deliberately unused because these mobs do not shoot. Defeated robots immediately lose targeting, collision, and contact damage, then finish their collapse animation before despawning. Friendly summoned shadows and Ema's mobs/swarm are unchanged.
 
 Run the action regression self-check with `Godot --headless --path . --fixed-fps 60 --script res://tests/player_actions.gd`. It exercises movement, facing, airborne shooting, complete firing/dash sequences, shadow attacks/recall, ultimate effects, invulnerability, and the final death pose.
 
 Run the progression regression with `Godot --headless --path . --fixed-fps 60 --script res://tests/level_progression.gd`. It covers restarting at the boss entrance, both bosses' phase boundaries, Yeral → Ema → level selection, death before victory, and restarting the current stage.
 
 Run Yeral's art/combat regression with `Godot --headless --path . --fixed-fps 60 --script res://tests/yeral_actions.gd`. It covers facing, identical honest/fake warning poses, committed charge direction and sustained dash pose, recovery to idle, orb collision/damage, and damage-highlight expiry.
+
+Run the robot regression with `Godot --headless --path . --fixed-fps 60 --script res://tests/robot_actions.gd`. It covers movement-facing, blocked idle, contact/projectile/shadow damage, hurt recovery, immediate corpse safety, death-animation completion, and Ema's unchanged mobs.
 
 ## Deploy to Railway
 
