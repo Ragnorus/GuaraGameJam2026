@@ -7,15 +7,15 @@
 1. Install Godot 4.x (standard build, not .NET) from https://godotengine.org/download/windows/ or `winget install GodotEngine.GodotEngine`. Unzip it anywhere; no installer is needed.
 2. Clone the repo: `git clone https://github.com/Ragnorus/GuaraGameJam2026.git`.
 3. Start Godot, click **Import**, select `project.godot` in the repo folder, then **Import & Edit**.
-4. Press **F5** (Play). The main scene is `scenes/main.tscn`. Press **F6** to run the currently open scene.
-5. Walk right to the end of the level to trigger the boss (Yeral, the Spoilerman). His hints appear at the bottom of the screen when you hit him. Press **R** to restart.
+4. Press **F5** (Play) to open the level picker; choose either level with the mouse or keyboard. Press **F6** to run the currently open scene.
+5. **Yeral — The Spoilerman** opens the existing stage. **The Infested Zone — Ema, the Bug Queen** opens the new bug-filled stage; reach its far end to trigger Ema's three-phase fight. Press **R** to restart the current level.
 
 Debugging:
 - Errors, warnings and `print()` output show in the **Output** and **Debugger** panels at the bottom of the editor. Script errors pause the game and open the failing line.
 - Click the gutter left of a line number in the Script editor to set a breakpoint (red dot). When it hits, use the Debugger controls (**F10** step over, **F11** step into, **F12** continue) and inspect variables in the Stack Variables panel.
 - While the game runs, the **Remote** tab in the Scene dock shows the live node tree. Select a node (for example the boss) to read or edit its properties in the Inspector.
 - Use the **Debug** menu for **Visible Collision Shapes** to see hitboxes, and **Visible Navigation** if you add pathfinding.
-- If scripts fail to parse, check that class names (`Player`, `BossYeral`, `YeralHints`, ...) are unique. Use **Project > Reload Current Project** after adding new `class_name` files.
+- If scripts fail to parse, check that class names (`Player`, `BossYeral`, `BossEma`, `YeralHints`, ...) are unique. Use **Project > Reload Current Project** after adding `class_name` scripts.
 
 | Action | Keys |
 |---|---|
