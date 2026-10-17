@@ -7,6 +7,7 @@ signal speech(text: String, duration: float)
 
 const GRAVITY := 1500.0
 const HINT_COOLDOWN := 3.0
+const YERAL_FRAMES := preload("res://assets/yeral_frames.tres")
 
 # Trap column: shows a warning, then becomes deadly for a moment.
 class TrapZone extends Node2D:
@@ -30,7 +31,7 @@ class TrapZone extends Node2D:
 		queue_redraw()
 
 	func _draw() -> void:
-		var c := Color(0.85, 0.6, 0.16, 0.25) if warn > 0.0 else Color(0.6, 1.0, 0.1, 0.7)
+		var c := Color(1, 0.9, 0.2, 0.25) if warn > 0.0 else Color(1, 0.2, 0.9, 0.7)
 		draw_rect(Rect2(-width / 2.0, -height, width, height), c)
 
 var max_health := 40
@@ -49,34 +50,47 @@ var hint_index := 0
 var hints: Array = []
 var floor_y := 600.0
 var sprite: AnimatedSprite2D
-var anim_lock := 0.0
+var pose_time := 0.0
 
 func _ready() -> void:
 	add_to_group("enemies")
 	var shape := RectangleShape2D.new()
-	shape.size = Vector2(56, 100)
+	shape.size = Vector2(60, 90)
 	var cs := CollisionShape2D.new()
 	cs.shape = shape
 	add_child(cs)
-	sprite = SpriteLib.make_sprite(SpriteLib.build("yeral", {
-		"idle": [["idle_0", "idle_1"], 3.0, true],
-		"run": [["run"], 1.0, true],
-		"announce": [["announce"], 1.0, true],
-		"point": [["point"], 1.0, true],
-		"swing": [["swing"], 1.0, false],
-		"cast": [["cast"], 1.0, false],
-		"taunt": [["taunt"], 1.0, false],
-		"summon": [["summon"], 1.0, false],
-		"dash": [["dash"], 1.0, true],
-	}), 50.0)
+	sprite = AnimatedSprite2D.new()
+	sprite.sprite_frames = YERAL_FRAMES
+	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	sprite.scale = Vector2(0.24, 0.24)
+	sprite.offset = Vector2(0, -224)
+	sprite.position.y = 45.0
 	add_child(sprite)
-	sprite.play("idle")
+	sprite.play(&"idle")
 	hints = YeralHints.all_hints()
 	hints.shuffle()
 
 func activate() -> void:
 	active = true
 	health_changed.emit(health, max_health)
+
+func _process(delta: float) -> void:
+	pose_time = maxf(0.0, pose_time - delta)
+	var animation := sprite.animation
+	if charge_time > 0.0:
+		sprite.flip_h = charge_dir < 0
+		animation = &"charge"
+	else:
+		if is_instance_valid(target):
+			sprite.flip_h = target.global_position.x < global_position.x
+		if pending != "":
+			# Honest and fake warnings must not reveal different visual tells.
+			animation = &"announce"
+		elif pose_time <= 0.0:
+			animation = &"idle"
+	if sprite.animation != animation:
+		sprite.play(animation)
+	sprite.modulate = Color(3, 3, 3) if flash > 0.0 else Color.WHITE
 
 func _physics_process(delta: float) -> void:
 	flash = maxf(0.0, flash - delta)
@@ -85,7 +99,6 @@ func _physics_process(delta: float) -> void:
 		velocity.y += GRAVITY * delta
 	if not active or not is_instance_valid(target):
 		move_and_slide()
-		_update_sprite(delta)
 		return
 	var mult := 1.0 + 0.4 * (phase - 1)
 	if charge_time > 0.0:
@@ -111,7 +124,6 @@ func _physics_process(delta: float) -> void:
 			and absf(target.global_position.x - global_position.x) < 45.0 \
 			and absf(target.global_position.y - global_position.y) < 65.0:
 		target.take_damage(2)
-	_update_sprite(delta)
 
 # Each attack has an announcement; it may be honest, fake, or swapped for another.
 func _announce() -> void:
@@ -135,35 +147,41 @@ func _announce() -> void:
 	pending_time = 1.0 if done != "nothing" else 1.2
 
 func _execute(a: String) -> void:
+	pose_time = 0.55
 	match a:
 		"volley":
+			sprite.play(&"volley")
 			_volley()
 		"charge":
 			charge_dir = 1 if target.global_position.x > global_position.x else -1
 			charge_time = 0.7
 		"trap":
 			_trap()
+			sprite.play(&"trap")
 		"nothing":
-			_play_lock("taunt", 0.8)
+			sprite.play(&"taunt")
 			if randf() < 0.5:
 				speech.emit("Hah! Nothing happened. Or did it?", 1.5)
 
 func _volley() -> void:
-	_play_lock("cast", 0.5)
 	var count := 2 + phase
 	for i in range(count):
 		var p := Projectile.new()
 		p.target_group = "player"
-		p.color = Color(0.6, 1.0, 0.2)
+		p.color = Color(0.2, 1.0, 0.05)
 		p.radius = 9.0
-		p.texture = SpriteLib.texture("yeral_fx", "orb")
 		p.position = global_position + Vector2(0, -20)
 		var dir := (target.global_position - p.position).normalized()
 		p.velocity = dir.rotated((i - (count - 1) / 2.0) * 0.3) * 300.0
+		p.sprite = AnimatedSprite2D.new()
+		p.sprite.sprite_frames = YERAL_FRAMES
+		p.sprite.scale = Vector2(0.24, 0.24)
+		p.sprite.flip_h = p.velocity.x < 0.0
+		p.add_child(p.sprite)
+		p.sprite.play(&"projectile")
 		get_parent().add_child(p)
 
 func _trap() -> void:
-	_play_lock("summon", 0.6)
 	var xs := [target.global_position.x]
 	if phase >= 2:
 		xs.append(target.global_position.x + 160.0 * (1 if randf() < 0.5 else -1))
@@ -180,7 +198,7 @@ func take_damage(amount: int) -> void:
 		return
 	health = maxi(0, health - amount)
 	flash = 0.1
-	phase = 1 if health > max_health * 2 / 3 else (2 if health > max_health / 3 else 3)
+	phase = 1 if health > max_health * 2.0 / 3.0 else (2 if health > max_health / 3.0 else 3)
 	health_changed.emit(health, max_health)
 	if health <= 0:
 		active = false
@@ -191,24 +209,3 @@ func take_damage(amount: int) -> void:
 		hint_cd = HINT_COOLDOWN
 		speech.emit("Yeral: " + hints[hint_index % hints.size()], 3.5)
 		hint_index += 1
-
-func _play_lock(anim: String, time: float) -> void:
-	anim_lock = time
-	sprite.play(anim)
-
-func _update_sprite(delta: float) -> void:
-	anim_lock = maxf(0.0, anim_lock - delta)
-	if is_instance_valid(target):
-		sprite.flip_h = target.global_position.x < global_position.x
-	sprite.modulate = Color(2.5, 2.5, 2.5) if flash > 0.0 else Color.WHITE
-	if anim_lock > 0.0:
-		return
-	var want := "idle"
-	if charge_time > 0.0:
-		want = "dash"
-	elif pending != "":
-		want = "announce"
-	elif absf(velocity.x) > 40.0:
-		want = "run"
-	if sprite.animation != want:
-		sprite.play(want)
