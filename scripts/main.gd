@@ -87,8 +87,8 @@ func _add_prop(path: String, pos: Vector2, px_scale := 2.0, z := -1) -> void:
 	add_child(s)
 
 # Yeral's night city: the painted skyline from art/sheets/spoiler_gotham_sheet.png, cropped unaltered by
-# tools/slice_gotham.js and drawn top-aligned at 2x with nearest filtering (1021x322 -> 2042x644; the floor at
-# y=600 covers the rest). A flipped copy sits beside it so the loop is seamless; a plain sky strip is the backstop.
+# tools/slice_gotham.js and drawn zoomed out at 1.25x with smooth filtering, bottom-aligned to the floor
+# (1021x322 -> 1276x402; the sky strip fills above). A flipped copy sits beside it so the loop is seamless.
 func _build_city_background(pb: ParallaxBackground) -> void:
 	var sky: Texture2D = load("res://assets/sprites/city_bg/city_bg_sky.png")
 	var sky_layer := ParallaxLayer.new()
@@ -101,20 +101,38 @@ func _build_city_background(pb: ParallaxBackground) -> void:
 	pb.add_child(sky_layer)
 
 	var tex: Texture2D = load("res://assets/sprites/city_bg/city_bg_panorama.png")
-	const PX := 2
+	# Zoomed out (1.25x, smoothed) so the skyline sits far back; its bottom edge tucks under the floor.
+	const PX := 1.25
 	var w := tex.get_width() * PX
+	var top := FLOOR_Y + 24.0 - tex.get_height() * PX
 	var pl := ParallaxLayer.new()
 	pl.motion_scale = Vector2(0.25, 0.0)
 	pl.motion_mirroring = Vector2(w * 2, 0)
 	for i in 2:
 		var spr := Sprite2D.new()
 		spr.texture = tex
-		spr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		spr.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 		spr.centered = false
 		spr.flip_h = i == 1
 		spr.scale = Vector2(PX, PX)
-		spr.position = Vector2(w * i, 0.0)
+		spr.position = Vector2(w * i, top)
 		pl.add_child(spr)
+	# Feather the skyline's top edge into the sky colour so there is no hard seam.
+	var fade := Gradient.new()
+	fade.set_color(0, Color8(4, 17, 10, 255))
+	fade.set_color(1, Color8(4, 17, 10, 0))
+	var fade_tex := GradientTexture2D.new()
+	fade_tex.gradient = fade
+	fade_tex.fill_from = Vector2(0, 0)
+	fade_tex.fill_to = Vector2(0, 1)
+	fade_tex.width = 8
+	fade_tex.height = 64
+	var fade_rect := TextureRect.new()
+	fade_rect.texture = fade_tex
+	fade_rect.stretch_mode = TextureRect.STRETCH_SCALE
+	fade_rect.position = Vector2(0, top - 1.0)
+	fade_rect.size = Vector2(w * 2, 90.0)
+	pl.add_child(fade_rect)
 	pb.add_child(pl)
 
 func _build_background() -> void:
