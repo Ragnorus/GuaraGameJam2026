@@ -1,6 +1,6 @@
 # Guara Slayer
 
-2D action platformer (Godot 4, Windows-first) for GuaraGameJam2026. Demo scope: tutorial/level + Boss #1, EMA the Bug Queen.
+2D action platformer (Godot 4, Windows-first) for GuaraGameJam2026. Two playable stages: Yeral — The Spoilerman, followed by The Infested Zone — Ema, the Bug Queen.
 
 ## Run and debug on Windows
 
@@ -8,7 +8,7 @@
 2. Clone the repo: `git clone https://github.com/Ragnorus/GuaraGameJam2026.git`.
 3. Start Godot, click **Import**, select `project.godot` in the repo folder, then **Import & Edit**.
 4. Press **F5** (Play) to open the level picker; choose either level with the mouse or keyboard. Press **F6** to run the currently open scene.
-5. **Yeral — The Spoilerman** opens the existing stage. **The Infested Zone — Ema, the Bug Queen** opens the new bug-filled stage; reach its far end to trigger Ema's three-phase fight. Press **R** to restart the current level.
+5. Reach the far end of a stage and defeat its boss. After a three-second clear banner, Yeral's stage automatically opens Ema's stage; completing Ema returns to level selection because it is the last available stage. Each stage starts with a fresh player. Press **R** while playing or after death to restart the current level.
 
 Debugging:
 - Errors, warnings and `print()` output show in the **Output** and **Debugger** panels at the bottom of the editor. Script errors pause the game and open the failing line.
@@ -28,6 +28,13 @@ Debugging:
 | GUARA ARMY (ultimate, needs full meter) | U |
 | Restart | R |
 
+The main character uses the full supplied sprite sheet: animated idle/run, jump/double-jump, fall/landing, firing, dash, summon/recall, ultimate, hurt, and death. Energy shots and shadow minions use the sheet's effect frames. The ultimate's beam/flock are visual effects; its damage still comes from the temporary minions. Controls, hitboxes, damage, and cooldowns are unchanged; enemies and scenery remain placeholder shapes.
+
+Animation data lives in `assets/character_frames.tres`, backed by `assets/character_atlas.png`. To rebuild from the original 1536×1024 RGBA sheet, run `python assets/extract_character.py "path/to/Nerdy Bat Vigilante Sprite Sheet.png"` (requires Pillow for asset rebuilding only, not for the game).
+
+Run the action regression self-check with `Godot --headless --path . --fixed-fps 60 --script res://tests/player_actions.gd`. It exercises movement, facing, airborne shooting, complete firing/dash sequences, shadow attacks/recall, ultimate effects, invulnerability, and the final death pose.
+
+Run the progression regression with `Godot --headless --path . --fixed-fps 60 --script res://tests/level_progression.gd`. It covers restarting at the boss entrance, both bosses' phase boundaries, Yeral → Ema → level selection, death before victory, and restarting the current stage.
 ## Deploy to Railway
 
 Railway's default builder (Railpack) can't build Godot projects, so the repo ships a `Dockerfile` and `railway.json` that Railway uses instead:

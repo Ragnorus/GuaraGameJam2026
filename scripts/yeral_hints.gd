@@ -7,7 +7,7 @@ const HINTS := {
 		"Ema's acid comes in a fan. The more she's hurt, the wider it gets. Keep moving!",
 		"Ema charges in a straight line. Jump over her, don't run from her.",
 		"Her bugs are weak to your minions. Let the Shadows do the dirty work.",
-		"Ema gets faster below two thirds health. Then again at one third. Brace yourself.",
+		"Ema gets faster at two-thirds health, then again at one-third. Brace yourself.",
 		"Fill the army meter on her bugs, then unleash the GUARA ARMY on the queen.",
 	],
 	"ponce": [

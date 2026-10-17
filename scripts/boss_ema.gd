@@ -90,8 +90,7 @@ func take_damage(amount: int) -> void:
 		return
 	health = maxi(0, health - amount)
 	flash = 0.1
-	var new_phase := 1 if health > max_health * 2 / 3 else (2 if health > max_health / 3 else 3)
-	phase = new_phase
+	phase = 1 if health > max_health * 2.0 / 3.0 else (2 if health > max_health / 3.0 else 3)
 	health_changed.emit(health, max_health)
 	if health <= 0:
 		active = false

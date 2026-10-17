@@ -1,12 +1,16 @@
 class_name Projectile
 extends Area2D
 
+const CHARACTER_FRAMES := preload("res://assets/character_frames.tres")
+
 var velocity := Vector2.ZERO
 var damage := 1
 var target_group := "enemies"
 var color := Color(0.4, 0.9, 1.0)
 var radius := 8.0
 var life := 3.0
+var character_art := false
+var sprite: AnimatedSprite2D
 
 func _ready() -> void:
 	collision_layer = 0
@@ -17,15 +21,25 @@ func _ready() -> void:
 	cs.shape = shape
 	add_child(cs)
 	body_entered.connect(_on_body_entered)
+	if character_art and target_group != "player":
+		sprite = AnimatedSprite2D.new()
+		sprite.sprite_frames = CHARACTER_FRAMES
+		sprite.scale = Vector2(0.34, 0.34)
+		sprite.flip_h = velocity.x < 0.0
+		add_child(sprite)
+		sprite.play(&"projectile")
 
 func _physics_process(delta: float) -> void:
+	if sprite != null and velocity.x != 0.0:
+		sprite.flip_h = velocity.x < 0.0
 	position += velocity * delta
 	life -= delta
 	if life <= 0.0:
 		queue_free()
 
 func _draw() -> void:
-	draw_circle(Vector2.ZERO, radius, color)
+	if sprite == null:
+		draw_circle(Vector2.ZERO, radius, color)
 
 func _on_body_entered(body: Node) -> void:
 	if body.is_in_group(target_group) and body.has_method("take_damage"):

@@ -11,18 +11,23 @@ var dialogue_time := 0.0
 var hud_label: Label
 var boss_label: Label
 var message: Label
+var message_timer: Timer
 var boss_started := false
 var finished := false
 
 func _ready() -> void:
 	InputSetup.setup()
+	message_timer = Timer.new()
+	message_timer.one_shot = true
+	message_timer.process_mode = Node.PROCESS_MODE_ALWAYS
+	message_timer.timeout.connect(_on_message_timeout)
+	add_child(message_timer)
 	_build_world()
 	_build_hud()
+	_update_hud()
 	if ema_level:
 		message.text = "THE INFESTED ZONE"
-		await get_tree().create_timer(2.0).timeout
-		if not boss_started:
-			message.text = ""
+		message_timer.start(2.0)
 
 func _tiled(path: String, pos: Vector2, size: Vector2, px_scale := 1.0) -> TextureRect:
 	var tr := TextureRect.new()
@@ -135,7 +140,6 @@ func _build_world() -> void:
 		b.position = Vector2(x, FLOOR_Y - 20)
 		b.target = player
 		add_child(b)
-	_update_hud()
 
 func _build_hud() -> void:
 	var layer := CanvasLayer.new()
@@ -174,8 +178,11 @@ func _process(delta: float) -> void:
 		if dialogue_time <= 0.0:
 			dialogue.text = ""
 	if Input.is_action_just_pressed("restart"):
-		get_tree().reload_current_scene()
-	if not boss_started and is_instance_valid(player) and player.position.x > LEVEL_END - 300.0:
+		var error := get_tree().reload_current_scene()
+		if error != OK:
+			push_error("Could not restart level: %s" % error_string(error))
+		return
+	if not finished and not boss_started and is_instance_valid(player) and not player.dead and player.position.x > LEVEL_END - 300.0:
 		_start_boss()
 
 func _start_boss() -> void:
@@ -201,9 +208,7 @@ func _start_boss() -> void:
 		yeral.speech.connect(_say)
 		yeral.activate()
 		message.text = "YERAL, THE SPOILERMAN"
-	await get_tree().create_timer(2.0).timeout
-	if not finished and is_instance_valid(player) and not player.dead:
-		message.text = ""
+	message_timer.start(2.0)
 
 func _on_boss_health(current: int, maximum: int) -> void:
 	boss_label.text = "%s  %d/%d" % ["EMA" if ema_level else "YERAL", current, maximum]
@@ -213,34 +218,34 @@ func _say(text: String, duration: float) -> void:
 	dialogue_time = duration
 
 func _on_boss_defeated() -> void:
+	if finished or player.dead:
+		return
 	finished = true
+	process_mode = Node.PROCESS_MODE_DISABLED
 	boss_label.text = ""
 	dialogue.text = ""
 	for e in get_tree().get_nodes_in_group("enemies"):
 		e.queue_free()
 	if ema_level:
-		message.text = "Ema defeated! The Infested Zone is clear."
+		message.text = "Ema defeated! All levels clear.\nReturning to level selection..."
+	else:
+		message.text = "Yeral defeated!\nNext: The Infested Zone"
+	message_timer.start(3.0)
+
+func _on_message_timeout() -> void:
+	if not finished:
+		if not player.dead:
+			message.text = ""
 		return
-	message.text = "Yeral defeated! Reward: Future Spoiler"
-	player.max_minions += 2
-	await get_tree().create_timer(3.0).timeout
-	message.text = "A mysterious signal reveals the other Guaras..."
-	await get_tree().create_timer(3.0).timeout
-	for c in get_children():
-		if c is CanvasLayer:
-			c.queue_free()
-	var black := ColorRect.new()
-	black.color = Color.BLACK
-	black.size = Vector2(5000, 3000)
-	black.position = player.global_position - Vector2(2500, 1500)
-	black.z_index = 100
-	add_child(black)
-	var end := Label.new()
-	end.text = "The Guara War Has Just Begun"
-	end.add_theme_font_size_override("font_size", 40)
-	end.position = player.global_position - Vector2(270, 20)
-	end.z_index = 101
-	add_child(end)
+	var next_scene := "res://scenes/level_select.tscn" if ema_level else "res://scenes/ema_level.tscn"
+	var error := get_tree().change_scene_to_file(next_scene)
+	if error != OK:
+		process_mode = Node.PROCESS_MODE_INHERIT
+		message.text = "Could not load the next level.\nPress R to restart."
+		push_error("Could not open level %s: %s" % [next_scene, error_string(error)])
 
 func _on_player_died() -> void:
+	if finished:
+		return
+	message_timer.stop()
 	message.text = "You died. Press R to restart"
