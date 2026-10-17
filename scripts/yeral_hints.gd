@@ -3,6 +3,13 @@ class_name YeralHints
 # Hints Yeral blurts out when hit. Keyed by the boss they refer to.
 # See .github/skills/yeral-hints/SKILL.md before adding or editing.
 const HINTS := {
+	"glizzy": [
+		"Spoiler: the sauce strip is safe until it splashes. Move before dinner is served.",
+		"My puddles only burn near the floor. Jump over the extra sauce.",
+		"Even this bun can't turn mid-charge. Jump once I commit.",
+		"Two-thirds health means a faster Gobler. Save your dash for the rush.",
+		"Ketchup and mustard both hurt. Keep moving through the gaps.",
+	],
 	"ema": [
 		"Ema's acid comes in a fan. The more she's hurt, the wider it gets. Keep moving!",
 		"Ema charges in a straight line. Jump over her, don't run from her.",

@@ -27,24 +27,63 @@ func _check_phases(boss: Node) -> void:
 		boss.take_damage(boss.health - boundary[0])
 		assert(boss.phase == boundary[1], "Boss phases must change at the one-third and two-thirds boundaries")
 
+func _restart() -> void:
+	Input.action_press(&"restart")
+	await _frames(1)
+	Input.action_release(&"restart")
+	await _frames(3)
+
+func _transform(boss: BossYeral, stage: Node) -> void:
+	boss.take_damage(boss.health)
+	assert(boss.glizzy and boss.transforming and boss.active)
+	assert(boss.health == boss.max_health and boss.phase == 1, "First depletion must refill a new health pool")
+	assert(not stage.get("finished") and current_scene == stage, "Transformation is not a stage clear")
+	var health := boss.health
+	boss.take_damage(health)
+	assert(boss.health == health and not boss.dying, "Transformation must ignore damage")
+
+func _wait_for_transform(boss: BossYeral) -> void:
+	for i in range(240):
+		if not boss.transforming:
+			break
+		await _frames(1)
+	assert(not boss.transforming and boss.is_in_group("enemies"), "The real transformation animation must resume combat")
+
 func _run() -> void:
 	assert(change_scene_to_file("res://scenes/main.tscn") == OK)
 	await _frames(2)
 	var old_stage := current_scene
 	(old_stage.get("player") as Player).position = Vector2(2200, 576)
-	Input.action_press(&"restart")
-	await _frames(1)
-	Input.action_release(&"restart")
-	await _frames(3)
+	await _restart()
 	assert(current_scene != old_stage and not current_scene.get("boss_started"))
 	assert((current_scene.get("player") as Player).position.x == 100.0)
 	var yeral_stage := current_scene
-	var yeral := await _enter_boss(yeral_stage)
-	assert(yeral is BossYeral)
+	var yeral := await _enter_boss(yeral_stage) as BossYeral
+	assert(yeral != null)
 	_check_phases(yeral)
+	_transform(yeral, yeral_stage)
+	await _restart()
+	assert(current_scene != yeral_stage, "Restart during transformation must reset the encounter")
+	yeral_stage = current_scene
+	yeral = await _enter_boss(yeral_stage) as BossYeral
+	assert(yeral != null and not yeral.glizzy and yeral.health == yeral.max_health)
+	_transform(yeral, yeral_stage)
+	await _wait_for_transform(yeral)
+	assert(current_scene == yeral_stage and not yeral_stage.get("finished"))
+	_check_phases(yeral)
+	await _restart()
+	assert(current_scene != yeral_stage, "Restart in the second form must restore Yeral")
+	yeral_stage = current_scene
+	yeral = await _enter_boss(yeral_stage) as BossYeral
+	assert(yeral != null and not yeral.glizzy and yeral.phase == 1)
+	_transform(yeral, yeral_stage)
+	await _wait_for_transform(yeral)
 	yeral.take_damage(yeral.health)
-	await _frames(240)
-	assert(current_scene != yeral_stage, "Yeral's clear must open Ema rather than leave a dead-end stage")
+	assert(yeral.dying and not yeral_stage.get("finished"), "The second depletion must wait for the collapse")
+	await _frames(1)
+	assert(current_scene == yeral_stage and not yeral_stage.get("finished"))
+	await _frames(360)
+	assert(current_scene != yeral_stage, "The final collapse must open Ema rather than leave a dead-end stage")
 	assert(current_scene.scene_file_path == "res://scenes/ema_level.tscn")
 
 	var ema_stage := current_scene
@@ -54,6 +93,22 @@ func _run() -> void:
 	ema.take_damage(ema.health)
 	await _frames(240)
 	assert(current_scene.scene_file_path == "res://scenes/level_select.tscn", "The last available stage must return to level selection")
+
+	assert(change_scene_to_file("res://scenes/main.tscn") == OK)
+	await _frames(2)
+	var dead_yeral_stage := current_scene
+	var dead_yeral := await _enter_boss(dead_yeral_stage) as BossYeral
+	_transform(dead_yeral, dead_yeral_stage)
+	await _wait_for_transform(dead_yeral)
+	dead_yeral.take_damage(dead_yeral.health)
+	var dead_yeral_player := dead_yeral_stage.get("player") as Player
+	dead_yeral_player.invuln = 0.0
+	dead_yeral_player.take_damage(dead_yeral_player.health)
+	await _frames(360)
+	assert(current_scene == dead_yeral_stage and not dead_yeral_stage.get("finished"), "Player death during the final collapse must block advancement")
+	await _restart()
+	assert(current_scene != dead_yeral_stage)
+	assert(not (current_scene.get("player") as Player).dead)
 
 	assert(change_scene_to_file("res://scenes/ema_level.tscn") == OK)
 	await _frames(2)
@@ -65,11 +120,8 @@ func _run() -> void:
 	dead_boss.take_damage(dead_boss.health)
 	await _frames(240)
 	assert(current_scene == dead_stage and not dead_stage.get("finished"), "Death before a boss defeat must not advance the level")
-	Input.action_press(&"restart")
-	await _frames(1)
-	Input.action_release(&"restart")
-	await _frames(3)
+	await _restart()
 	assert(current_scene != dead_stage and current_scene.scene_file_path == "res://scenes/ema_level.tscn")
 	assert(not (current_scene.get("player") as Player).dead)
-	print("PASS: boss-entrance restart; phase boundaries; Yeral -> Ema -> level select; death blocks victory; stage restart")
+	print("PASS: entrance/transform/second-form restart; both health pools and phases; final collapse -> Ema -> level select; player death blocks victory")
 	quit()

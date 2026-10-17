@@ -23,7 +23,7 @@ Nerd with glasses, hoodie, magical controller. Abilities (implemented in `script
 
 ## Boss roster (name - theme; mechanics; reward)
 Each boss needs a distinct look, gimmick and unlockable reward.
-0. **YERAL - The Spoilerman** (demo boss, `scripts/boss_yeral.gd`) - Riddler. Announces attacks before doing them, plants fake telegraphs, puzzle-platforming traps; player can't tell if a warning is true. Reward: Future Spoiler - briefly reveals enemy attack patterns. Says hints about other bosses when hit.
+0. **YERAL - The Spoilerman / Glizzy Gobler** (demo boss, `scripts/boss_yeral.gd`) - Riddler. Announces attacks before doing them, plants fake telegraphs, puzzle-platforming traps; player can't tell if a warning is true. Depleting his first health pool triggers a protected green transformation into Glizzy Gobler with a fresh health pool, ketchup/mustard spreads, faster bun charges, and warned, jumpable floor sauce. Only the transformed form's final collapse clears the stage. Reward: Future Spoiler - briefly reveals enemy attack patterns. Says truthful hints when hit.
 1. **EMA - The Bug Queen** (`scripts/boss_ema.gd`) - giant insect with armor, razor legs, bug swarm. Wall crawling, acid projectiles, bug swarms, faster/aggressive final phase (3 phases). Reward: Swarm Command - summon extra minions briefly.
 2. **PONCE - The Guara Hulk** - Marvel Rivals-style brawler. Ground slams, shockwaves, charges, destructible platforms. Reward: Rage Breaker - ground-pound.
 3. **ZINNA - The Octane Menace** - rocket-powered battle car, Rocket League arena. Boost charges, aerial dives, bouncing projectiles, ricochets. Reward: Rocket Boost - dash through hazards/enemies.

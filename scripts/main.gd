@@ -13,6 +13,7 @@ var boss_label: Label
 var message: Label
 var message_timer: Timer
 var boss_started := false
+var glizzy_form := false
 var finished := false
 var gates: Array = []
 var hp_bar: ProgressBar
@@ -335,13 +336,20 @@ func _start_boss() -> void:
 		add_child(yeral)
 		yeral.health_changed.connect(_on_boss_health)
 		yeral.defeated.connect(_on_boss_defeated)
+		yeral.transformed.connect(_on_yeral_transformed)
 		yeral.speech.connect(_say)
 		yeral.activate()
 		message.text = "YERAL, THE SPOILERMAN"
 	message_timer.start(2.0)
 
+func _on_yeral_transformed() -> void:
+	glizzy_form = true
+	boss_label.text = "GLIZZY GOBLER"
+	message.text = "YERAL'S TRUE FORM\nGLIZZY GOBLER"
+	message_timer.start(3.0)
+
 func _on_boss_health(current: int, maximum: int) -> void:
-	boss_label.text = "EMA" if ema_level else "YERAL"
+	boss_label.text = "EMA" if ema_level else ("GLIZZY GOBLER" if glizzy_form else "YERAL")
 	boss_bar.visible = true
 	boss_bar.max_value = maximum
 	boss_bar.value = current
@@ -362,7 +370,7 @@ func _on_boss_defeated() -> void:
 	if ema_level:
 		message.text = "Ema defeated! All levels clear.\nReturning to level selection..."
 	else:
-		message.text = "Yeral defeated!\nNext: The Infested Zone"
+		message.text = "Yeral and Glizzy Gobler defeated!\nNext: The Infested Zone"
 	message_timer.start(3.0)
 
 func _on_message_timeout() -> void:

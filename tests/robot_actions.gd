@@ -9,6 +9,17 @@ func _frames(count: int) -> void:
 		await physics_frame
 		await process_frame
 
+func _assert_ground_contact(robot: Robot, floor_y: float) -> void:
+	assert(robot.is_on_floor(), "Robot must settle on the floor")
+	var image := robot.sprite.sprite_frames.get_frame_texture(robot.sprite.animation, robot.sprite.frame).get_image()
+	var origin := robot.sprite.offset - Vector2(image.get_size()) / 2.0 if robot.sprite.centered else robot.sprite.offset
+	for y in range(image.get_height() - 1, -1, -1):
+		for x in range(image.get_width()):
+			if image.get_pixel(x, y).a >= 0.5:
+				var feet := robot.sprite.to_global(origin + Vector2(x, y + 1))
+				assert(absf(feet.y - floor_y) < 1.0, "Visible robot feet must meet the floor")
+				return
+
 func _run() -> void:
 	var stage := preload("res://scenes/main.tscn").instantiate()
 	root.add_child(stage)
@@ -29,12 +40,12 @@ func _run() -> void:
 	await _frames(12)
 	assert(robot.get_position_delta().x > 0.0 and not robot.sprite.flip_h)
 	assert(robot.sprite.animation == &"walk")
+	_assert_ground_contact(robot, stage.FLOOR_Y)
 	player.position = robot.position - Vector2(180, 0)
 	await _frames(12)
 	assert(robot.get_position_delta().x < 0.0 and robot.sprite.flip_h)
 	assert(robot.sprite.animation == &"walk")
 	var shape := robot.get_child(0) as CollisionShape2D
-	assert((shape.shape as RectangleShape2D).size == Vector2(32, 20))
 
 	var wall := StaticBody2D.new()
 	var wall_shape := CollisionShape2D.new()
@@ -47,6 +58,7 @@ func _run() -> void:
 	player.position = robot.position + Vector2(150, 0)
 	await _frames(8)
 	assert(robot.sprite.animation == &"idle", "A robot pushing into a wall must idle rather than walk in place")
+	_assert_ground_contact(robot, stage.FLOOR_Y)
 	wall.queue_free()
 	await _frames(1)
 

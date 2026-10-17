@@ -13,7 +13,7 @@ func _ready() -> void:
 	sprite.scale = Vector2(0.16, 0.16)
 	sprite.centered = false
 	sprite.offset = Vector2(-128, -240)
-	sprite.position.y = 10.0
+	sprite.position.y = cs.position.y + (cs.shape as RectangleShape2D).size.y / 2.0
 	add_child(sprite)
 	sprite.animation_finished.connect(_on_animation_finished)
 	sprite.play(&"idle")
