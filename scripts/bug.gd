@@ -18,11 +18,15 @@ var anim_lock := 0.0
 var sprite: AnimatedSprite2D
 var cs: CollisionShape2D
 var points := 1
+# Horizontal bounds of the room (between gates) the mob belongs to; it never leaves them.
+var zone_min := -INF
+var zone_max := INF
+const ZONE_MARGIN := 45.0
 
 func _ready() -> void:
 	add_to_group("enemies")
 	health = GameSettings.scale_health(health)
-	origin_x = position.x
+	origin_x = clampf(position.x, zone_min + ZONE_MARGIN, zone_max - ZONE_MARGIN)
 	var shape := RectangleShape2D.new()
 	shape.size = Vector2(44, 72) if robot else Vector2(36, 48)
 	cs = CollisionShape2D.new()
@@ -46,17 +50,26 @@ func _physics_process(delta: float) -> void:
 		return
 	if not is_on_floor():
 		velocity.y += GRAVITY * delta
-	if is_instance_valid(target) and absf(target.global_position.x - global_position.x) < 250.0:
+	var chasing := is_instance_valid(target) and absf(target.global_position.x - global_position.x) < 250.0
+	if chasing:
 		dir = 1 if target.global_position.x > global_position.x else -1
-	elif absf(position.x - origin_x) > patrol or is_on_wall():
+	elif absf(position.x - origin_x) > patrol or is_on_wall() or _at_zone_edge(dir):
 		dir = -dir
-	velocity.x = dir * speed * GameSettings.aggro()
+	velocity.x = 0.0 if _at_zone_edge(dir) else dir * speed * GameSettings.aggro()
 	if robot:
 		_robot_update(delta)
 	move_and_slide()
+	_clamp_to_zone()
 	_touch_damage()
 	if not robot:
 		queue_redraw()
+
+func _at_zone_edge(towards: int) -> bool:
+	return (towards < 0 and position.x <= zone_min + ZONE_MARGIN) \
+			or (towards > 0 and position.x >= zone_max - ZONE_MARGIN)
+
+func _clamp_to_zone() -> void:
+	position.x = clampf(position.x, zone_min + ZONE_MARGIN, zone_max - ZONE_MARGIN)
 
 # Contact damage: hurts the player whenever the two bodies touch (box overlap plus a small margin,
 # since physics keeps them from actually overlapping).

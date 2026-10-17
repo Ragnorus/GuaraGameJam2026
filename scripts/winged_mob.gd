@@ -82,7 +82,9 @@ func _physics_process(delta: float) -> void:
 	state_time -= delta
 	match state:
 		"hover":
-			if absf(position.x - origin_x) > patrol:
+			if _at_zone_edge(dir):
+				dir = -dir
+			elif absf(position.x - origin_x) > patrol:
 				dir = 1 if position.x < origin_x else -1
 			position.x += dir * speed * aggro * delta
 			position.y = hover_y + sin(time * 2.4) * 12.0
@@ -110,6 +112,7 @@ func _physics_process(delta: float) -> void:
 				state = "hover"
 				shoot_cd = randf_range(1.6, 2.6)
 				sprite.play(&"idle")
+	_clamp_to_zone()
 	sprite.flip_h = (swoop_dir.x if state == "swoop" else float(dir)) < 0.0
 	_touch_damage()
 	queue_redraw()

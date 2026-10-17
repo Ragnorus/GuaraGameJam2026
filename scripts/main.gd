@@ -1,8 +1,11 @@
 extends Node2D
 
 const LEVEL_END := 2400.0
+const LEVEL_LEFT := -100.0
 const FLOOR_Y := 600.0
 const PLATFORM_LAYER := 4
+const VIEW_WIDTH := 1280.0
+const CAMERA_LIMIT_SPEED := 900.0
 
 @export var bichema_level := false
 
@@ -24,6 +27,10 @@ var score_label: Label
 var gate_hint_cd := 0.0
 # Right edge of the boss arena; Yeral's lair is wider so the fight has room to move.
 var arena_right := LEVEL_END + 500.0
+var camera: Camera2D
+# Camera limits ease towards these so the view never shows past the next uncleared gate.
+var cam_left := LEVEL_LEFT
+var cam_right := LEVEL_END
 
 func _ready() -> void:
 	InputSetup.setup()
@@ -260,13 +267,15 @@ func _build_world() -> void:
 	add_child(player)
 	player.died.connect(_on_player_died)
 	player.stats_changed.connect(_update_hud)
-	var cam := Camera2D.new()
-	cam.limit_left = -100
-	cam.limit_right = int(arena_right)
-	cam.limit_bottom = int(FLOOR_Y + 100)
-	player.add_child(cam)
+	camera = Camera2D.new()
+	camera.limit_left = int(LEVEL_LEFT)
+	camera.limit_bottom = int(FLOOR_Y + 100)
+	player.add_child(camera)
 	for gx in gate_xs:
 		gates.append({"x": gx, "wall": _add_gate(gx), "bugs": []})
+	cam_left = LEVEL_LEFT
+	cam_right = _camera_right_target()
+	camera.limit_right = int(cam_right)
 	var mobs: Array = []
 	for x in bug_positions:
 		var b: Bug = TruffleAndroid.new() if bichema_level else Robot.new()
@@ -280,6 +289,13 @@ func _build_world() -> void:
 	for b in mobs:
 		b.target = player
 		b.points = clampi(1 + int(5.0 * b.position.x / LEVEL_END), GameSettings.MOB_POINTS_MIN, GameSettings.MOB_POINTS_MAX)
+		b.zone_min = LEVEL_LEFT
+		b.zone_max = LEVEL_END - 340.0
+		for gx in gate_xs:
+			if b.position.x < gx:
+				b.zone_max = gx
+				break
+			b.zone_min = gx
 		add_child(b)
 		for g in gates:
 			if b.position.x < g["x"]:
@@ -355,6 +371,18 @@ func _update_gates() -> void:
 			and player.position.x > gates[0]["x"] - 50.0:
 		gate_hint_cd = 4.0
 		_say("Defeat the mobs nearby to keep moving!", 2.0)
+
+func _camera_right_target() -> float:
+	var right: float = gates[0]["x"] if not gates.is_empty() else arena_right
+	return clampf(right, cam_left + VIEW_WIDTH, arena_right)
+
+func _update_camera_limits(delta: float) -> void:
+	if not is_instance_valid(camera):
+		return
+	var step := CAMERA_LIMIT_SPEED * delta
+	cam_right = move_toward(cam_right, _camera_right_target(), step)
+	camera.limit_right = int(cam_right)
+	camera.limit_left = int(move_toward(camera.limit_left, cam_left, step))
 
 func _make_bar(pos: Vector2, size: Vector2, fill: Color) -> ProgressBar:
 	var bar := ProgressBar.new()
@@ -435,12 +463,17 @@ func _process(delta: float) -> void:
 			push_error("Could not restart level: %s" % error_string(error))
 		return
 	_update_gates()
+	_update_camera_limits(delta)
 	if not finished and not boss_started and is_instance_valid(player) and not player.dead and player.position.x > LEVEL_END - 300.0:
 		_start_boss()
 
 func _start_boss() -> void:
 	boss_started = true
 	_add_block(Rect2(LEVEL_END - 340, -200, 30, FLOOR_Y + 200))
+	# Lock the view to the arena (the arena may be narrower than the screen, so keep a full view).
+	cam_left = minf(LEVEL_END - 340.0, arena_right - VIEW_WIDTH)
+	if is_instance_valid(camera):
+		camera.limit_left = int(minf(cam_left, camera.get_screen_center_position().x - VIEW_WIDTH / 2.0))
 	if bichema_level:
 		var genius := BossEvilGenius.new()
 		genius.position = Vector2(LEVEL_END + 250, FLOOR_Y - 112)
