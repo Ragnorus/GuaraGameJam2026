@@ -3,8 +3,9 @@ extends Node2D
 const LEVEL_END := 2400.0
 const FLOOR_Y := 600.0
 
+@export var ema_level := false
+
 var player: Player
-var boss: BossYeral
 var dialogue: Label
 var dialogue_time := 0.0
 var hud_label: Label
@@ -17,6 +18,11 @@ func _ready() -> void:
 	InputSetup.setup()
 	_build_world()
 	_build_hud()
+	if ema_level:
+		message.text = "THE INFESTED ZONE"
+		await get_tree().create_timer(2.0).timeout
+		if not boss_started:
+			message.text = ""
 
 func _tiled(path: String, pos: Vector2, size: Vector2, px_scale := 1.0) -> TextureRect:
 	var tr := TextureRect.new()
@@ -88,16 +94,30 @@ func _build_props() -> void:
 		_add_prop("res://assets/prop_crate.png", Vector2(x, FLOOR_Y), 2.0)
 
 func _build_world() -> void:
+func _build_world() -> void:
 	_build_background()
 	_build_props()
+	if ema_level:
+		var tint := CanvasModulate.new()
+		tint.color = Color(0.7, 1.0, 0.75)
+		add_child(tint)
 	_add_block(Rect2(-100, FLOOR_Y, LEVEL_END + 600, 100), "floor")
 	_add_block(Rect2(-140, -200, 40, 900))
 	_add_block(Rect2(LEVEL_END + 500, -200, 40, 900))
-	for r in [Rect2(350, 480, 140, 20), Rect2(600, 400, 140, 20),
-			Rect2(850, 480, 140, 20), Rect2(1100, 380, 160, 20),
-			Rect2(1400, 470, 140, 20)]:
-		_add_block(r, "platform")
-	player = Player.new()
+	var platforms: Array = [
+		Rect2(350, 480, 140, 20), Rect2(600, 400, 140, 20),
+		Rect2(850, 480, 140, 20), Rect2(1100, 380, 160, 20),
+		Rect2(1400, 470, 140, 20),
+	]
+	if ema_level:
+		platforms = [
+			Rect2(300, 490, 170, 20), Rect2(560, 405, 150, 20),
+			Rect2(790, 495, 170, 20), Rect2(1030, 385, 170, 20),
+			Rect2(1300, 475, 160, 20), Rect2(1580, 385, 170, 20),
+			Rect2(1820, 475, 170, 20),
+		]
+	for r in platforms:
+		_add_block(r, "platform")	player = Player.new()
 	player.position = Vector2(100, FLOOR_Y - 40)
 	add_child(player)
 	player.died.connect(_on_player_died)
@@ -107,7 +127,10 @@ func _build_world() -> void:
 	cam.limit_right = int(LEVEL_END + 500)
 	cam.limit_bottom = int(FLOOR_Y + 100)
 	player.add_child(cam)
-	for x in [500.0, 800.0, 1000.0, 1250.0, 1550.0, 1800.0]:
+	var bug_positions := [500.0, 800.0, 1000.0, 1250.0, 1550.0, 1800.0]
+	if ema_level:
+		bug_positions = [420.0, 660.0, 900.0, 1120.0, 1350.0, 1590.0, 1810.0, 1980.0]
+	for x in bug_positions:
 		var b := Bug.new()
 		b.position = Vector2(x, FLOOR_Y - 20)
 		b.target = player
@@ -158,22 +181,32 @@ func _process(delta: float) -> void:
 func _start_boss() -> void:
 	boss_started = true
 	_add_block(Rect2(LEVEL_END - 340, -200, 30, FLOOR_Y + 200))
-	boss = BossYeral.new()
-	boss.position = Vector2(LEVEL_END + 250, FLOOR_Y - 45)
-	boss.target = player
-	boss.floor_y = FLOOR_Y
-	add_child(boss)
-	boss.health_changed.connect(_on_boss_health)
-	boss.defeated.connect(_on_boss_defeated)
-	boss.speech.connect(_say)
-	boss.activate()
-	message.text = "YERAL, THE SPOILERMAN"
+	if ema_level:
+		var ema := BossEma.new()
+		ema.position = Vector2(LEVEL_END + 250, FLOOR_Y - 45)
+		ema.target = player
+		add_child(ema)
+		ema.health_changed.connect(_on_boss_health)
+		ema.defeated.connect(_on_boss_defeated)
+		ema.activate()
+		message.text = "EMA, THE BUG QUEEN"
+	else:
+		var yeral := BossYeral.new()
+		yeral.position = Vector2(LEVEL_END + 250, FLOOR_Y - 45)
+		yeral.target = player
+		yeral.floor_y = FLOOR_Y
+		add_child(yeral)
+		yeral.health_changed.connect(_on_boss_health)
+		yeral.defeated.connect(_on_boss_defeated)
+		yeral.speech.connect(_say)
+		yeral.activate()
+		message.text = "YERAL, THE SPOILERMAN"
 	await get_tree().create_timer(2.0).timeout
 	if not finished and is_instance_valid(player) and not player.dead:
 		message.text = ""
 
 func _on_boss_health(current: int, maximum: int) -> void:
-	boss_label.text = "YERAL  %d/%d" % [current, maximum]
+	boss_label.text = "%s  %d/%d" % ["EMA" if ema_level else "YERAL", current, maximum]
 
 func _say(text: String, duration: float) -> void:
 	dialogue.text = text
@@ -185,6 +218,9 @@ func _on_boss_defeated() -> void:
 	dialogue.text = ""
 	for e in get_tree().get_nodes_in_group("enemies"):
 		e.queue_free()
+	if ema_level:
+		message.text = "Ema defeated! The Infested Zone is clear."
+		return
 	message.text = "Yeral defeated! Reward: Future Spoiler"
 	player.max_minions += 2
 	await get_tree().create_timer(3.0).timeout
