@@ -8,9 +8,7 @@ description: Write or update the hint dialogue Yeral (the Spoilerman, demo boss)
 Yeral is the Riddler-style demo boss (`scripts/boss_yeral.gd`). Each time he is hit he says a line from
 `scripts/yeral_hints.gd` (`YeralHints.HINTS`), shown in the dialogue box at the bottom of the screen.
 
-Source of truth: the game design shared at
-https://chatgpt.com/share/6ad2beec-9730-83e9-8ccb-20f188f0e182
-(the page is JS-rendered and could not be fetched automatically; paste its boss list here or open it manually).
+Source of truth: the [guara-game-design](../guara-game-design/SKILL.md) skill (boss roster, mechanics, rewards).
 
 ## Rules
 1. One dictionary key per boss (`"ema"`, ...), plus `"general"` for player-kit tips.
@@ -23,4 +21,4 @@ https://chatgpt.com/share/6ad2beec-9730-83e9-8ccb-20f188f0e182
 
 ## Current coverage
 - Ema, the Bug Queen: derived from `scripts/boss_ema.gd` (acid fan, charge, bug swarm, 3 phases).
-- Other bosses: add once their design entries are available.
+- All roster bosses have hints. Ema's are based on `scripts/boss_ema.gd`; the rest are inferred from the design's mechanics, so revise them once those bosses are implemented.
