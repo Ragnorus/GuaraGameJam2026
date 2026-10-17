@@ -11,7 +11,7 @@ const HINTS := {
 		"Ketchup and mustard both hurt. Keep moving through the gaps.",
 	],
 	"evil_genius": [
-		"The Evil Genius fires red bolts in a fan. The more he's hurt, the wider it gets. Keep moving!",
+		"Ema sprays a fan of cash bills. The more he's hurt, the wider it gets. Keep moving!",
 		"He stops and braces before a charge. Jump over him, don't run from him.",
 		"His truffle androids die in one hit. Let the Shadows clear them while you aim at the boss.",
 		"He gets faster at two-thirds health, then again at one-third. Brace yourself.",

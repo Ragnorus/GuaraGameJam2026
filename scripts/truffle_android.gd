@@ -50,8 +50,12 @@ func _fire() -> void:
 	anim_lock = 0.3
 	var p := Projectile.new()
 	p.target_group = "player"
-	p.color = Color(1.0, 0.2, 0.15)
+	p.texture = FRAMES.get_frame_texture(&"money_bolt", 0)
+	p.texture_scale = Vector2(0.25, 0.25)
+	p.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	p.radius = 8.0
+	p.coin_pop = true
+	p.texture_outline_color = Projectile.GOLD_OUTLINE_COLOR
 	p.position = global_position + Vector2(dir * 34, -8)
 	p.velocity = Vector2(dir * 320.0, 0.0)
 	if is_in_group("evil_genius_attacks"):

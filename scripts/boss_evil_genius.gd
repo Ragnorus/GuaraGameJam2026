@@ -145,13 +145,18 @@ func _blast() -> void:
 	for i in range(count):
 		var p := Projectile.new()
 		p.target_group = "player"
-		p.color = Color(1.0, 0.2, 0.15)
 		p.radius = 12.0
 		p.position = global_position + Vector2(dir * 70.0, -40.0)
 		var aim := (target.global_position - p.position).normalized()
 		p.velocity = aim.rotated((i - (count - 1) / 2.0) * 0.25) * 340.0
 		if costume_form:
 			p.texture = COSTUME_FRAMES.get_frame_texture(&"pink_bolt", 0)
+		else:
+			p.texture = TruffleAndroid.FRAMES.get_frame_texture(&"money_bolt", 0)
+			p.texture_scale = Vector2(0.35, 0.35)
+			p.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+			p.coin_pop = true
+			p.texture_outline_color = Projectile.GOLD_OUTLINE_COLOR
 		p.add_to_group("evil_genius_attacks")
 		get_parent().add_child(p)
 

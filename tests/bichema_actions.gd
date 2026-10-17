@@ -6,6 +6,13 @@ class DamageTarget extends Node2D:
 	func take_damage(amount: int) -> void:
 		health -= amount
 
+class ProjectileTarget extends StaticBody2D:
+	var health := 10
+
+	func take_damage(amount: int) -> void:
+		health -= amount
+
+
 # Run: Godot --headless --path . --fixed-fps 60 --script res://tests/bichema_actions.gd
 func _initialize() -> void:
 	_run.call_deferred()
@@ -29,6 +36,54 @@ func _run() -> void:
 	var target := DamageTarget.new()
 	target.position = Vector2(400, 0)
 	world.add_child(target)
+
+	var cash_target := ProjectileTarget.new()
+	cash_target.add_to_group("player")
+	cash_target.position = Vector2(90, -16)
+	var cash_shape := CircleShape2D.new()
+	cash_shape.radius = 10.0
+	var cash_collision := CollisionShape2D.new()
+	cash_collision.shape = cash_shape
+	cash_target.add_child(cash_collision)
+	world.add_child(cash_target)
+	var shooter := TruffleAndroid.new()
+	shooter.position = Vector2(0, -8)
+	shooter.dir = 1
+	shooter.target = cash_target
+	world.add_child(shooter)
+	shooter.sprite.play(&"warn")
+	shooter._fire()
+	var cash_shot: Projectile
+	for child in world.get_children():
+		if child is Projectile and child.target_group == "player":
+			cash_shot = child
+	assert(cash_shot != null
+			and cash_shot.texture == TruffleAndroid.FRAMES.get_frame_texture(&"money_bolt", 0)
+			and cash_shot.texture_scale == Vector2(0.25, 0.25)
+			and cash_shot.radius == 8.0 and cash_shot.damage == 1
+			and cash_shot.velocity == Vector2(320.0, 0.0) and cash_shot.coin_pop,
+			"Ground minions fire the supplied, scaled cash projectile without changing hit balance")
+	var cash_outline := cash_shot.material as ShaderMaterial
+	assert(cash_outline != null and cash_outline.shader == Projectile.OUTLINE_SHADER
+			and cash_outline.get_shader_parameter("outline_color") == Projectile.GOLD_OUTLINE_COLOR,
+			"Minion cash bills use a gold outline")
+	for i in range(20):
+		if cash_target.health < 10:
+			break
+		await _frames(1)
+	assert(cash_target.health == 9, "The cash projectile still damages its target once")
+	var saw_coin_pop := false
+	for child in world.get_children():
+		if child is Label and child.text == "$":
+			saw_coin_pop = true
+	assert(saw_coin_pop, "A cash hit must show a gold dollar pop")
+	await _frames(20)
+	for child in world.get_children():
+		assert(not (child is Label and child.text == "$"), "The coin pop must clean itself up")
+	shooter.queue_free()
+	cash_target.queue_free()
+	await _frames(1)
+
 	var boss := BossEvilGenius.new()
 	boss.target = target
 	world.add_child(boss)
@@ -49,6 +104,21 @@ func _run() -> void:
 		defeats[0] += 1
 	)
 	boss._blast()
+
+	var cash_fan_count := 0
+	for attack in get_nodes_in_group("evil_genius_attacks"):
+		if attack is Projectile:
+			cash_fan_count += 1
+			assert(attack.texture == TruffleAndroid.FRAMES.get_frame_texture(&"money_bolt", 0))
+			assert(attack.texture_scale == Vector2(0.35, 0.35) and attack.radius == 12.0
+					and attack.target_group == "player" and attack.damage == 1
+					and attack.velocity.length() > 300.0 and attack.coin_pop)
+			var fan_outline := attack.material as ShaderMaterial
+			assert(fan_outline != null and fan_outline.shader == Projectile.OUTLINE_SHADER
+					and fan_outline.get_shader_parameter("outline_color") == Projectile.GOLD_OUTLINE_COLOR,
+					"Ema's money fan uses a gold outline")
+	assert(cash_fan_count == 1 + boss.phase, "Normal Ema must fire the unchanged fan with scaled cash projectiles")
+
 	boss._summon()
 	var summoned: TruffleAndroid
 	for attack in get_nodes_in_group("evil_genius_attacks"):
