@@ -1,9 +1,9 @@
 ---
 name: guara-art
-description: Art direction and sprite pipeline for Guara Slayer - palette, Yeral the Spoilerman / robot minion / lair sprite sheets, slicing tools, naming and scale rules, and how sprites are wired into Godot. Use when adding or changing art, slicing new sheets, or integrating sprites into scripts.
+description: Art direction and sprite pipeline for THE NIGHT UNC - palette, Yeral the Spoilerman / robot minion / lair sprite sheets, slicing tools, naming and scale rules, and how sprites are wired into Godot. Use when adding or changing art, slicing new sheets, or integrating sprites into scripts.
 ---
 
-# Guara Slayer art
+# THE NIGHT UNC art
 
 Related: `guara-game-design` (roster, mechanics), `yeral-hints` (Yeral dialogue).
 

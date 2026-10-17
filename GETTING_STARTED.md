@@ -1,4 +1,4 @@
-# Vibe coding Guara Slayer – quick start
+# Vibe coding THE NIGHT UNC – quick start
 
 No coding experience needed. You describe what you want and Copilot writes the code.
 

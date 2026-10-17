@@ -14,7 +14,7 @@ var dialogue: Label
 var dialogue_time := 0.0
 var hud_label: Label
 var boss_label: Label
-var message: Label
+var message: ComicBox
 var message_timer: Timer
 var boss_started := false
 var glizzy_form := false
@@ -418,9 +418,7 @@ func _build_hud() -> void:
 	boss_bar = _make_bar(Vector2(440, 34), Vector2(400, 20), Color(0.8, 0.15, 0.2))
 	boss_bar.visible = false
 	layer.add_child(boss_bar)
-	message = Label.new()
-	message.position = Vector2(300, 300)
-	message.add_theme_font_size_override("font_size", 36)
+	message = ComicBox.new()
 	layer.add_child(message)
 	dialogue = Label.new()
 	dialogue.position = Vector2(100, 630)

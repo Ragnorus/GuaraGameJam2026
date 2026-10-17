@@ -1,9 +1,9 @@
 ---
 name: guara-dev-workflow
-description: Development workflow and accumulated session knowledge for Guara Slayer - deploy pipeline, git practices, menus/difficulty/score systems, procedural audio and web-audio gotchas, levels/bosses, tooling, and open issues. Use when continuing development on a new machine or touching menus, audio, settings, deployment or levels.
+description: Development workflow and accumulated session knowledge for THE NIGHT UNC - deploy pipeline, git practices, menus/difficulty/score systems, procedural audio and web-audio gotchas, levels/bosses, tooling, and open issues. Use when continuing development on a new machine or touching menus, audio, settings, deployment or levels.
 ---
 
-# Guara Slayer – dev workflow & session knowledge
+# THE NIGHT UNC – dev workflow & session knowledge
 
 ## Project & deploy
 - Repo: Ragnorus/GuaraGameJam2026, branch `main`. Godot 4.5.
@@ -20,7 +20,7 @@ description: Development workflow and accumulated session knowledge for Guara Sl
 - Tests: `tests/*.gd` (run with `--fixed-fps 60 --script`) and `tools/smoke_test.gd`. A failing `assert` makes Godot wait in the debugger, so wrap runs in a timeout. A portable Godot can be downloaded to a scratch folder for validation.
 
 ## Menus, difficulty, score
-- Scripts: `game_settings.gd` (static settings, save/load to `user://settings.cfg`), `menu_kit.gd` (UI helpers), `main_menu.gd`, `level_select.gd`, `settings_menu.gd` (resolution, music/SFX on+volume, difficulty), `game_info.gd` (judge-facing explanation), `pause_menu.gd`.
+- Scripts: `game_settings.gd` (static settings, save/load to `user://settings.cfg`), `menu_kit.gd` (UI helpers), `main_menu.gd` (title screen from `assets/ui/title_screen.png` + bottom button strip; `title_seen` static skips PRESS START on return), `comic_box.gd` (top-right comic caption used for `main.gd`'s `message`), `level_select.gd`, `settings_menu.gd` (resolution, music/SFX on+volume, difficulty), `game_info.gd` (judge-facing explanation), `pause_menu.gd`.
 - Difficulties (`GameSettings.DIFFICULTIES`, hp/damage/aggro multipliers): Baby Guara 0.6/0.5/0.8, Young Guara 1/1/1, Guara 1.5/1.5/1.2, OG Guara 2.5/2/1.5. Applied in `bug/robot/truffle_android/boss_*` and `player.gd`.
 - Score: mobs 1–5 points (`clampi(1 + int(5*x/LEVEL_END), 1, 5)`), bosses 10. High score stored per difficulty. HUD + handling in `main.gd`.
 

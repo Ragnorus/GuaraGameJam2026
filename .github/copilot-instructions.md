@@ -1,4 +1,4 @@
-# Guara Slayer – Copilot instructions
+# THE NIGHT UNC – Copilot instructions
 
 Godot 4.5 2D action platformer (GDScript). Scripts in `scripts/`, scenes in `scenes/`, Node helper tools in `tools/`.
 

@@ -1,4 +1,4 @@
-# Guara Slayer
+# THE NIGHT UNC
 
 2D action platformer (Godot 4, Windows-first) for GuaraGameJam2026. Two playable stages: Yeral — The Spoilerman and his true second form, Glizzy Gobler, followed by Bichema's World — the Evil Genius, the alpha and the omega.
 
@@ -85,7 +85,8 @@ Run the robot regression with `Godot --headless --path . --fixed-fps 60 --script
 
 ## Menus, difficulty and score
 
-- Main menu (`scenes/main_menu.tscn`, the project's main scene): **Start Game** (first level, fresh score), **Level Select** (replay one level), **Settings**, **Game Info** (the rules screen for reviewers, generated from the live difficulty values), and Quit (hidden on web). **Esc** pauses a level (Resume / Restart Level / Main Menu).
+- Main menu (`scenes/main_menu.tscn`, the project's main scene) opens on the "The Night Unc" title art (`assets/ui/title_screen.png`, unaltered, scaled to cover the window); any key, button or click at **PRESS START** reveals a button strip along the bottom (returning from a sub-menu skips the title). Buttons: **Start Game** (first level, fresh score), **Level Select** (replay one level), **Settings**, **Game Info** (the rules screen for reviewers, generated from the live difficulty values), and Quit (hidden on web). **Esc** pauses a level (Resume / Restart Level / Main Menu).
+- In-level announcements (stage title, boss intro, transformation, victory, death) pop up in a yellow comic-style caption box at the top right (`scripts/comic_box.gd`, `ComicBox`), under the score; boss dialogue and hints stay at the bottom.
 - Settings (`scripts/settings_menu.gd`): difficulty, resolution (desktop only), fullscreen, music on/off + volume, sound on/off + volume. Saved to `user://settings.cfg` (browser storage on web) by `GameSettings`. Music and sound effects are generated in code by `GameAudio` (no audio files) and routed through `Music`/`SFX` buses.
 - Difficulties (`GameSettings.DIFFICULTIES`): Baby Guara (health x0.6, damage x0.5, aggression x0.8), Young Guara (x1/x1/x1, the original balance), Guara (x1.5/x1.5/x1.2), OG Guara (x2.5/x2/x1.5). Health scales mobs and bosses (and Yeral's second form); damage scales everything that hurts the player (min 1); aggression scales mob speed/shot rate and boss attack rate/charge speed. Mobs/bosses read it when they spawn, so a change applies from the next level load.
 - Score: a mob gives 1-5 points (more the deeper it is in the level; boss-summoned minions give 1), a boss gives 10. Score carries Yeral -> Bichema's World in one run; dying or restarting reverts to the score the level began with. The high score is kept per difficulty and recorded on death or boss defeat. The HUD shows score, high score and difficulty.

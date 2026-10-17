@@ -1,9 +1,9 @@
 ---
 name: guara-game-design
-description: Game design reference for Guara Slayer (GuaraGameJam2026) - premise, the Controller King's abilities, the 10-boss Guara roster with mechanics and rewards, and demo scope. Use when implementing bosses, abilities, levels, or writing boss-related dialogue/hints.
+description: Game design reference for THE NIGHT UNC (GuaraGameJam2026) - premise, the Controller King's abilities, the 10-boss Guara roster with mechanics and rewards, and demo scope. Use when implementing bosses, abilities, levels, or writing boss-related dialogue/hints.
 ---
 
-# GUARA SLAYER - Game Design
+# THE NIGHT UNC - Game Design
 
 Source: https://chatgpt.com/share/6ad2beec-9730-83e9-8ccb-20f188f0e182 (Godot 4 project, scripts in `scripts/`).
 

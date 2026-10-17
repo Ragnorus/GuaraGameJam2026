@@ -10,7 +10,7 @@ config_version=5
 
 [application]
 
-config/name="Guara Slayer"
+config/name="The Night Unc"
 run/main_scene="res://scenes/main_menu.tscn"
 config/features=PackedStringArray("4.5", "Forward Plus")
 
@@ -27,7 +27,7 @@ window/stretch/mode="canvas_items"
 
 [dotnet]
 
-project/assembly_name="Guara Slayer"
+project/assembly_name="The Night Unc"
 
 [rendering]
 
