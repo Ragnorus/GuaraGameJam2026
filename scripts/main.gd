@@ -94,7 +94,6 @@ func _build_props() -> void:
 		_add_prop("res://assets/prop_crate.png", Vector2(x, FLOOR_Y), 2.0)
 
 func _build_world() -> void:
-func _build_world() -> void:
 	_build_background()
 	_build_props()
 	if ema_level:
@@ -117,7 +116,8 @@ func _build_world() -> void:
 			Rect2(1820, 475, 170, 20),
 		]
 	for r in platforms:
-		_add_block(r, "platform")	player = Player.new()
+		_add_block(r, "platform")
+	player = Player.new()
 	player.position = Vector2(100, FLOOR_Y - 40)
 	add_child(player)
 	player.died.connect(_on_player_died)
