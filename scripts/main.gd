@@ -310,6 +310,14 @@ func _build_world() -> void:
 	var bug_positions := [500.0, 800.0, 1000.0, 1250.0, 1550.0, 1800.0]
 	var flyer_positions := [700.0, 1350.0, 1900.0]
 	var gate_xs := [900.0, 1400.0, 2000.0]
+	var coin_positions := [
+		Vector2(350.0, FLOOR_Y - 40.0), Vector2(700.0, FLOOR_Y - 40.0),
+		Vector2(1250.0, FLOOR_Y - 40.0), Vector2(1510.0, FLOOR_Y - 40.0),
+		Vector2(1800.0, FLOOR_Y - 40.0), Vector2(2210.0, FLOOR_Y - 40.0),
+	]
+	var medalla_positions := [
+		Vector2(1050.0, FLOOR_Y - 40.0), Vector2(1940.0, FLOOR_Y - 40.0),
+	]
 	if bichema_level:
 		var pub_x: float = (bichema_rooms[1]["rect"] as Rect2).position.x
 		var factory_x: float = (bichema_rooms[2]["rect"] as Rect2).position.x
@@ -317,6 +325,16 @@ func _build_world() -> void:
 			pub_x + 1500.0, factory_x + 250.0, factory_x + 520.0, factory_x + 770.0]
 		flyer_positions = [700.0, 1650.0, pub_x + 650.0, pub_x + 1300.0, factory_x + 600.0]
 		gate_xs = [1100.0, pub_x - 32.0, pub_x + 900.0, factory_x - 32.0, boss_gate_x]
+		coin_positions = [
+			Vector2(350.0, FLOOR_Y - 40.0), Vector2(850.0, FLOOR_Y - 40.0),
+			Vector2(1450.0, FLOOR_Y - 40.0), Vector2(pub_x + 350.0, FLOOR_Y - 40.0),
+			Vector2(pub_x + 1000.0, FLOOR_Y - 40.0), Vector2(factory_x + 350.0, FLOOR_Y - 40.0),
+			Vector2(factory_x + 850.0, FLOOR_Y - 40.0), Vector2(factory_x + 1450.0, FLOOR_Y - 40.0),
+		]
+		medalla_positions = [
+			Vector2(1350.0, FLOOR_Y - 40.0), Vector2(pub_x + 1200.0, FLOOR_Y - 40.0),
+			Vector2(factory_x + 650.0, FLOOR_Y - 40.0),
+		]
 	else:
 		platforms.append_array(_random_platforms(platforms, gate_xs))
 		for rect: Rect2 in platforms:
@@ -325,6 +343,10 @@ func _build_world() -> void:
 	player.collision_mask |= PLATFORM_LAYER
 	player.position = Vector2(100, FLOOR_Y - 60)
 	add_child(player)
+	for pickup_position in medalla_positions:
+		_spawn_pickup(Pickup.Kind.MEDALLA, pickup_position)
+	for pickup_position in coin_positions:
+		_spawn_pickup(Pickup.Kind.COIN, pickup_position)
 	player.died.connect(_on_player_died)
 	player.stats_changed.connect(_update_hud)
 	camera = Camera2D.new()
@@ -364,6 +386,12 @@ func _build_world() -> void:
 				g["bugs"].append(b)
 				break
 	_update_hud()
+
+func _spawn_pickup(kind: int, at: Vector2) -> void:
+	var pickup := Pickup.new()
+	pickup.kind = kind
+	pickup.position = at
+	add_child(pickup)
 
 # Extra platforms at random spots each run (gaps between the fixed ones, plus a few in the boss arena).
 # Heights stay within a double jump of the floor or a neighbouring platform.

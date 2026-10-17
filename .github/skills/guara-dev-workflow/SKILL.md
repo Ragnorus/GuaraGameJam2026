@@ -24,7 +24,7 @@ description: Development workflow and accumulated session knowledge for THE NIGH
 - `InputSetup` maps left stick/D-pad movement, A jump/confirm, X shoot, LB dash, Y summon, RB recall, R3 ultimate and B/Start cancel/pause; B/Start returns from submenus, and menus navigate with D-pad or left stick.
 - Scripts: `game_settings.gd` (static settings, save/load to `user://settings.cfg`), `menu_kit.gd` (UI helpers), `main_menu.gd` (title screen from `assets/ui/title_screen.png` + bottom button strip; `title_seen` static skips PRESS START on return), `comic_box.gd` (top-right comic caption used for `main.gd`'s `message`), `level_select.gd`, `settings_menu.gd` (resolution, music/SFX on+volume, difficulty), `game_info.gd` (judge-facing explanation), `pause_menu.gd`.
 - Difficulties (`GameSettings.DIFFICULTIES`, hp/damage/aggro multipliers): Baby Guara 0.6/0.5/0.8, Young Guara 1/1/1, Guara 1.5/1.5/1.2, OG Guara 2.5/2/1.5. Applied in `bug/robot/truffle_android/boss_*` and `player.gd`.
-- Score: mobs 1–5 points (`clampi(1 + int(5*x/LEVEL_END), 1, 5)`), bosses 10. High score stored per difficulty. HUD + handling in `main.gd`.
+- Score: mobs give 1–5 points (`clampi(1 + int(5*x/LEVEL_END), 1, 5)`), bosses 10, coins 5. Medalla cans heal up to 4 HP and stay available when health is full. High score stored per difficulty; HUD and score handling in `main.gd`. Regression: `tests/pickups.gd`.
 
 ## Audio (procedural, no asset files)
 - `game_audio.gd`: generates 16-bit mono `AudioStreamWAV` at 22050 Hz in code (arpeggio over Am F C G, looped; square-wave SFX `click/kill/hurt/boss`). Buses "Music"/"SFX" created at runtime. Music started in `main_menu._ready` and by the level.

@@ -211,6 +211,16 @@ func add_meter(amount: float) -> void:
 	meter = minf(meter_max, meter + amount)
 	stats_changed.emit()
 
+func heal(amount: int) -> int:
+	if dead:
+		return 0
+	var restored := mini(amount, max_health - health)
+	if restored <= 0:
+		return 0
+	health += restored
+	stats_changed.emit()
+	return restored
+
 func take_damage(amount: int) -> void:
 	if invuln > 0.0 or dead:
 		return

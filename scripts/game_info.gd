@@ -37,6 +37,7 @@ func _build_text() -> String:
 	lines.append("SCORE")
 	lines.append("  - Mobs give %d-%d points. The deeper into the level a mob stands, the more it is worth. Minions summoned by a boss give 1." % [GameSettings.MOB_POINTS_MIN, GameSettings.MOB_POINTS_MAX])
 	lines.append("  - Defeating a boss gives %d points." % GameSettings.BOSS_POINTS)
+	lines.append("  - Coins give 5 points. Medalla cans restore up to 4 HP and remain until the player needs healing.")
 	lines.append("  - Score carries from Yeral into Bichema's World during one run. Dying or pressing R restarts the level with the score you had when it began.")
 	lines.append("  - Replaying from Level Select starts a fresh score.")
 	lines.append("")
