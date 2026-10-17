@@ -90,7 +90,7 @@ func _build_hud() -> void:
 	layer.add_child(help)
 
 func _update_hud() -> void:
-	if not is_instance_valid(player):
+	if not is_instance_valid(player) or not is_instance_valid(hud_label):
 		return
 	hud_label.text = "HP %d/%d   Army meter %d%%" % [player.health, player.max_health,
 			int(player.meter / player.meter_max * 100.0)]
