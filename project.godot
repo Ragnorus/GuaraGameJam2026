@@ -14,6 +14,10 @@ config/name="Guara Slayer"
 run/main_scene="res://scenes/main_menu.tscn"
 config/features=PackedStringArray("4.5", "Forward Plus")
 
+[audio]
+
+general/default_playback_type.web=1
+
 [display]
 
 window/size/viewport_width=1280

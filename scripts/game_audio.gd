@@ -34,6 +34,7 @@ static func start_music(tree: SceneTree) -> void:
 	_music = AudioStreamPlayer.new()
 	_music.stream = _music_stream()
 	_music.bus = "Music"
+	_music.playback_type = AudioServer.PLAYBACK_TYPE_STREAM
 	_music.volume_db = -8.0
 	_music.process_mode = Node.PROCESS_MODE_ALWAYS
 	_music.autoplay = true
@@ -48,6 +49,7 @@ static func play(tree: SceneTree, kind: String) -> void:
 	var player := AudioStreamPlayer.new()
 	player.stream = _sfx_stream(kind)
 	player.bus = "SFX"
+	player.playback_type = AudioServer.PLAYBACK_TYPE_STREAM
 	player.process_mode = Node.PROCESS_MODE_ALWAYS
 	player.autoplay = true
 	player.finished.connect(player.queue_free)
