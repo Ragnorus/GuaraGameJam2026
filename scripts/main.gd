@@ -4,7 +4,9 @@ const LEVEL_END := 2400.0
 const FLOOR_Y := 600.0
 
 var player: Player
-var boss: BossEma
+var boss: BossYeral
+var dialogue: Label
+var dialogue_time := 0.0
 var hud_label: Label
 var boss_label: Label
 var message: Label
@@ -75,6 +77,13 @@ func _build_hud() -> void:
 	message.position = Vector2(300, 300)
 	message.add_theme_font_size_override("font_size", 36)
 	layer.add_child(message)
+	dialogue = Label.new()
+	dialogue.position = Vector2(100, 630)
+	dialogue.size = Vector2(1080, 50)
+	dialogue.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	dialogue.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	dialogue.add_theme_font_size_override("font_size", 22)
+	layer.add_child(dialogue)
 	var help := Label.new()
 	help.text = "Move A/D  Jump Space  Smash J  Summon K  Recall L  Ultimate U  Restart R"
 	help.position = Vector2(16, 690)
@@ -86,7 +95,11 @@ func _update_hud() -> void:
 	hud_label.text = "HP %d/%d   Army meter %d%%" % [player.health, player.max_health,
 			int(player.meter / player.meter_max * 100.0)]
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
+	if dialogue_time > 0.0:
+		dialogue_time -= delta
+		if dialogue_time <= 0.0:
+			dialogue.text = ""
 	if Input.is_action_just_pressed("restart"):
 		get_tree().reload_current_scene()
 	if not boss_started and is_instance_valid(player) and player.position.x > LEVEL_END - 300.0:
@@ -95,27 +108,34 @@ func _process(_delta: float) -> void:
 func _start_boss() -> void:
 	boss_started = true
 	_add_block(Rect2(LEVEL_END - 340, -200, 30, FLOOR_Y + 200))
-	boss = BossEma.new()
-	boss.position = Vector2(LEVEL_END + 250, FLOOR_Y - 40)
+	boss = BossYeral.new()
+	boss.position = Vector2(LEVEL_END + 250, FLOOR_Y - 45)
 	boss.target = player
+	boss.floor_y = FLOOR_Y
 	add_child(boss)
 	boss.health_changed.connect(_on_boss_health)
 	boss.defeated.connect(_on_boss_defeated)
+	boss.speech.connect(_say)
 	boss.activate()
-	message.text = "EMA, THE BUG QUEEN"
+	message.text = "YERAL, THE SPOILERMAN"
 	await get_tree().create_timer(2.0).timeout
 	if not finished and is_instance_valid(player) and not player.dead:
 		message.text = ""
 
 func _on_boss_health(current: int, maximum: int) -> void:
-	boss_label.text = "EMA  %d/%d" % [current, maximum]
+	boss_label.text = "YERAL  %d/%d" % [current, maximum]
+
+func _say(text: String, duration: float) -> void:
+	dialogue.text = text
+	dialogue_time = duration
 
 func _on_boss_defeated() -> void:
 	finished = true
 	boss_label.text = ""
+	dialogue.text = ""
 	for e in get_tree().get_nodes_in_group("enemies"):
 		e.queue_free()
-	message.text = "Ema defeated! Reward: Swarm Command"
+	message.text = "Yeral defeated! Reward: Future Spoiler"
 	player.max_minions += 2
 	await get_tree().create_timer(3.0).timeout
 	message.text = "A mysterious signal reveals the other Guaras..."
