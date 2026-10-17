@@ -9,12 +9,9 @@ var target_group := "enemies"
 var color := Color(0.4, 0.9, 1.0)
 var radius := 8.0
 var life := 3.0
-<<<<<<< ours
 var texture: Texture2D
-=======
 var character_art := false
 var sprite: AnimatedSprite2D
->>>>>>> theirs
 
 func _ready() -> void:
 	collision_layer = 0
@@ -42,16 +39,12 @@ func _physics_process(delta: float) -> void:
 		queue_free()
 
 func _draw() -> void:
-<<<<<<< ours
 	if texture != null:
 		draw_set_transform(Vector2.ZERO, velocity.angle())
 		draw_texture(texture, -texture.get_size() / 2.0)
 		return
-	draw_circle(Vector2.ZERO, radius, color)
-=======
 	if sprite == null:
 		draw_circle(Vector2.ZERO, radius, color)
->>>>>>> theirs
 
 func _on_body_entered(body: Node) -> void:
 	if body.is_in_group(target_group) and body.has_method("take_damage"):
