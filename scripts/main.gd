@@ -14,6 +14,10 @@ var message: Label
 var message_timer: Timer
 var boss_started := false
 var finished := false
+var gates: Array = []
+var hp_bar: ProgressBar
+var meter_bar: ProgressBar
+var boss_bar: ProgressBar
 
 func _ready() -> void:
 	InputSetup.setup()
@@ -54,7 +58,10 @@ func _add_block(rect: Rect2, kind := "wall") -> void:
 			body.add_child(_tiled("res://assets/tile_floor_mesh.png", origin, rect.size))
 			body.add_child(_tiled("res://assets/tile_floor_top.png", origin, Vector2(rect.size.x, 32), 2.0))
 		"platform":
-			body.add_child(_tiled("res://assets/tile_platform.png", origin, rect.size))
+			if ema_level:
+				body.add_child(_tiled("res://assets/tile_platform.png", origin, rect.size))
+			else:
+				_add_platform_sprite(body, rect)
 		_:
 			body.add_child(_tiled("res://assets/tile_wall.png", origin, rect.size))
 	add_child(body)
@@ -87,6 +94,9 @@ func _build_background() -> void:
 		pb.add_child(pl)
 
 func _build_props() -> void:
+	if not ema_level:
+		_build_yeral_props()
+		return
 	_add_prop("res://assets/prop_door.png", Vector2(60, FLOOR_Y), 2.0)
 	_add_prop("res://assets/prop_sign_billboard.png", Vector2(420, 330), 3.0, -2)
 	_add_prop("res://assets/prop_sign_vertical.png", Vector2(980, 380), 3.0, -2)
@@ -97,6 +107,37 @@ func _build_props() -> void:
 		_add_prop("res://assets/prop_bollard.png", Vector2(x, FLOOR_Y), 2.0)
 	for x in [560.0, 1320.0, 2000.0]:
 		_add_prop("res://assets/prop_crate.png", Vector2(x, FLOOR_Y), 2.0)
+
+func _lair(name: String) -> String:
+	return "res://assets/sprites/lair/lair_%s.png" % name
+
+# Yeral's lair dressing (sprites sliced from art/sheets/level_sheet.png).
+func _build_yeral_props() -> void:
+	_add_prop("res://assets/prop_door.png", Vector2(60, FLOOR_Y), 2.0)
+	for x in [300.0, 760.0, 1250.0, 1700.0, 2150.0]:
+		_add_prop(_lair("banner_a"), Vector2(x, 250), 1.0, -2)
+	for x in [520.0, 1020.0, 1500.0, 1950.0]:
+		_add_prop(_lair("lamp_b"), Vector2(x, 160), 1.0, -2)
+	_add_prop(_lair("desk_banner"), Vector2(620, FLOOR_Y), 1.0)
+	_add_prop(_lair("plant"), Vector2(250, FLOOR_Y), 1.0)
+	_add_prop(_lair("crate_crown"), Vector2(1320, FLOOR_Y), 1.0)
+	_add_prop(_lair("crate_dark"), Vector2(1360, FLOOR_Y), 1.0)
+	_add_prop(_lair("terminal"), Vector2(1800, FLOOR_Y), 1.0)
+	_add_prop(_lair("vat"), Vector2(2100, FLOOR_Y), 1.0)
+	_add_prop(_lair("pillar_glow"), Vector2(LEVEL_END - 80, FLOOR_Y), 1.0, -2)
+	_add_prop(_lair("crown_screen"), Vector2(LEVEL_END + 250, 300), 1.5, -2)
+	_add_prop(_lair("command_desk"), Vector2(LEVEL_END + 120, FLOOR_Y), 1.0, -1)
+	_add_prop(_lair("crown_hologram"), Vector2(LEVEL_END + 400, FLOOR_Y), 1.0, -1)
+
+func _add_platform_sprite(body: Node2D, rect: Rect2) -> void:
+	var s := Sprite2D.new()
+	s.texture = load(_lair("platform_long"))
+	s.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	s.centered = false
+	var k := rect.size.x / s.texture.get_width()
+	s.scale = Vector2(k, k)
+	s.position = Vector2(-rect.size.x / 2.0, -rect.size.y / 2.0)
+	body.add_child(s)
 
 func _build_world() -> void:
 	_build_background()
@@ -133,13 +174,67 @@ func _build_world() -> void:
 	cam.limit_bottom = int(FLOOR_Y + 100)
 	player.add_child(cam)
 	var bug_positions := [500.0, 800.0, 1000.0, 1250.0, 1550.0, 1800.0]
+	var gate_xs := [900.0, 1400.0, 2000.0]
 	if ema_level:
 		bug_positions = [420.0, 660.0, 900.0, 1120.0, 1350.0, 1590.0, 1810.0, 1980.0]
+		gate_xs = [800.0, 1250.0, 1700.0, 2100.0]
+	for gx in gate_xs:
+		gates.append({"x": gx, "wall": _add_gate(gx), "bugs": []})
 	for x in bug_positions:
 		var b: Bug = Bug.new() if ema_level else Robot.new()
 		b.position = Vector2(x, FLOOR_Y - 20)
 		b.target = player
 		add_child(b)
+		for g in gates:
+			if x < g["x"]:
+				g["bugs"].append(b)
+				break
+	_update_hud()
+
+# Energy barrier that blocks the player until its zone's mobs are dead.
+func _add_gate(x: float) -> StaticBody2D:
+	var body := StaticBody2D.new()
+	body.position = Vector2(x, FLOOR_Y - 300)
+	var shape := RectangleShape2D.new()
+	shape.size = Vector2(16, 600)
+	var cs := CollisionShape2D.new()
+	cs.shape = shape
+	body.add_child(cs)
+	var vis := ColorRect.new()
+	vis.size = Vector2(16, 600)
+	vis.position = Vector2(-8, -300)
+	vis.color = Color(0.4, 1.0, 0.1, 0.35)
+	body.add_child(vis)
+	add_child(body)
+	return body
+
+func _update_gates() -> void:
+	for g in gates.duplicate():
+		var alive := false
+		for b in g["bugs"]:
+			if is_instance_valid(b) and not b.dead:
+				alive = true
+				break
+		if not alive:
+			g["wall"].queue_free()
+			gates.erase(g)
+			_say("Path cleared!", 1.5)
+
+func _make_bar(pos: Vector2, size: Vector2, fill: Color) -> ProgressBar:
+	var bar := ProgressBar.new()
+	bar.position = pos
+	bar.custom_minimum_size = size
+	bar.size = size
+	bar.show_percentage = false
+	var bg := StyleBoxFlat.new()
+	bg.bg_color = Color(0.05, 0.08, 0.06, 0.85)
+	bg.set_border_width_all(2)
+	bg.border_color = Color(0.85, 0.6, 0.15)
+	var fg := StyleBoxFlat.new()
+	fg.bg_color = fill
+	bar.add_theme_stylebox_override("background", bg)
+	bar.add_theme_stylebox_override("fill", fg)
+	return bar
 
 func _build_hud() -> void:
 	var layer := CanvasLayer.new()
@@ -147,9 +242,18 @@ func _build_hud() -> void:
 	hud_label = Label.new()
 	hud_label.position = Vector2(16, 12)
 	layer.add_child(hud_label)
+	hp_bar = _make_bar(Vector2(16, 14), Vector2(260, 22), Color(0.4, 0.95, 0.15))
+	layer.add_child(hp_bar)
+	meter_bar = _make_bar(Vector2(16, 40), Vector2(260, 12), Color(0.85, 0.6, 0.15))
+	layer.add_child(meter_bar)
 	boss_label = Label.new()
-	boss_label.position = Vector2(440, 12)
+	boss_label.position = Vector2(440, 8)
+	boss_label.size = Vector2(400, 24)
+	boss_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	layer.add_child(boss_label)
+	boss_bar = _make_bar(Vector2(440, 34), Vector2(400, 20), Color(0.8, 0.15, 0.2))
+	boss_bar.visible = false
+	layer.add_child(boss_bar)
 	message = Label.new()
 	message.position = Vector2(300, 300)
 	message.add_theme_font_size_override("font_size", 36)
@@ -169,8 +273,13 @@ func _build_hud() -> void:
 func _update_hud() -> void:
 	if not is_instance_valid(player) or not is_instance_valid(hud_label):
 		return
-	hud_label.text = "HP %d/%d   Army meter %d%%" % [player.health, player.max_health,
-			int(player.meter / player.meter_max * 100.0)]
+	hp_bar.max_value = player.max_health
+	hp_bar.value = player.health
+	meter_bar.max_value = player.meter_max
+	meter_bar.value = player.meter
+	hud_label.text = "HP %d/%d" % [player.health, player.max_health]
+	hud_label.position = Vector2(24, 12)
+	hud_label.add_theme_font_size_override("font_size", 14)
 
 func _process(delta: float) -> void:
 	if dialogue_time > 0.0:
@@ -182,6 +291,7 @@ func _process(delta: float) -> void:
 		if error != OK:
 			push_error("Could not restart level: %s" % error_string(error))
 		return
+	_update_gates()
 	if not finished and not boss_started and is_instance_valid(player) and not player.dead and player.position.x > LEVEL_END - 300.0:
 		_start_boss()
 
@@ -199,7 +309,7 @@ func _start_boss() -> void:
 		message.text = "EMA, THE BUG QUEEN"
 	else:
 		var yeral := BossYeral.new()
-		yeral.position = Vector2(LEVEL_END + 250, FLOOR_Y - 45)
+		yeral.position = Vector2(LEVEL_END + 250, FLOOR_Y - 52)
 		yeral.target = player
 		yeral.floor_y = FLOOR_Y
 		add_child(yeral)
@@ -211,7 +321,10 @@ func _start_boss() -> void:
 	message_timer.start(2.0)
 
 func _on_boss_health(current: int, maximum: int) -> void:
-	boss_label.text = "%s  %d/%d" % ["EMA" if ema_level else "YERAL", current, maximum]
+	boss_label.text = "EMA" if ema_level else "YERAL"
+	boss_bar.visible = true
+	boss_bar.max_value = maximum
+	boss_bar.value = current
 
 func _say(text: String, duration: float) -> void:
 	dialogue.text = text
@@ -223,7 +336,7 @@ func _on_boss_defeated() -> void:
 	finished = true
 	process_mode = Node.PROCESS_MODE_DISABLED
 	boss_label.text = ""
-	dialogue.text = ""
+	boss_bar.visible = false
 	for e in get_tree().get_nodes_in_group("enemies"):
 		e.queue_free()
 	if ema_level:

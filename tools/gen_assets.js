@@ -1,4 +1,4 @@
-// Generates the cyberpunk pixel-art assets into assets/. Run: node tools/gen_assets.js
+// Generates the pixel-art assets into assets/. Run: node tools/gen_assets.js
 const fs = require("fs");
 const path = require("path");
 const zlib = require("zlib");
@@ -83,11 +83,11 @@ class Img {
 }
 
 const P = {
-	night: hex("#120a22"), dark: hex("#1e1236"), purple: hex("#3a2466"), violet: hex("#6a2c91"),
-	magenta: hex("#c04fd0"), pink: hex("#ff6fd8"), cyan: hex("#38e8ff"), blue: hex("#2a6cff"),
-	yellow: hex("#ffc03a"), green: hex("#4dff9a"), steel: hex("#232a52"), steelHi: hex("#3a4a8a"),
+	night: hex("#080d0a"), dark: hex("#101b12"), forest: hex("#1b3020"), forestHi: hex("#29442a"),
+	lime: hex("#70ed18"), limeHi: hex("#9cff22"), leaf: hex("#36c934"), emerald: hex("#277a32"),
+	gold: hex("#d99a28"), acid: hex("#68f51c"), steel: hex("#17251a"), steelHi: hex("#304c32"),
 };
-const LIGHTS = [P.cyan, P.yellow, P.pink, P.blue, P.green];
+const LIGHTS = [P.leaf, P.gold, P.limeHi, P.emerald, P.acid];
 
 function windows(img, r, x, y, w, h, density, palette) {
 	for (let wy = y + 4; wy < y + h - 3; wy += 6) {
@@ -105,7 +105,7 @@ function skyline(name, seed, opts) {
 	if (opts.sky) {
 		for (let y = 0; y < H; y++) {
 			const t = y / H;
-			const c = t < 0.6 ? mix(hex("#1a1040"), hex("#7a2f9e"), t / 0.6) : mix(hex("#7a2f9e"), hex("#ff6fd8"), (t - 0.6) / 0.4);
+			const c = t < 0.6 ? mix(hex("#07100a"), hex("#142918"), t / 0.6) : mix(hex("#142918"), hex("#234329"), (t - 0.6) / 0.4);
 			img.rect(0, y, W, 1, c);
 		}
 	}
@@ -116,10 +116,10 @@ function skyline(name, seed, opts) {
 		const top = H - h;
 		const body = mix(opts.base, opts.tint, r() * 0.6);
 		img.rect(x, top, w, h, body);
-		img.rect(x, top, 2, h, mix(body, P.magenta, 0.35));
+		img.rect(x, top, 2, h, mix(body, P.lime, 0.35));
 		img.rect(x + w - 2, top, 2, h, mix(body, P.night, 0.4));
 		if (r() < 0.5) img.rect(x + 3, top - 4, w - 6, 4, mix(body, P.night, 0.2));
-		if (r() < 0.4) img.rect(x + Math.floor(w / 2), top - 14, 1, 14, mix(body, P.cyan, 0.4));
+		if (r() < 0.4) img.rect(x + Math.floor(w / 2), top - 14, 1, 14, mix(body, P.leaf, 0.4));
 		windows(img, r, x, top, w, h, opts.windows, opts.lights);
 		if (opts.neon && r() < 0.6) {
 			const nc = LIGHTS[Math.floor(r() * LIGHTS.length)];
@@ -142,26 +142,26 @@ function skyline(name, seed, opts) {
 }
 
 skyline("bg_far.png", 11, {
-	sky: true, minW: 30, maxW: 60, minH: 140, maxH: 300, base: hex("#2a1a58"), tint: hex("#5a2a88"),
-	windows: 0.06, lights: [P.cyan, P.pink, P.yellow], neon: false,
+	sky: true, minW: 30, maxW: 60, minH: 140, maxH: 300, base: hex("#142219"), tint: hex("#253b28"),
+	windows: 0.06, lights: [P.acid, P.gold, P.leaf], neon: false,
 });
 skyline("bg_mid.png", 22, {
-	minW: 40, maxW: 80, minH: 100, maxH: 240, base: hex("#2b1a52"), tint: hex("#4a2a7a"),
-	windows: 0.22, lights: LIGHTS, neon: true, edge: P.violet,
+	minW: 40, maxW: 80, minH: 100, maxH: 240, base: hex("#152319"), tint: hex("#263c29"),
+	windows: 0.22, lights: LIGHTS, neon: true, edge: P.forestHi,
 });
 skyline("bg_near.png", 33, {
 	minW: 50, maxW: 100, minH: 50, maxH: 150, base: P.night, tint: P.dark,
-	windows: 0.1, lights: [P.yellow, P.cyan], neon: true, edge: P.cyan,
+	windows: 0.1, lights: [P.gold, P.acid], neon: true, edge: P.acid,
 });
 
 // Floor: bright walkway top + chain-link underside.
 {
 	const t = new Img(32, 16);
 	t.rect(0, 0, 32, 16, P.steel);
-	t.rect(0, 0, 32, 2, hex("#6fc7ff"));
-	t.rect(0, 2, 32, 1, P.blue);
+	t.rect(0, 0, 32, 2, P.acid);
+	t.rect(0, 2, 32, 1, P.emerald);
 	t.rect(0, 12, 32, 4, hex("#151a38"));
-	for (const x of [3, 15, 27]) { t.rect(x, 6, 2, 2, hex("#6a78c0")); t.rect(x, 8, 2, 1, P.night); }
+	for (const x of [3, 15, 27]) { t.rect(x, 6, 2, 2, P.gold); t.rect(x, 8, 2, 1, P.night); }
 	t.rect(0, 10, 32, 1, hex("#161c40"));
 	t.save("tile_floor_top.png");
 
@@ -175,20 +175,20 @@ skyline("bg_near.png", 33, {
 	const p = new Img(32, 20);
 	p.rect(0, 0, 32, 20, P.steel);
 	p.rect(0, 0, 32, 3, P.steelHi);
-	p.rect(0, 0, 32, 1, hex("#6fc7ff"));
+	p.rect(0, 0, 32, 1, P.acid);
 	p.rect(0, 14, 32, 3, hex("#151a38"));
-	for (const x of [3, 27]) p.rect(x, 6, 2, 2, hex("#6a78c0"));
-	p.rect(0, 17, 32, 1, P.pink, 90);
-	p.rect(0, 18, 32, 2, P.pink);
+	for (const x of [3, 27]) p.rect(x, 6, 2, 2, P.gold);
+	p.rect(0, 17, 32, 1, P.acid, 90);
+	p.rect(0, 18, 32, 2, P.acid);
 	p.save("tile_platform.png");
 
 	const w = new Img(32, 32);
-	w.rect(0, 0, 32, 32, hex("#161036"));
-	w.rect(0, 0, 3, 32, hex("#2a2060"));
-	w.rect(29, 0, 3, 32, hex("#0c0820"));
-	for (let y = 0; y < 32; y += 8) w.rect(0, y, 32, 1, hex("#0c0820"));
-	w.rect(14, 0, 4, 32, P.cyan, 60);
-	w.rect(15, 0, 2, 32, P.cyan, 140);
+	w.rect(0, 0, 32, 32, hex("#101b12"));
+	w.rect(0, 0, 3, 32, hex("#203724"));
+	w.rect(29, 0, 3, 32, hex("#080d0a"));
+	for (let y = 0; y < 32; y += 8) w.rect(0, y, 32, 1, hex("#080d0a"));
+	w.rect(14, 0, 4, 32, P.acid, 60);
+	w.rect(15, 0, 2, 32, P.acid, 140);
 	w.save("tile_wall.png");
 }
 
@@ -197,64 +197,64 @@ skyline("bg_near.png", 33, {
 	const c = new Img(16, 24);
 	c.rect(2, 20, 12, 4, P.night);
 	for (let y = 2; y < 20; y++) for (let x = 3; x < 13; x++) {
-		c.px(x, y, Math.floor((x + y) / 3) % 2 ? P.yellow : P.night);
+		c.px(x, y, Math.floor((x + y) / 3) % 2 ? P.gold : P.night);
 	}
 	c.rect(4, 0, 8, 3, hex("#ffe58a"));
-	c.rect(3, 1, 10, 2, P.yellow);
+	c.rect(3, 1, 10, 2, P.gold);
 	c.save("prop_bollard.png");
 
 	const d = new Img(40, 64);
-	d.rect(0, 0, 40, 64, hex("#6a4a30"));
-	d.rect(0, 0, 40, 3, hex("#8a6a4a"));
-	d.rect(0, 61, 40, 3, hex("#3e2a1a"));
-	d.rect(4, 8, 32, 48, hex("#7a5a3a"));
-	d.rect(8, 22, 24, 16, hex("#10243a"));
-	d.rect(8, 22, 24, 1, P.cyan); d.rect(8, 37, 24, 1, P.cyan);
-	d.rect(8, 22, 1, 16, P.cyan); d.rect(31, 22, 1, 16, P.cyan);
-	d.rect(14, 29, 14, 2, P.cyan);
-	d.rect(14, 27, 2, 6, P.cyan); d.rect(12, 28, 2, 4, P.cyan);
+	d.rect(0, 0, 40, 64, hex("#332517"));
+	d.rect(0, 0, 40, 3, hex("#8f6424"));
+	d.rect(0, 61, 40, 3, hex("#17150e"));
+	d.rect(4, 8, 32, 48, hex("#46351d"));
+	d.rect(8, 22, 24, 16, hex("#101b12"));
+	d.rect(8, 22, 24, 1, P.acid); d.rect(8, 37, 24, 1, P.acid);
+	d.rect(8, 22, 1, 16, P.gold); d.rect(31, 22, 1, 16, P.gold);
+	d.rect(14, 29, 14, 2, P.acid);
+	d.rect(14, 27, 2, 6, P.acid); d.rect(12, 28, 2, 4, P.acid);
 	d.rect(6, 44, 10, 8, hex("#5a3e28")); d.rect(24, 12, 8, 6, hex("#5a3e28"));
 	d.save("prop_door.png");
 
 	const s = new Img(64, 40);
 	const r = rng(77);
-	s.rect(0, 0, 64, 40, P.pink, 40);
+	s.rect(0, 0, 64, 40, P.acid, 40);
 	s.rect(3, 3, 58, 34, P.night);
-	s.rect(3, 3, 58, 1, P.cyan); s.rect(3, 36, 58, 1, P.cyan);
-	s.rect(3, 3, 1, 34, P.cyan); s.rect(60, 3, 1, 34, P.cyan);
-	for (let y = 4; y < 36; y++) s.rect(4, y, 56, 1, mix(hex("#2a1060"), hex("#b040e0"), (y - 4) / 32));
+	s.rect(3, 3, 58, 1, P.acid); s.rect(3, 36, 58, 1, P.acid);
+	s.rect(3, 3, 1, 34, P.acid); s.rect(60, 3, 1, 34, P.acid);
+	for (let y = 4; y < 36; y++) s.rect(4, y, 56, 1, mix(hex("#102015"), hex("#294b25"), (y - 4) / 32));
 	for (let i = 0; i < 6; i++) {
 		const gx = 8 + i * 9;
-		for (let k = 0; k < 9; k++) if (r() < 0.6) s.px(gx + (k % 3) * 2, 10 + Math.floor(k / 3) * 3 + 8, P.cyan);
-		s.rect(gx, 12, 6, 1, P.cyan);
-		s.rect(gx, 26, 6, 1, P.yellow);
+		for (let k = 0; k < 9; k++) if (r() < 0.6) s.px(gx + (k % 3) * 2, 10 + Math.floor(k / 3) * 3 + 8, P.leaf);
+		s.rect(gx, 12, 6, 1, P.acid);
+		s.rect(gx, 26, 6, 1, P.gold);
 	}
 	s.save("prop_sign_billboard.png");
 
 	const v = new Img(20, 72);
-	v.rect(0, 0, 20, 72, P.cyan, 35);
+	v.rect(0, 0, 20, 72, P.acid, 35);
 	v.rect(3, 2, 14, 68, P.night);
-	v.rect(3, 2, 1, 68, P.blue); v.rect(16, 2, 1, 68, P.blue);
+	v.rect(3, 2, 1, 68, P.acid); v.rect(16, 2, 1, 68, P.gold);
 	for (let i = 0; i < 6; i++) {
-		v.rect(7, 8 + i * 10, 6, 2, P.cyan);
-		v.rect(7, 12 + i * 10, 3 + (i % 3) * 2, 2, i % 2 ? P.pink : P.cyan);
+		v.rect(7, 8 + i * 10, 6, 2, P.acid);
+		v.rect(7, 12 + i * 10, 3 + (i % 3) * 2, 2, i % 2 ? P.gold : P.acid);
 	}
 	v.save("prop_sign_vertical.png");
 
 	const l = new Img(48, 32);
-	l.rect(2, 8, 44, 22, P.cyan, 30);
-	l.rect(4, 0, 40, 6, hex("#2a2450"));
-	l.rect(4, 6, 40, 1, P.pink);
-	for (let y = 8; y < 26; y++) l.rect(8, y, 32, 1, mix(P.cyan, P.pink, (y - 8) / 18));
+	l.rect(2, 8, 44, 22, P.acid, 30);
+	l.rect(4, 0, 40, 6, hex("#172019"));
+	l.rect(4, 6, 40, 1, P.gold);
+	for (let y = 8; y < 26; y++) l.rect(8, y, 32, 1, mix(P.acid, P.gold, (y - 8) / 18));
 	l.rect(8, 8, 32, 1, hex("#e6ffff"));
-	l.rect(6, 8, 2, 18, P.pink); l.rect(40, 8, 2, 18, P.yellow);
+	l.rect(6, 8, 2, 18, P.acid); l.rect(40, 8, 2, 18, P.gold);
 	l.save("prop_neon_lamp.png");
 
 	const k = new Img(24, 24);
-	k.rect(0, 0, 24, 24, hex("#3a2c60"));
-	k.rect(2, 2, 20, 20, hex("#2a1f4a"));
-	k.rect(0, 0, 24, 2, hex("#6a78c0"));
-	for (let i = 0; i < 24; i++) { k.px(i, i, hex("#4a3a80")); k.px(23 - i, i, hex("#4a3a80")); }
-	k.rect(10, 10, 4, 4, P.pink);
+	k.rect(0, 0, 24, 24, hex("#352719"));
+	k.rect(2, 2, 20, 20, hex("#1b2c1e"));
+	k.rect(0, 0, 24, 2, P.gold);
+	for (let i = 0; i < 24; i++) { k.px(i, i, hex("#39523a")); k.px(23 - i, i, hex("#39523a")); }
+	k.rect(10, 10, 4, 4, P.acid);
 	k.save("prop_crate.png");
 }
