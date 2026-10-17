@@ -37,6 +37,7 @@ var jumps_remaining := MAX_JUMPS
 var dash_time := 0.0
 var dash_cooldown := 0.0
 var dash_direction := 1
+var dash_vector := Vector2.RIGHT
 
 func _ready() -> void:
 	player_sprite = AnimatedSprite2D.new()
@@ -101,15 +102,19 @@ func _physics_process(delta: float) -> void:
 	var dir := Input.get_axis("move_left", "move_right")
 	if dir != 0.0:
 		facing = 1 if dir > 0.0 else -1
-	if Input.is_action_just_pressed("dash") and dash_cooldown <= 0.0:
+	if Input.is_action_just_pressed("dash") and dash_cooldown <= 0.0 and GameSettings.dash_unlocked:
 		dash_time = DASH_DURATION
 		dash_cooldown = DASH_COOLDOWN
 		dash_direction = facing
+		dash_vector = Vector2(dash_direction, 0.0)
+	# Jump can redirect an active forward dash vertically, so the inputs needn't be simultaneous.
+	if dash_time > 0.0 and Input.is_action_just_pressed("jump"):
+		dash_vector = Vector2.UP
 	if dash_time > 0.0:
-		velocity.x = dash_direction * DASH_SPEED
+		velocity = dash_vector * DASH_SPEED
 	else:
 		velocity.x = dir * SPEED
-	if Input.is_action_just_pressed("jump") and jumps_remaining > 0:
+	if Input.is_action_just_pressed("jump") and dash_time <= 0.0 and jumps_remaining > 0:
 		air_animation = &"jump" if jumps_remaining == MAX_JUMPS else &"double_jump"
 		velocity.y = JUMP_VELOCITY
 		jumps_remaining -= 1
@@ -152,7 +157,7 @@ func _update_animation() -> void:
 		animation = &"fall" if velocity.y > 40.0 else air_animation
 	else:
 		animation = &"run" if absf(velocity.x) > 1.0 else &"idle"
-	player_sprite.flip_h = (dash_direction if dash_time > 0.0 else facing) < 0
+	player_sprite.flip_h = (dash_direction if dash_time > 0.0 and dash_vector.x != 0.0 else facing) < 0
 	player_sprite.visible = dead or animation == &"hurt" or invuln <= 0.0 or int(invuln * 20) % 2 != 0
 	if player_sprite.animation != animation:
 		player_sprite.play(animation)

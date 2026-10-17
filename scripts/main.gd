@@ -637,6 +637,9 @@ func _on_boss_defeated() -> void:
 	GameSettings.add_score(GameSettings.BOSS_POINTS)
 	var new_high := GameSettings.commit_score()
 	GameSettings.complete_level()
+	if not bichema_level:
+		GameSettings.dash_unlocked = true
+		GameSettings.save()
 	GameAudio.play(get_tree(), "boss")
 	var score_text := "\nBoss +%d  |  Score: %d%s" % [GameSettings.BOSS_POINTS, GameSettings.score,
 			"  NEW HIGH SCORE!" if new_high else ""]

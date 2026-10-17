@@ -16,9 +16,11 @@ func _tap(action: StringName) -> void:
 	await _frames(1)
 
 func _run() -> void:
+	GameSettings.dash_unlocked = true
 	var stage := preload("res://scenes/main.tscn").instantiate()
 	root.add_child(stage)
 	var player := stage.get("player") as Player
+	GameSettings.dash_unlocked = false
 	for enemy in get_nodes_in_group("enemies"):
 		enemy.queue_free()
 	await _frames(60)
@@ -48,6 +50,9 @@ func _run() -> void:
 	assert(player.velocity.x > 0.0 and not player.player_sprite.flip_h)
 	Input.action_release(&"move_right")
 	await _frames(2)
+	await _tap(&"dash")
+	assert(player.dash_time == 0.0, "Dash must remain locked until Yeral is defeated")
+	GameSettings.dash_unlocked = true
 
 	await _tap(&"jump")
 	assert(player.velocity.y < 0.0 and player.player_sprite.animation == &"jump")
@@ -89,6 +94,16 @@ func _run() -> void:
 			finished_dash = finished_dash or player.player_sprite.frame == player.CHARACTER_FRAMES.get_frame_count(&"dash") - 1
 	assert(finished_dash, "Dash must display its final frame before movement ends")
 	assert(player.player_sprite.animation == &"idle")
+	await _frames(45)
+	Input.action_press(&"dash")
+	await _frames(1)
+	Input.action_release(&"dash")
+	Input.action_press(&"jump")
+	await _frames(1)
+	assert(player.dash_vector == Vector2.UP and player.velocity.y < -Player.DASH_SPEED,
+			"Pressing jump during a forward dash must redirect it straight up")
+	Input.action_release(&"jump")
+	await _frames(20)
 	await _tap(&"summon")
 	assert(player.minions.size() == 1 and player.player_sprite.animation == &"summon")
 	var shadow := player.minions[0] as Minion

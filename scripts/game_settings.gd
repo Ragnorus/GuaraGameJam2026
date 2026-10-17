@@ -29,6 +29,7 @@ static var score := 0
 static var level_start_score := 0
 static var high_scores: Array[int] = [0, 0, 0, 0]
 static var loaded := false
+static var dash_unlocked := false
 
 static func current() -> Dictionary:
 	return DIFFICULTIES[clampi(difficulty, 0, DIFFICULTIES.size() - 1)]
@@ -76,6 +77,7 @@ static func save() -> void:
 		return
 	var cfg := ConfigFile.new()
 	cfg.set_value("game", "difficulty", difficulty)
+	cfg.set_value("game", "dash_unlocked", dash_unlocked)
 	cfg.set_value("display", "fullscreen", fullscreen)
 	cfg.set_value("display", "resolution", resolution_index)
 	cfg.set_value("audio", "music_on", music_on)
@@ -93,6 +95,7 @@ static func load_settings() -> void:
 	var cfg := ConfigFile.new()
 	if cfg.load(PATH) == OK:
 		difficulty = clampi(int(cfg.get_value("game", "difficulty", 1)), 0, DIFFICULTIES.size() - 1)
+		dash_unlocked = bool(cfg.get_value("game", "dash_unlocked", false))
 		fullscreen = bool(cfg.get_value("display", "fullscreen", false))
 		resolution_index = clampi(int(cfg.get_value("display", "resolution", 0)), 0, RESOLUTIONS.size() - 1)
 		music_on = bool(cfg.get_value("audio", "music_on", true))
