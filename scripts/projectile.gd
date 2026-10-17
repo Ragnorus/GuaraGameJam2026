@@ -7,6 +7,7 @@ var target_group := "enemies"
 var color := Color(0.4, 0.9, 1.0)
 var radius := 8.0
 var life := 3.0
+var texture: Texture2D
 
 func _ready() -> void:
 	collision_layer = 0
@@ -25,6 +26,10 @@ func _physics_process(delta: float) -> void:
 		queue_free()
 
 func _draw() -> void:
+	if texture != null:
+		draw_set_transform(Vector2.ZERO, velocity.angle())
+		draw_texture(texture, -texture.get_size() / 2.0)
+		return
 	draw_circle(Vector2.ZERO, radius, color)
 
 func _on_body_entered(body: Node) -> void:
