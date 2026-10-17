@@ -104,6 +104,9 @@ Run `Godot --headless --path . --fixed-fps 60 --script res://tests/bichema_backg
 
 ## Level layout and mobs
 
+- Jumpable platforms use a consistent pale-gold landing edge with dark backing and short end brackets. Markers match the exact collision width/top on fixed and random platforms, the plaza bridge, and painted pub/factory ledges; decorative props are not marked. Original textures, jump heights and one-way collision behavior are unchanged. Check with `godot --headless --path . --fixed-fps 60 --script res://tests/platform_visibility.gd`.
+- Readability approach: [The Level Design Book](https://book.leveldesignbook.com/process/blockout) emphasizes metrics, wayfinding and playtesting; [Game Accessibility Guidelines](https://gameaccessibilityguidelines.com/provide-high-contrast-between-text-ui-and-background/) recommends outlines/backing for separation, while its [color guidance](https://gameaccessibilityguidelines.com/ensure-no-essential-information-is-conveyed-by-a-fixed-colour-alone/) recommends redundant shape/pattern cues. Applied here as static, collision-aligned top edges and brackets rather than color-only recoloring or flashing highlights. The UI contrast guidance informs separation, not a claim that a UI contrast threshold validates all scenery.
+
 - Zones are separated by **invisible** barriers; walking into one before its mobs are dead shows "Defeat the mobs nearby to keep moving!". They block only the player (shots pass through).
 - Floating platforms are one-way (jump up through them) on their own physics layer (`PLATFORM_LAYER`), so only the player stands on them and projectiles pass through. Yeral keeps a fixed set plus extra random platforms each run (`_random_platforms` in `main.gd`). Stage two instead uses fixed geometry aligned to each painting, without random overlays obscuring its details.
 - Yeral's lair (boss arena) is 500 px wider than before (`arena_right`), and Yeral spawns further in.

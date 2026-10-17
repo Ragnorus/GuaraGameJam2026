@@ -97,10 +97,29 @@ func _add_block(rect: Rect2, kind := "wall", painted := false) -> void:
 			cs.one_way_collision = true
 			if not painted:
 				_add_platform_sprite(body, rect)
+			_add_platform_edge(body, rect.size)
 		_:
 			if not painted:
 				body.add_child(_tiled("res://assets/tile_wall.png", origin, rect.size))
 	add_child(body)
+
+func _add_platform_edge(body: StaticBody2D, size: Vector2) -> void:
+	var edge := Node2D.new()
+	edge.name = "LandingEdge"
+	edge.add_to_group("landing_edges")
+	edge.z_index = 1
+	var left := Vector2(-size.x / 2.0, -size.y / 2.0)
+	var right := left + Vector2(size.x, 0.0)
+	var points := PackedVector2Array([
+		left + Vector2(0.0, 7.0), left, right, right + Vector2(0.0, 7.0)])
+	for width in [7.0, 3.0]:
+		var line := Line2D.new()
+		line.points = points
+		line.width = width
+		line.default_color = Color8(8, 13, 18) if width == 7.0 else Color8(255, 224, 145)
+		line.joint_mode = Line2D.LINE_JOINT_SHARP
+		edge.add_child(line)
+	body.add_child(edge)
 
 func _add_prop(path: String, pos: Vector2, px_scale := 2.0, z := -1) -> void:
 	var s := Sprite2D.new()
