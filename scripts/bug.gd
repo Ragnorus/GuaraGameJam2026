@@ -17,9 +17,11 @@ var sprite: AnimatedSprite2D
 var cs: CollisionShape2D
 var reach_x := 30.0
 var reach_y := 46.0
+var points := 1
 
 func _ready() -> void:
 	add_to_group("enemies")
+	health = GameSettings.scale_health(health)
 	origin_x = position.x
 	var shape := RectangleShape2D.new()
 	shape.size = Vector2(44, 72) if robot else Vector2(36, 48)
@@ -48,7 +50,7 @@ func _physics_process(delta: float) -> void:
 		dir = 1 if target.global_position.x > global_position.x else -1
 	elif absf(position.x - origin_x) > patrol or is_on_wall():
 		dir = -dir
-	velocity.x = dir * speed
+	velocity.x = dir * speed * GameSettings.aggro()
 	if robot:
 		_robot_update(delta)
 	move_and_slide()
@@ -79,7 +81,7 @@ func _robot_update(delta: float) -> void:
 		sprite.play(want)
 
 func _shoot() -> void:
-	shoot_cd = 3.0
+	shoot_cd = 3.0 / GameSettings.aggro()
 	sprite.play("shoot")
 	anim_lock = 0.3
 	var p := Projectile.new()
@@ -101,6 +103,7 @@ func take_damage(amount: int) -> void:
 		sprite.play("hurt")
 
 func _die() -> void:
+	_award_points()
 	if not robot:
 		queue_free()
 		return
@@ -118,6 +121,21 @@ func _die() -> void:
 	boom.play("boom")
 	await boom.animation_finished
 	queue_free()
+
+func _award_points() -> void:
+	GameSettings.add_score(points)
+	GameAudio.play(get_tree(), "kill")
+	var popup := Label.new()
+	popup.text = "+%d" % points
+	popup.add_theme_font_size_override("font_size", 22)
+	popup.modulate = Color(1.0, 0.9, 0.3)
+	popup.z_index = 50
+	popup.position = global_position + Vector2(-12.0, -70.0)
+	get_parent().add_child(popup)
+	var tween := popup.create_tween()
+	tween.tween_property(popup, "position:y", popup.position.y - 45.0, 0.8)
+	tween.parallel().tween_property(popup, "modulate:a", 0.0, 0.8)
+	tween.tween_callback(popup.queue_free)
 
 func _draw() -> void:
 	if robot:

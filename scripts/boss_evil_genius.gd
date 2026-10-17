@@ -29,6 +29,8 @@ var flash := 0.0
 var sprite: AnimatedSprite2D
 
 func _ready() -> void:
+	max_health = GameSettings.scale_health(max_health)
+	health = max_health
 	add_to_group("enemies")
 	var shape := RectangleShape2D.new()
 	shape.size = BODY
@@ -69,7 +71,7 @@ func _physics_process(delta: float) -> void:
 		move_and_slide()
 		_update_art()
 		return
-	var mult := 1.0 + 0.5 * (phase - 1)
+	var mult := (1.0 + 0.5 * (phase - 1)) * GameSettings.aggro()
 	if charge_windup > 0.0:
 		charge_windup -= delta
 		velocity.x = 0.0

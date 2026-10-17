@@ -97,6 +97,8 @@ var dying := false
 var mustard_next := false
 
 func _ready() -> void:
+	max_health = GameSettings.scale_health(max_health)
+	health = max_health
 	add_to_group("enemies")
 	var shape := RectangleShape2D.new()
 	shape.size = Vector2(126, 188)
@@ -150,7 +152,7 @@ func _physics_process(delta: float) -> void:
 	if not active or transforming or not is_instance_valid(target):
 		move_and_slide()
 		return
-	var mult := 1.0 + 0.4 * (phase - 1)
+	var mult := (1.0 + 0.4 * (phase - 1)) * GameSettings.aggro()
 	if charge_time > 0.0:
 		charge_time -= delta
 		velocity.x = charge_dir * (520.0 if glizzy else 480.0) * mult
@@ -302,7 +304,7 @@ func _transform() -> void:
 	flash = 0.0
 	remove_from_group("enemies")
 	_clear_attacks()
-	max_health = 48
+	max_health = GameSettings.scale_health(48)
 	health = max_health
 	phase = 1
 	hints = YeralHints.HINTS["glizzy"].duplicate()

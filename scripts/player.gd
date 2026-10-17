@@ -198,6 +198,8 @@ func add_meter(amount: float) -> void:
 func take_damage(amount: int) -> void:
 	if invuln > 0.0 or dead:
 		return
+	amount = GameSettings.incoming_damage(amount)
+	GameAudio.play(get_tree(), "hurt")
 	health -= amount
 	invuln = 1.0
 	velocity.y = -250.0

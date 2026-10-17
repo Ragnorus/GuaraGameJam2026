@@ -41,6 +41,7 @@ func take_damage(amount: int) -> void:
 	if health <= 0:
 		dying = true
 		dead = true
+		_award_points()
 		remove_from_group("enemies")
 		set_physics_process(false)
 		velocity = Vector2.ZERO

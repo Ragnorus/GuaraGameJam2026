@@ -53,7 +53,7 @@ func _physics_process(delta: float) -> void:
 func _fire() -> void:
 	if dying or not is_inside_tree() or sprite.animation != &"warn":
 		return
-	shoot_cd = 3.0
+	shoot_cd = 3.0 / GameSettings.aggro()
 	sprite.play(&"shoot")
 	anim_lock = 0.3
 	var p := Projectile.new()
@@ -71,6 +71,7 @@ func take_damage(amount: int) -> void:
 	if health <= 0:
 		dying = true
 		dead = true
+		_award_points()
 		remove_from_group("enemies")
 		set_physics_process(false)
 		velocity = Vector2.ZERO

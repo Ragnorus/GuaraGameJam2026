@@ -19,9 +19,14 @@ var gates: Array = []
 var hp_bar: ProgressBar
 var meter_bar: ProgressBar
 var boss_bar: ProgressBar
+var score_label: Label
 
 func _ready() -> void:
 	InputSetup.setup()
+	GameSettings.begin_level()
+	if GameSettings.loaded:
+		GameAudio.start_music(get_tree())
+	add_child(PauseMenu.new())
 	message_timer = Timer.new()
 	message_timer.one_shot = true
 	message_timer.process_mode = Node.PROCESS_MODE_ALWAYS
@@ -230,6 +235,7 @@ func _build_world() -> void:
 		var b: Bug = TruffleAndroid.new() if bichema_level else Robot.new()
 		b.position = Vector2(x, FLOOR_Y - (40 if bichema_level else 38))
 		b.target = player
+		b.points = clampi(1 + int(5.0 * x / LEVEL_END), GameSettings.MOB_POINTS_MIN, GameSettings.MOB_POINTS_MAX)
 		add_child(b)
 		for g in gates:
 			if x < g["x"]:
@@ -312,9 +318,15 @@ func _build_hud() -> void:
 	dialogue.add_theme_font_size_override("font_size", 22)
 	layer.add_child(dialogue)
 	var help := Label.new()
-	help.text = "Move A/D  Jump Space  Smash J  Summon K  Recall L  Ultimate U  Restart R"
+	help.text = "Move A/D  Jump Space  Smash J  Summon K  Recall L  Ultimate U  Restart R  Pause Esc"
 	help.position = Vector2(16, 690)
 	layer.add_child(help)
+	score_label = Label.new()
+	score_label.position = Vector2(880, 12)
+	score_label.size = Vector2(384, 50)
+	score_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	score_label.add_theme_font_size_override("font_size", 18)
+	layer.add_child(score_label)
 
 func _update_hud() -> void:
 	if not is_instance_valid(player) or not is_instance_valid(hud_label):
@@ -328,6 +340,7 @@ func _update_hud() -> void:
 	hud_label.add_theme_font_size_override("font_size", 14)
 
 func _process(delta: float) -> void:
+	score_label.text = "SCORE %d   HI %d\n%s" % [GameSettings.score, GameSettings.high_score(), GameSettings.current()["name"]]
 	if dialogue_time > 0.0:
 		dialogue_time -= delta
 		if dialogue_time <= 0.0:
@@ -393,10 +406,16 @@ func _on_boss_defeated() -> void:
 	boss_bar.visible = false
 	for e in get_tree().get_nodes_in_group("enemies"):
 		e.queue_free()
+	GameSettings.add_score(GameSettings.BOSS_POINTS)
+	var new_high := GameSettings.commit_score()
+	GameSettings.complete_level()
+	GameAudio.play(get_tree(), "boss")
+	var score_text := "\nBoss +%d  |  Score: %d%s" % [GameSettings.BOSS_POINTS, GameSettings.score,
+			"  NEW HIGH SCORE!" if new_high else ""]
 	if bichema_level:
-		message.text = "The Evil Genius is defeated! All levels clear.\nReturning to level selection..."
+		message.text = "The Evil Genius is defeated! All levels clear." + score_text + "\nReturning to level selection..."
 	else:
-		message.text = "Yeral and Glizzy Gobler defeated!\nNext: Bichema's World"
+		message.text = "Yeral and Glizzy Gobler defeated!" + score_text + "\nNext: Bichema's World"
 	message_timer.start(3.0)
 
 func _on_message_timeout() -> void:
@@ -415,4 +434,5 @@ func _on_player_died() -> void:
 	if finished:
 		return
 	message_timer.stop()
-	message.text = "You died. Press R to restart"
+	var new_high := GameSettings.commit_score()
+	message.text = "You died. Score: %d%s\nPress R to restart" % [GameSettings.score, "  NEW HIGH SCORE!" if new_high else ""]

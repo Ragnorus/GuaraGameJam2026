@@ -7,7 +7,7 @@
 1. Install Godot 4.x (standard build, not .NET) from https://godotengine.org/download/windows/ or `winget install GodotEngine.GodotEngine`. Unzip it anywhere; no installer is needed.
 2. Clone the repo: `git clone https://github.com/Ragnorus/GuaraGameJam2026.git`.
 3. Start Godot, click **Import**, select `project.godot` in the repo folder, then **Import & Edit**.
-4. Press **F5** (Play) to open the level picker; choose either level with the mouse or keyboard. Press **F6** to run the currently open scene.
+4. Press **F5** (Play) to open the main menu (Start Game, Level Select, Settings, Game Info). Press **F6** to run the currently open scene.
 5. Reach the far end of a stage and defeat its boss. Depleting Yeral's first health bar transforms him into Glizzy Gobler with a fresh health pool; he cannot take damage during the transformation. Defeat the second form and wait for his collapse, then the three-second clear banner opens Ema's stage. Completing Ema returns to level selection because it is the last available stage. Each stage starts with a fresh player. Press **R** while playing or after death to restart the current level; restarting either Yeral form restores the first encounter.
 
 Debugging:
@@ -24,7 +24,7 @@ Replace `godot` below with the path to your Godot 4.5 executable if it is not on
 
 **Preview a level in the editor**
 1. Open the project (`godot --editor --path .`) and let it finish importing. After changing anything in `assets/`, focus the editor window so it reimports.
-2. Press **F5** to play from the level picker, or open `scenes/main.tscn` (Yeral) or `scenes/bichema_level.tscn` (Bichema's World) and press **F6** to run just that scene.
+2. Press **F5** to play from the main menu, or open `scenes/main.tscn` (Yeral) or `scenes/bichema_level.tscn` (Bichema's World) and press **F6** to run just that scene (menu settings are only loaded when you start from the main menu).
 3. Reach the far end of the level (x ≈ 2100+) to trigger the boss. Enable **Debug > Visible Collision Shapes** to check hitboxes.
 
 **Preview without the editor**
@@ -82,6 +82,14 @@ Run the progression regression with `Godot --headless --path . --fixed-fps 60 --
 Run Yeral's art/combat regression with `Godot --headless --path . --fixed-fps 60 --script res://tests/yeral_actions.gd`. It retains first-form facing, honest/fake tells, committed charge and sustained dash pose, idle recovery, real orb damage, and damage-highlight checks. Second-form checks cover phase boundaries, indistinguishable fake warnings, charge contact damage, real ketchup/mustard collisions, safe sauce warnings, jumping clear of active floor damage, transformation immunity/attack cleanup, and exactly one defeat only after the final collapse.
 
 Run the robot regression with `Godot --headless --path . --fixed-fps 60 --script res://tests/robot_actions.gd`. It covers movement-facing, visible foot contact while walking and idle, blocked idle, contact/projectile/shadow damage, hurt recovery, immediate corpse safety, death-animation completion, and Bichema's World mobs being truffle androids.
+
+## Menus, difficulty and score
+
+- Main menu (`scenes/main_menu.tscn`, the project's main scene): **Start Game** (first level, fresh score), **Level Select** (replay one level), **Settings**, **Game Info** (the rules screen for reviewers, generated from the live difficulty values), and Quit (hidden on web). **Esc** pauses a level (Resume / Restart Level / Main Menu).
+- Settings (`scripts/settings_menu.gd`): difficulty, resolution (desktop only), fullscreen, music on/off + volume, sound on/off + volume. Saved to `user://settings.cfg` (browser storage on web) by `GameSettings`. Music and sound effects are generated in code by `GameAudio` (no audio files) and routed through `Music`/`SFX` buses.
+- Difficulties (`GameSettings.DIFFICULTIES`): Baby Guara (health x0.6, damage x0.5, aggression x0.8), Young Guara (x1/x1/x1, the original balance), Guara (x1.5/x1.5/x1.2), OG Guara (x2.5/x2/x1.5). Health scales mobs and bosses (and Yeral's second form); damage scales everything that hurts the player (min 1); aggression scales mob speed/shot rate and boss attack rate/charge speed. Mobs/bosses read it when they spawn, so a change applies from the next level load.
+- Score: a mob gives 1-5 points (more the deeper it is in the level; boss-summoned minions give 1), a boss gives 10. Score carries Yeral -> Bichema's World in one run; dying or restarting reverts to the score the level began with. The high score is kept per difficulty and recorded on death or boss defeat. The HUD shows score, high score and difficulty.
+- Regression: `Godot --headless --path . --fixed-fps 60 --script res://tests/difficulty_score.gd`.
 
 ## Deploy to Railway
 
