@@ -1,3 +1,15 @@
+STORY INTRO
+Title: Heroic Demise [Updated Version]
+Artist: Matthew Pablo
+Artist URL: http://www.matthewpablo.com/
+Source: https://opengameart.org/content/heroic-demise-updated-version
+Download: https://opengameart.org/sites/default/files/Heroic%20Demise%20%28New%29_0.mp3
+License: Creative Commons Attribution 3.0 Unported (CC BY 3.0)
+License URL: https://creativecommons.org/licenses/by/3.0/
+Original MP3 unchanged; renamed story_heroic_demise.mp3. Looped at runtime.
+Source page and license declaration checked on 2026-10-18.
+Original heroic orchestral music; not the Star Wars score or a cover.
+
 LEVEL 1
 Title: Menace
 Artist: Tomasz Kucza / Magnesus (magory.net)

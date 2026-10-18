@@ -1,10 +1,11 @@
 class_name GameAudio
 extends RefCounted
 
-# Recorded menu/stage music and procedural story music/effects use the settings buses.
+# Recorded music and procedural effects use the settings buses.
 
 const RATE := 22050
 const MENU_MUSIC := preload("res://assets/audio/lord_of_the_night.mp3")
+const STORY_MUSIC := preload("res://assets/audio/music/story_heroic_demise.mp3")
 const LEVEL1_MUSIC := preload("res://assets/audio/music/level1_menace.ogg")
 const LEVEL2_MUSIC := preload("res://assets/audio/music/level2_pre_race_groove.wav")
 
@@ -54,7 +55,9 @@ static func start_music(tree: SceneTree, menu := false, level := 0) -> void:
 		recording.loop_end = roundi(recording.get_length() * recording.mix_rate)
 		_music.stream = recording
 	else:
-		_music.stream = _music_stream()
+		var recording := STORY_MUSIC.duplicate() as AudioStreamMP3
+		recording.loop = true
+		_music.stream = recording
 	_music.bus = "Music"
 	_music.playback_type = AudioServer.PLAYBACK_TYPE_STREAM
 	_music.volume_db = 0.0 if menu else -8.0

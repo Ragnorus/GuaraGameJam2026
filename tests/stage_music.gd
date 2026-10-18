@@ -42,7 +42,7 @@ func _run() -> void:
 		GameAudio.apply()
 	assert(change_scene_to_file("res://scenes/story_intro.tscn") == OK)
 	await _frames(4)
-	assert(GameAudio._music_level == 0 and GameAudio._music.stream is AudioStreamWAV)
+	assert(GameAudio._music_level == 0 and (GameAudio._music.stream as AudioStreamMP3).data == GameAudio.STORY_MUSIC.data)
 	assert(change_scene_to_file("res://scenes/main_menu.tscn") == OK)
 	await _frames(4)
 	assert(GameAudio._menu_music and (GameAudio._music.stream as AudioStreamMP3).data == GameAudio.MENU_MUSIC.data)

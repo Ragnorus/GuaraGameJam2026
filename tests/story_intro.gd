@@ -32,7 +32,17 @@ func _run() -> void:
 	menu._start_game()
 	await _frames(3)
 	assert(current_scene is StoryIntro, "Start Game must open the story, not the level")
-	assert(not is_instance_valid(menu_music) and GameAudio._music.stream is AudioStreamWAV, "The story restores gameplay music without overlapping the menu song")
+	assert(not is_instance_valid(menu_music), "The story replaces the menu song without overlap")
+	var story_music := GameAudio._music
+	var story_recording := story_music.stream as AudioStreamMP3
+	assert(story_recording != null and story_recording.data == GameAudio.STORY_MUSIC.data)
+	assert(story_recording.loop and not GameAudio.STORY_MUSIC.loop, "Story loops a private orchestral recording")
+	assert(story_music.playing and story_music.bus == &"Music")
+	assert(AudioServer.is_bus_mute(AudioServer.get_bus_index("Music")), "Story respects Music mute")
+	GameAudio.start_music(self)
+	assert(GameAudio._music == story_music, "Repeated story requests preserve playback")
+	if DisplayServer.get_name() != "headless":
+		await _capture_story()
 	assert(GameSettings.score == 0 and GameSettings.level_start_score == 0)
 	assert(get_nodes_in_group("enemies").is_empty(), "Gameplay must not run behind the intro")
 	var intro := current_scene as StoryIntro
@@ -76,6 +86,7 @@ func _run() -> void:
 	await timer.timeout
 	await _frames(3)
 	assert(current_scene.scene_file_path == StoryIntro.NEXT_SCENE, "Completion must open Yeral's stage")
+	assert(not is_instance_valid(story_music) and GameAudio._music_level == 1, "Completion releases story music and starts Level 1 music")
 	assert(GameSettings.score == 0)
 	# A second Start Game must replay the intro, regardless of title_seen.
 	MenuKit.go(current_scene, "res://scenes/main_menu.tscn")
@@ -88,6 +99,7 @@ func _run() -> void:
 	await create_timer(0.8).timeout
 	await _frames(3)
 	assert(current_scene.scene_file_path == StoryIntro.NEXT_SCENE)
+	assert(GameAudio._music_level == 1, "Skipping replaces story music with Level 1 music")
 	MenuKit.go(current_scene, "res://scenes/level_select.tscn")
 	await _frames(3)
 	current_scene._open_level(StoryIntro.NEXT_SCENE)
@@ -103,3 +115,33 @@ func _new_intro() -> StoryIntro:
 	var intro := preload("res://scenes/story_intro.tscn").instantiate() as StoryIntro
 	root.add_child(intro)
 	return intro
+
+func _capture_story() -> void:
+	var capture := AudioEffectCapture.new()
+	var bus := AudioServer.get_bus_index("Master")
+	var index := AudioServer.get_bus_effect_count(bus)
+	AudioServer.add_bus_effect(bus, capture)
+	GameSettings.music_on = true
+	GameSettings.music_volume = 0.35
+	GameAudio.apply()
+	assert(is_equal_approx(db_to_linear(AudioServer.get_bus_volume_db(AudioServer.get_bus_index("Music"))), 0.35))
+	GameAudio._music.seek(15.0)
+	await create_timer(0.6).timeout
+	assert(_peak(capture) > 0.0001, "Story recording produces actual mixer output")
+	GameAudio._music.seek(GameAudio._music.stream.get_length() - 0.15)
+	await create_timer(0.5).timeout
+	assert(GameAudio._music.playing and GameAudio._music.get_playback_position() < 2.0, "Story music loops if needed")
+	GameSettings.music_on = false
+	GameAudio.apply()
+	await create_timer(0.3).timeout
+	capture.clear_buffer()
+	await create_timer(0.3).timeout
+	assert(_peak(capture) == 0.0, "Music mute silences actual story output")
+	AudioServer.remove_bus_effect(bus, index)
+	print("STORY MUSIC OUTPUT OK: audible recording, loop wrap, volume and mute")
+
+func _peak(capture: AudioEffectCapture) -> float:
+	var peak := 0.0
+	for sample in capture.get_buffer(capture.get_frames_available()):
+		peak = maxf(peak, maxf(absf(sample.x), absf(sample.y)))
+	return peak
