@@ -136,6 +136,8 @@ func _run() -> void:
 	assert(truck == bichema_route.truck and bichema_route.room_enemies[2].size() == 1
 			and truck.health == GameSettings.scale_health(19),
 			"The Bros stay in one damageable Tacoma")
+	var normal_music := GameAudio._music
+	assert(not truck.music.playing, "Tacoma music must not play outside the fight")
 	var bichema_player := ema_stage.get("player") as Player
 	bichema_player.invuln = 0.0
 	var intro_health := bichema_player.health
@@ -148,6 +150,8 @@ func _run() -> void:
 	for i in range(180):
 		await _frames(1)
 		assert(bichema_player.health == intro_health, "The Tacoma entrance must preserve player HP")
+		if bichema_player.controls_locked:
+			assert(not truck.music.playing, "Tacoma music must wait until the entrance finishes")
 		if bichema_route.area_index == 2 and truck.visible:
 			assert(truck.position.x - bichema_player.position.x > TacomaTruck.HALF_WIDTH + Bug.PLAYER_HALF.x,
 					"The entrance must stop clear instead of crossing through the player")
@@ -165,6 +169,13 @@ func _run() -> void:
 			and truck.visible and bichema_route.room_enemies[2].size() == 1
 			and bichema_route.room_enemies[2][0] == truck,
 			"The Tacoma must enter the pub and remain as the single enemy")
+	assert(truck.music.playing and (truck.music.stream as AudioStreamMP3).loop
+			and GameAudio._music == null and not is_instance_valid(normal_music),
+			"The fight must loop its recording without overlapping normal music")
+	paused = true
+	await _frames(2)
+	assert(truck.music.stream_paused, "Pausing combat must pause its music")
+	paused = false
 	await _frames(60)
 	assert(bichema_player.health == intro_health and truck.drive_state == TacomaTruck.DriveState.WINDUP,
 			"The player must get a full warning after regaining control")
@@ -248,7 +259,12 @@ func _run() -> void:
 	await _frames(30)
 	assert(truck.health == truck_health - 1,
 			"A real player projectile must damage the Tacoma")
+	truck.take_damage(truck.health)
+	await _frames(2)
+	assert(not is_instance_valid(truck) and is_instance_valid(GameAudio._music)
+			and GameAudio._music.stream is AudioStreamWAV,
+			"Defeating the Tacoma must stop its song and restore normal music")
 	ema_stage.queue_free()
 	await _frames(1)
-	print("PASS: robot movement/combat/death; Tacoma protected entrance, pause, warning, hopping charge, animated donut recovery, jump dodge and projectile damage")
+	print("PASS: robot movement/combat/death; Tacoma entrance, pause, warning, charge, recovery, dodge, damage and fight-only music")
 	quit()

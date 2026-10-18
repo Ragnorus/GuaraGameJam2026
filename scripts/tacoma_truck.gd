@@ -2,6 +2,7 @@ class_name TacomaTruck
 extends Bug
 
 const TRUCK_FRAMES := preload("res://assets/tacoma_truck_frames.tres")
+const MUSIC := preload("res://assets/audio/ronca.mp3")
 const TRUCK_SCALE := 0.75
 const TRUCK_SOURCE_WIDTH := 400.0
 const HALF_WIDTH := TRUCK_SOURCE_WIDTH * TRUCK_SCALE / 2.0
@@ -20,6 +21,7 @@ var charge_direction := 1
 var hit_this_charge := false
 var max_health := 0
 var truck_sprite: AnimatedSprite2D
+var music: AudioStreamPlayer
 
 func _ready() -> void:
 	robot = false
@@ -40,6 +42,15 @@ func _ready() -> void:
 	truck_sprite.z_index = -1
 	add_child(truck_sprite)
 	truck_sprite.play(&"drive")
+	music = AudioStreamPlayer.new()
+	var recording := MUSIC.duplicate() as AudioStreamMP3
+	recording.loop = true
+	music.stream = recording
+	music.bus = "Music"
+	music.playback_type = AudioServer.PLAYBACK_TYPE_STREAM
+	add_child(music)
+	if target is Player:
+		(target as Player).died.connect(_stop_music)
 	set_physics_process(false)
 	queue_redraw()
 
@@ -53,6 +64,8 @@ func activate() -> void:
 	state_time = FIRST_WINDUP_TIME
 	truck_sprite.play(&"idle")
 	set_physics_process(true)
+	GameAudio.stop_music()
+	music.play()
 
 func _physics_process(delta: float) -> void:
 	if dead or drive_state == DriveState.INTRO or not is_instance_valid(target) \
@@ -126,8 +139,17 @@ func _die() -> void:
 	collision_layer = 0
 	collision_mask = 0
 	cs.set_deferred("disabled", true)
+	_stop_music()
 	_award_points()
 	queue_free()
+
+func _stop_music() -> void:
+	music.stop()
+	GameAudio.start_music(get_tree())
+
+func _exit_tree() -> void:
+	music.stop()
+	music.stream = null
 
 func _draw() -> void:
 	if dead:
