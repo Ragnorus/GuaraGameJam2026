@@ -87,9 +87,6 @@ func _run() -> void:
 					break
 			assert(boss.costume_form and not boss.transforming)
 			boss.attack_cd = 1000.0
-	stage.queue_free()
-	await _frames(4)
-	GameAudio.stop_music()
-	await create_timer(0.1).timeout
+	await preload("res://tests/test_cleanup.gd").finish(self)
 	print("EMA BOSS ROOM OK: three reachable platforms matching Yeral, both-direction platform traversal and clean floor double-jumps over both boss forms")
 	quit()
