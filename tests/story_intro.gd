@@ -15,11 +15,21 @@ func _run() -> void:
 	root.add_child(menu)
 	current_scene = menu
 	await _frames(2)
+	var menu_music := GameAudio._music
+	var recording := menu_music.stream as AudioStreamMP3
+	assert(recording != null and recording.data == GameAudio.MENU_MUSIC.data)
+	assert(GameAudio.MENU_MUSIC.resource_path == "res://assets/audio/seal_kiss_from_a_rose.mp3")
+	assert(recording.loop and not GameAudio.MENU_MUSIC.loop, "Menu loops a private copy of the supplied Seal recording")
+	assert(menu_music.playing and menu_music.bus == "Music")
+	assert(AudioServer.is_bus_mute(AudioServer.get_bus_index("Music")))
+	GameAudio.start_music(self, true)
+	assert(GameAudio._music == menu_music, "Repeated menu visits must preserve one music player")
 	GameSettings.score = 42
 	GameSettings.level_start_score = 20
 	menu._start_game()
 	await _frames(3)
 	assert(current_scene is StoryIntro, "Start Game must open the story, not the level")
+	assert(not is_instance_valid(menu_music) and GameAudio._music.stream is AudioStreamWAV, "The story restores gameplay music without overlapping the menu song")
 	assert(GameSettings.score == 0 and GameSettings.level_start_score == 0)
 	assert(get_nodes_in_group("enemies").is_empty(), "Gameplay must not run behind the intro")
 	var intro := current_scene as StoryIntro

@@ -1,14 +1,15 @@
 class_name GameAudio
 extends RefCounted
 
-# Procedurally generated chiptune music loop and sound effects (no audio files needed),
-# routed through "Music" and "SFX" buses that the settings menu controls.
+# Recorded menu music and procedural gameplay music/effects use the settings buses.
 
 const RATE := 22050
+const MENU_MUSIC := preload("res://assets/audio/seal_kiss_from_a_rose.mp3")
 
 static var _cache := {}
 static var _music: AudioStreamPlayer
 static var _buses_ready := false
+static var _menu_music := false
 
 static func apply() -> void:
 	for bus in ["Music", "SFX"]:
@@ -26,16 +27,23 @@ static func _set_bus(bus: String, on: bool, volume: float) -> void:
 	AudioServer.set_bus_mute(i, not on or volume <= 0.001)
 	AudioServer.set_bus_volume_db(i, linear_to_db(maxf(volume, 0.001)))
 
-static func start_music(tree: SceneTree) -> void:
-	if is_instance_valid(_music):
+static func start_music(tree: SceneTree, menu := false) -> void:
+	if is_instance_valid(_music) and _menu_music == menu:
 		return
+	stop_music()
 	if not _buses_ready:
 		apply()
+	_menu_music = menu
 	_music = AudioStreamPlayer.new()
-	_music.stream = _music_stream()
+	if menu:
+		var recording := MENU_MUSIC.duplicate() as AudioStreamMP3
+		recording.loop = true
+		_music.stream = recording
+	else:
+		_music.stream = _music_stream()
 	_music.bus = "Music"
 	_music.playback_type = AudioServer.PLAYBACK_TYPE_STREAM
-	_music.volume_db = -8.0
+	_music.volume_db = 0.0 if menu else -8.0
 	_music.process_mode = Node.PROCESS_MODE_ALWAYS
 	_music.autoplay = true
 	tree.root.add_child.call_deferred(_music)
@@ -132,4 +140,3 @@ static func _music_stream() -> AudioStreamWAV:
 			var bass := (1.0 if bass_phase < 0.5 else -1.0) * 0.14
 			samples[step * step_len + j] = lead + bass
 	return _wav(samples, true)
-

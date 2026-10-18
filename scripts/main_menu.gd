@@ -12,7 +12,7 @@ static var title_seen := false
 func _ready() -> void:
 	InputSetup.setup()
 	GameSettings.load_settings()
-	GameAudio.start_music(get_tree())
+	GameAudio.start_music(get_tree(), true)
 	MenuKit.backdrop(self)
 	# Title art: the supplied "The Night Unc" screen, unaltered, scaled to cover the window.
 	art = TextureRect.new()
