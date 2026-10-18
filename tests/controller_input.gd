@@ -9,10 +9,14 @@ func _initialize() -> void:
 	_check_button(&"jump", JOY_BUTTON_A)
 	_check_button(&"dash", JOY_BUTTON_LEFT_SHOULDER)
 	_check_button(&"shoot", JOY_BUTTON_X)
+	_check_motion(&"shoot", JOY_AXIS_TRIGGER_RIGHT, 1.0)
 	_check_button(&"summon", JOY_BUTTON_Y)
 	_check_button(&"recall", JOY_BUTTON_RIGHT_SHOULDER)
 	_check_button(&"ultimate", JOY_BUTTON_RIGHT_STICK)
-	_check_button(&"shield", JOY_BUTTON_B)
+	_check_button(&"shield", JOY_BUTTON_LEFT_STICK)
+	var shield_back := InputEventJoypadButton.new()
+	shield_back.button_index = JOY_BUTTON_B
+	assert(not InputMap.action_has_event(&"shield", shield_back), "B must remain available for menu cancel")
 	_check_button(&"ui_accept", JOY_BUTTON_A)
 	_check_button(&"ui_cancel", JOY_BUTTON_B)
 	_check_button(&"ui_cancel", JOY_BUTTON_START)
@@ -32,13 +36,14 @@ func _initialize() -> void:
 func _check_synthetic_input() -> void:
 	await process_frame
 	var shield_event := InputEventJoypadButton.new()
-	shield_event.button_index = JOY_BUTTON_B
+	shield_event.button_index = JOY_BUTTON_LEFT_STICK
 	shield_event.pressed = true
 	Input.parse_input_event(shield_event)
 	Input.flush_buffered_events()
-	assert(Input.is_action_pressed(&"shield"), "B must activate Shield Burst")
-	shield_event.pressed = false
-	Input.parse_input_event(shield_event)
+	assert(Input.is_action_pressed(&"shield"), "L3 must activate Shield Burst")
+	var shield_release := InputEventJoypadButton.new()
+	shield_release.button_index = JOY_BUTTON_LEFT_STICK
+	Input.parse_input_event(shield_release)
 	var jump_event := InputEventJoypadButton.new()
 	jump_event.button_index = JOY_BUTTON_A
 	jump_event.pressed = true
@@ -46,6 +51,18 @@ func _check_synthetic_input() -> void:
 	Input.flush_buffered_events()
 	assert(Input.is_action_pressed(&"jump"), "A must activate gameplay jump")
 	assert(Input.is_action_pressed(&"ui_accept"), "A must activate menu confirm")
+	var shoot_trigger := InputEventJoypadMotion.new()
+	shoot_trigger.axis = JOY_AXIS_TRIGGER_RIGHT
+	shoot_trigger.axis_value = 1.0
+	Input.parse_input_event(shoot_trigger)
+	Input.flush_buffered_events()
+	assert(Input.is_action_pressed(&"shoot"), "Right trigger must fire")
+	assert(Input.is_action_pressed(&"jump"), "Jump must remain active while firing")
+	var neutral_trigger := InputEventJoypadMotion.new()
+	neutral_trigger.axis = JOY_AXIS_TRIGGER_RIGHT
+	neutral_trigger.axis_value = 0.0
+	Input.parse_input_event(neutral_trigger)
+	Input.flush_buffered_events()
 	var jump_release := InputEventJoypadButton.new()
 	jump_release.button_index = JOY_BUTTON_A
 	Input.parse_input_event(jump_release)
@@ -102,6 +119,7 @@ func _check_synthetic_input() -> void:
 	Input.flush_buffered_events()
 	await process_frame
 	assert(current_scene.scene_file_path == "res://scenes/main_menu.tscn", "B must return from submenus")
+	assert(not Input.is_action_pressed(&"shield"), "B must cancel without activating Shield Burst")
 	print("PASS: controller gameplay, title/menu navigation, confirm/cancel, and repeated setup")
 	quit()
 

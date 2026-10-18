@@ -55,8 +55,10 @@ func build(parent_stage: Node2D) -> void:
 	_spawn_bug(1, Vector2(1600, 562))
 	_spawn_bug(1, Vector2(2260, 562))
 	_spawn_flyer(1, 1900.0, 470.0)
-	_spawn_tacoma(2, &"capi", Vector2(3100, 558), true, 3020.0, 3200.0)
-	_spawn_tacoma(2, &"ludo", Vector2(3340, 566), false, 3240.0, 3500.0)
+	var pub_ledge: Rect2 = stage.bichema_rooms[1]["platforms"][4]
+	_spawn_tacoma(2, &"capi", Vector2(3100.0, 550.0), true, 3020.0, 3200.0)
+	_spawn_tacoma(2, &"ludo", Vector2(pub_ledge.get_center().x, pub_ledge.position.y - 42.0),
+			false, pub_ledge.position.x, pub_ledge.end.x)
 	_spawn_bug(4, Vector2(5860, 562))
 	_spawn_bug(4, Vector2(6500, 562))
 	_spawn_flyer(4, 6220.0, 470.0)
@@ -133,8 +135,10 @@ func _set_area(index: int) -> void:
 	stage.cam_left = AREAS[index].position.x
 	stage.cam_right = AREAS[index].end.x
 	stage._update_bichema_background()
-	stage.camera.limit_top = int(stage.bichema_background.position.y)
-	stage.camera.limit_bottom = stage.camera.limit_top + 720
+	# Keep camera movement tied to playable area bounds, not the painted background
+	# image bounds. The background panels do not necessarily match the route widths.
+	stage.camera.limit_left = int(stage.cam_left)
+	stage.camera.limit_right = int(stage.cam_right)
 	stage.camera.reset_smoothing()
 	stage.camera.force_update_scroll()
 

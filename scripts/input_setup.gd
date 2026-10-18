@@ -45,9 +45,10 @@ static func setup() -> void:
 	_add_joy_button("jump", JOY_BUTTON_A)
 	_add_joy_button("dash", JOY_BUTTON_LEFT_SHOULDER)
 	_add_joy_button("shoot", JOY_BUTTON_X)
+	_add_joy_motion("shoot", JOY_AXIS_TRIGGER_RIGHT, 1.0)
 	_add_joy_button("summon", JOY_BUTTON_Y)
 	_add_joy_button("recall", JOY_BUTTON_RIGHT_SHOULDER)
-	_add_joy_button("shield", JOY_BUTTON_B)
+	_add_joy_button("shield", JOY_BUTTON_LEFT_STICK)
 	_add_joy_button("ultimate", JOY_BUTTON_RIGHT_STICK)
 
 	_add_joy_button("ui_accept", JOY_BUTTON_A)

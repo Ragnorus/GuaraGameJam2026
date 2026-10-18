@@ -133,7 +133,7 @@ func _transition(route: BichemaRoute, player: Player, area: int, next_area: int,
 			if enemy is TacomaBro:
 				var screen_x: float = (enemy as TacomaBro).get_global_transform_with_canvas().origin.x
 				assert(screen_x >= view.position.x + 24.0 and screen_x <= view.end.x - 24.0,
-						"Both Tacoma Bros must fit in camera after their entrance")
+						"Both Tacoma Bros must fit in camera")
 
 func _run() -> void:
 	GameSettings.loaded = true
