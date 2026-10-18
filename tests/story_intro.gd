@@ -18,8 +18,8 @@ func _run() -> void:
 	var menu_music := GameAudio._music
 	var recording := menu_music.stream as AudioStreamMP3
 	assert(recording != null and recording.data == GameAudio.MENU_MUSIC.data)
-	assert(GameAudio.MENU_MUSIC.resource_path == "res://assets/audio/seal_kiss_from_a_rose.mp3")
-	assert(recording.loop and not GameAudio.MENU_MUSIC.loop, "Menu loops a private copy of the supplied Seal recording")
+	assert(GameAudio.MENU_MUSIC.resource_path == "res://assets/audio/lord_of_the_night.mp3")
+	assert(recording.loop and not GameAudio.MENU_MUSIC.loop, "Menu loops a private copy of the supplied Lord of the Night recording")
 	assert(menu_music.playing and menu_music.bus == "Music")
 	assert(AudioServer.is_bus_mute(AudioServer.get_bus_index("Music")))
 	GameAudio.start_music(self, true)

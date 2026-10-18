@@ -76,7 +76,7 @@ func _run() -> void:
 	assert(GameAudio._music != null and is_instance_valid(GameAudio._music), "Menu music resumes")
 	var menu_recording := GameAudio._music.stream as AudioStreamMP3
 	assert(menu_recording != null and menu_recording.data == GameAudio.MENU_MUSIC.data)
-	assert(EndCredits.MUSIC.resource_path == "res://assets/audio/lord_of_the_night.mp3")
+	assert(EndCredits.MUSIC.resource_path == "res://assets/audio/seal_kiss_from_a_rose.mp3")
 	assert(menu_recording.data != EndCredits.MUSIC.data, "Menu and credits must use their separate songs")
 	assert(menu_recording.loop and not EndCredits.MUSIC.loop, "Returning to the menu loops its own copy without changing credits")
 	menu_recording = null

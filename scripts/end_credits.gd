@@ -1,7 +1,7 @@
 class_name EndCredits
 extends Control
 
-const MUSIC := preload("res://assets/audio/lord_of_the_night.mp3")
+const MUSIC := preload("res://assets/audio/seal_kiss_from_a_rose.mp3")
 const MENU := "res://scenes/main_menu.tscn"
 const INTRO_DURATION := 6.0
 const ROLL_DURATION := 30.0

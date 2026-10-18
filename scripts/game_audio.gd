@@ -4,7 +4,7 @@ extends RefCounted
 # Recorded menu music and procedural gameplay music/effects use the settings buses.
 
 const RATE := 22050
-const MENU_MUSIC := preload("res://assets/audio/seal_kiss_from_a_rose.mp3")
+const MENU_MUSIC := preload("res://assets/audio/lord_of_the_night.mp3")
 
 static var _cache := {}
 static var _music: AudioStreamPlayer
