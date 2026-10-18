@@ -144,6 +144,26 @@ func _run() -> void:
 	bichema_route.tacoma_arrived = true
 	bichema_route._set_area(2)
 	var bichema_player := ema_stage.get("player") as Player
+	bichema_player.position = Vector2(2750.0, 564.0)
+	await _frames(3)
+	var upper_ledge: Rect2 = ema_stage.get("bichema_rooms")[1]["platforms"][4]
+	var ludo := bichema_route.room_enemies[2][1] as TacomaBro
+	assert(capi.is_on_floor() and absf(capi.position.y - 550.0) < 2.0,
+			"Capi stays on the lower pub floor")
+	assert(ludo.is_on_floor() and absf(ludo.position.y + 42.0 - upper_ledge.position.y) < 2.0,
+			"Ludo stays on the upper pub ledge")
+	ludo.shoot_cd = 100.0
+	bichema_player.position.x = ludo.position.x
+	var ludo_walk_start := ludo.position.x
+	var ludo_walk_direction := ludo.dir
+	var ludo_walk_frame := ludo.sprite.frame
+	for i in range(12):
+		await _frames(1)
+		assert(ludo.dir == ludo_walk_direction,
+				"Ludo must keep walking through the target-alignment deadzone")
+	assert(absf(ludo.position.x - ludo_walk_start) > 12.0
+			and ludo.sprite.animation == &"run" and ludo.sprite.frame != ludo_walk_frame,
+			"Ludo must make visible progress through a complete run-cycle sample")
 	bichema_player.position = capi.position + Vector2(300.0, 0.0)
 	capi.dir = -1
 	capi.shoot_cd = 0.0
@@ -162,5 +182,5 @@ func _run() -> void:
 			"Capi must face and fire the Toyota-logo projectile at a player 300 pixels away")
 	ema_stage.queue_free()
 	await _frames(1)
-	print("PASS: first-stage robots, locomotion/facing, blocked idle, contact/projectile/shadow damage, corpse safety, TruffleAndroids and Tacoma Sergeant pair")
+	print("PASS: first-stage robots, locomotion/facing, Ludo patrol, blocked idle, contact/projectile/shadow damage, corpse safety, TruffleAndroids and Tacoma Sergeant pair")
 	quit()

@@ -1,6 +1,6 @@
 ---
 name: godot-development
-description: "Godot 4.5 development and validation for THE NIGHT UNC. Use when implementing or debugging GDScript, scenes, physics, moving platforms, Area2D collisions, cinematics, lifecycle cleanup, imported assets, audio or headless regression tests."
+description: "Godot 4.5 development and validation for THE NIGHT UNC. Use when implementing or debugging GDScript, scenes, physics, moving platforms, Area2D collisions, cinematics, lifecycle cleanup, imported assets, audio or regression testing."
 ---
 
 # Godot development
@@ -32,6 +32,6 @@ description: "Godot 4.5 development and validation for THE NIGHT UNC. Use when i
 - `tests/player_actions.gd`, `tests/yeral_actions.gd`, `tests/bichema_actions.gd`: actor combat and animation behavior.
 - `tests/level_progression.gd`: transformation, restart and stage advancement.
 - `tests/level1_upgrades.gd`: checkpoints, buffered/variable jumps, loot, turret/hopper, hit feedback and Shield Burst. Shield damage must ignore inactive-room enemies and cinematic bosses; `enemy_shots`/`sergeant_attacks` are the clearable hostile-effect groups.
-- `tests/bichema_background.gd`: stage-two camera coverage, traversal and real painted-ledge landing.
-- `tests/bichema_background.gd`: six-area route bounds/fades, continuous map-aligned ground, painted ledge jumps, Tacoma truck entry/disembark, final factory boss entry and complete-painting viewport edges.
+- `tests/bichema_background_transition.gd`: four contiguous full paintings, dark backstop, stretched edge-strip coverage and spatial crossfades with gradual camera framing at every join.
+- `tests/bichema_background.gd`: stage-two route bounds/fades, traversal and real painted-ledge landing.
 - `tools/smoke_test.gd`: bounded two-form boss lifecycle smoke.

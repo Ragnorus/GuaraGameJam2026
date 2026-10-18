@@ -5,6 +5,9 @@ const LEVEL_LEFT := -100.0
 const FLOOR_Y := 600.0
 const PLATFORM_LAYER := 4
 const VIEW_WIDTH := 1280.0
+const BICHEMA_BACKGROUND_HYSTERESIS := 24.0
+const BICHEMA_BACKGROUND_BLEND_WIDTH := 240.0
+const BICHEMA_BACKGROUND_BLEND_SHADER := preload("res://scripts/bichema_background_transition.gdshader")
 const BICHEMA_GROUND := [628.0, 688.0, 533.0]
 const BICHEMA_PLATFORMS := [
 	[Rect2(260, 500, 150, 16), Rect2(1300, 430, 150, 16), Rect2(1680, 500, 160, 16)],
@@ -26,6 +29,9 @@ var boss_started := false
 var glizzy_form := false
 var costume_form := false
 var bichema_background: Sprite2D
+var bichema_background_sprites: Array[Sprite2D] = []
+var bichema_background_blends: Array[ColorRect] = []
+var bichema_background_bleeds: Array[Sprite2D] = []
 var bichema_rooms: Array[Dictionary] = []
 var bichema_background_index := -1
 var bichema_background_area_index := -1
@@ -182,7 +188,7 @@ func _build_city_background(pb: ParallaxBackground) -> void:
 	pl.add_child(fade_rect)
 	pb.add_child(pl)
 
-# Complete paintings are world-sized rooms; the camera never sees beyond the active image.
+# Keep every unaltered painting in world space so camera edges never expose the canvas clear color.
 func _build_bichema_background() -> void:
 	var start := 0.0
 	var panels := ["plaza", "pub", "factory", "factory"]
@@ -193,7 +199,6 @@ func _build_bichema_background() -> void:
 		var index := bichema_rooms.size()
 		var source_index: int = source_indices[index]
 		var tex: Texture2D = load("res://assets/backgrounds/bichema/%s.png" % panel)
-		# Two pixels of vertical bleed keep fractional floor alignment inside the fixed 720 px view.
 		var k := 722.0 / tex.get_height()
 		var rect := Rect2(start, FLOOR_Y - BICHEMA_GROUND[source_index] * k, floorf(tex.get_width() * k), 722)
 		var platforms: Array[Rect2] = []
@@ -203,40 +208,133 @@ func _build_bichema_background() -> void:
 			"scale": k, "ground": BICHEMA_GROUND[source_index], "platforms": platforms})
 		start = rect.end.x
 	arena_right = start
-	bichema_background = Sprite2D.new()
-	bichema_background.centered = false
-	bichema_background.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
-	bichema_background.z_index = -10
-	add_child(bichema_background)
+	var backstop := Polygon2D.new()
+	backstop.name = "BichemaBackgroundBackstop"
+	var route_right: float = bichema_route.AREAS[5].end.x
+	backstop.polygon = PackedVector2Array([
+		Vector2(0.0, -200.0), Vector2(route_right, -200.0),
+		Vector2(route_right, 900.0), Vector2(0.0, 900.0)])
+	backstop.color = Color(0.02, 0.035, 0.03)
+	backstop.z_index = -11
+	add_child(backstop)
+	var camera_top_min: float = (bichema_rooms[0]["rect"] as Rect2).position.y
+	var camera_bottom_max: float = (bichema_rooms[0]["rect"] as Rect2).end.y
+	for room in bichema_rooms:
+		var rect: Rect2 = room["rect"]
+		var texture: Texture2D = room["texture"]
+		var room_scale: float = room["scale"]
+		camera_top_min = minf(camera_top_min, rect.position.y)
+		camera_bottom_max = maxf(camera_bottom_max, rect.end.y)
+		var sprite := Sprite2D.new()
+		sprite.centered = false
+		sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+		sprite.texture = texture
+		sprite.position = rect.position
+		sprite.scale = Vector2.ONE * room_scale
+		sprite.z_index = -10
+		add_child(sprite)
+		bichema_background_sprites.append(sprite)
+	for room in bichema_rooms:
+		var rect: Rect2 = room["rect"]
+		var texture: Texture2D = room["texture"]
+		var room_scale: float = room["scale"]
+		var edge_rows := mini(32, texture.get_height())
+		var top_height := rect.position.y - camera_top_min
+		if top_height > 0.5:
+			var top_bleed := Sprite2D.new()
+			top_bleed.name = "BichemaBackgroundTopBleed%d" % bichema_background_bleeds.size()
+			top_bleed.centered = false
+			top_bleed.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+			top_bleed.texture = texture
+			top_bleed.region_enabled = true
+			top_bleed.region_rect = Rect2(0.0, 0.0, texture.get_width(), edge_rows)
+			top_bleed.position = Vector2(rect.position.x, camera_top_min)
+			top_bleed.scale = Vector2(room_scale, top_height / edge_rows)
+			top_bleed.z_index = -10
+			add_child(top_bleed)
+			bichema_background_bleeds.append(top_bleed)
+		var bottom_height := camera_bottom_max - rect.end.y
+		if bottom_height > 0.5:
+			var bottom_bleed := Sprite2D.new()
+			bottom_bleed.name = "BichemaBackgroundBottomBleed%d" % bichema_background_bleeds.size()
+			bottom_bleed.centered = false
+			bottom_bleed.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+			bottom_bleed.texture = texture
+			bottom_bleed.region_enabled = true
+			bottom_bleed.region_rect = Rect2(0.0, texture.get_height() - edge_rows, texture.get_width(), edge_rows)
+			bottom_bleed.position = Vector2(rect.position.x, rect.end.y)
+			bottom_bleed.scale = Vector2(room_scale, bottom_height / edge_rows)
+			bottom_bleed.z_index = -10
+			add_child(bottom_bleed)
+			bichema_background_bleeds.append(bottom_bleed)
+	for i in range(1, bichema_rooms.size()):
+		var left_room: Dictionary = bichema_rooms[i - 1]
+		var right_room: Dictionary = bichema_rooms[i]
+		var left_rect: Rect2 = left_room["rect"]
+		var right_rect: Rect2 = right_room["rect"]
+		var left_texture: Texture2D = left_room["texture"]
+		var right_texture: Texture2D = right_room["texture"]
+		var origin := Vector2(right_rect.position.x - BICHEMA_BACKGROUND_BLEND_WIDTH / 2.0, -200.0)
+		var blend := ColorRect.new()
+		blend.name = "BichemaBackgroundBlend%d" % i
+		blend.position = origin
+		blend.size = Vector2(BICHEMA_BACKGROUND_BLEND_WIDTH, 1100.0)
+		blend.color = Color.WHITE
+		blend.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		blend.z_index = -9
+		var material := ShaderMaterial.new()
+		material.shader = BICHEMA_BACKGROUND_BLEND_SHADER
+		material.set_shader_parameter("left_texture", left_texture)
+		material.set_shader_parameter("right_texture", right_texture)
+		material.set_shader_parameter("transition_origin", origin)
+		material.set_shader_parameter("transition_size", blend.size)
+		material.set_shader_parameter("left_origin", left_rect.position)
+		material.set_shader_parameter("right_origin", right_rect.position)
+		material.set_shader_parameter("left_texture_size", Vector2(left_texture.get_size()))
+		material.set_shader_parameter("right_texture_size", Vector2(right_texture.get_size()))
+		material.set_shader_parameter("left_scale", float(left_room["scale"]))
+		material.set_shader_parameter("right_scale", float(right_room["scale"]))
+		blend.material = material
+		add_child(blend)
+		bichema_background_blends.append(blend)
 
 func _update_bichema_background() -> void:
-	if not is_instance_valid(camera) or not is_instance_valid(player):
+	if not is_instance_valid(camera) or not is_instance_valid(player) or bichema_rooms.is_empty():
 		return
-	var index := 0
+	var index := maxi(0, bichema_background_index)
+	if bichema_background_index < 0:
+		for i in range(1, bichema_rooms.size()):
+			if player.position.x >= (bichema_rooms[i]["rect"] as Rect2).position.x:
+				index = i
+	else:
+		while index < bichema_rooms.size() - 1 \
+				and player.position.x >= (bichema_rooms[index + 1]["rect"] as Rect2).position.x \
+				+ BICHEMA_BACKGROUND_HYSTERESIS:
+			index += 1
+		while index > 0 and player.position.x < (bichema_rooms[index]["rect"] as Rect2).position.x \
+				- BICHEMA_BACKGROUND_HYSTERESIS:
+			index -= 1
+	var camera_top: float = (bichema_rooms[0]["rect"] as Rect2).position.y
 	for i in range(1, bichema_rooms.size()):
-		if player.position.x >= (bichema_rooms[i]["rect"] as Rect2).position.x:
-			index = i
+		var rect: Rect2 = bichema_rooms[i]["rect"]
+		var amount := clampf((player.position.x - rect.position.x
+				+ BICHEMA_BACKGROUND_BLEND_WIDTH / 2.0) / BICHEMA_BACKGROUND_BLEND_WIDTH, 0.0, 1.0)
+		amount = amount * amount * (3.0 - 2.0 * amount)
+		camera_top = lerpf(camera_top, rect.position.y, amount)
+	camera.limit_top = roundi(camera_top)
+	camera.limit_bottom = camera.limit_top + 720
 	var area := bichema_route.area_index if bichema_route != null else -1
 	var room_changed := index != bichema_background_index
 	if not room_changed and area == bichema_background_area_index:
 		return
+	_apply_bichema_background(index, area, room_changed)
+
+func _apply_bichema_background(index: int, area: int, announce: bool) -> void:
 	bichema_background_index = index
 	bichema_background_area_index = area
-	var room: Dictionary = bichema_rooms[index]
-	var rect: Rect2 = room["rect"]
-	bichema_background.texture = room["texture"]
-	bichema_background.position = rect.position
-	bichema_background.scale = Vector2.ONE * float(room["scale"])
-	cam_left = maxf(rect.position.x, boss_gate_x) if boss_started else rect.position.x
-	cam_right = rect.end.x
-	camera.limit_left = int(cam_left)
-	camera.limit_right = int(cam_right)
-	camera.limit_top = ceili(bichema_background.position.y)
-	camera.limit_bottom = camera.limit_top + 720
-	camera.reset_smoothing()
-	camera.force_update_scroll()
-	if room_changed and is_instance_valid(message) and not finished and not player.dead:
-		message.text = room["name"]
+	bichema_background = bichema_background_sprites[index]
+	if announce and is_instance_valid(message) and not finished and not player.dead:
+		message.text = bichema_rooms[index]["name"]
 		message_timer.start(1.8)
 
 func _build_background() -> void:
