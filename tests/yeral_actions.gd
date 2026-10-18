@@ -14,7 +14,11 @@ func _run() -> void:
 	root.add_child(stage)
 	var player := stage.get("player") as Player
 	player.health = 1000
-	player.position = Vector2(2200, 576)
+	var route := stage.get("yeral_route") as YeralRoute
+	route._set_area(5)
+	player.position = Vector2(7240, 576)
+	route.start_boss_intro()
+	await _frames(350)
 	await _frames(3)
 	var boss: BossYeral
 	for enemy in get_nodes_in_group("enemies"):
@@ -92,7 +96,7 @@ func _run() -> void:
 func _second_form(boss: BossYeral, player: Player) -> void:
 	var defeats := [0]
 	boss.defeated.connect(func() -> void: defeats[0] += 1)
-	player.position = Vector2(2200, 576)
+	player.position = Vector2(7240, 576)
 	boss._execute("volley")
 	boss._execute("trap")
 	assert(not get_nodes_in_group("yeral_attacks").is_empty())
@@ -115,7 +119,7 @@ func _second_form(boss: BossYeral, player: Player) -> void:
 		await _frames(1)
 	assert(not boss.transforming and boss.is_in_group("enemies") and defeats[0] == 0)
 	boss.attack_cd = 1000.0
-	player.position = Vector2(2200, 576)
+	player.position = Vector2(7240, 576)
 
 	var one_third := floori(boss.max_health / 3.0)
 	var two_thirds := floori(boss.max_health * 2.0 / 3.0)
@@ -133,15 +137,18 @@ func _second_form(boss: BossYeral, player: Player) -> void:
 	await _frames(45)
 	assert(boss.sprite.animation == &"idle")
 
-	boss.position = Vector2(2650, 555)
-	player.position = boss.position + Vector2(-60, 20)
+	boss.position = Vector2(7690, 504)
+	# Start just outside the solid bodies so depenetration is not mistaken for a charge.
+	player.position = boss.position + Vector2(-90, 20)
 	await _frames(2)
 	player.invuln = 0.0
 	health = player.health
 	var charge_start := boss.position.x
 	boss._execute("charge")
 	await _frames(2)
-	assert(boss.charge_dir < 0 and boss.position.x < charge_start)
+	assert(boss.charge_dir < 0 and boss.position.x < charge_start,
+		"Charge start %.2f -> %s, dir %d, velocity %s, wall %s, player %s" % [
+			charge_start, boss.position, boss.charge_dir, boss.velocity, boss.is_on_wall(), player.position])
 	assert(player.health == health - 2, "The second form's charge must really deal contact damage")
 	player.position = boss.position + Vector2(400, 20)
 	boss._execute("charge")
@@ -149,8 +156,8 @@ func _second_form(boss: BossYeral, player: Player) -> void:
 	assert(boss.charge_time > 0.0 and boss.velocity.x > 0.0, "A charge away from the previous collision must not be cancelled by stale wall state")
 	boss.charge_time = 0.0
 	boss.velocity = Vector2.ZERO
-	boss.position = Vector2(2650, 555)
-	player.position = Vector2(2250, 576)
+	boss.position = Vector2(7690, 504)
+	player.position = Vector2(7290, 576)
 
 	var condiments: Array[StringName] = []
 	for cast in range(2):

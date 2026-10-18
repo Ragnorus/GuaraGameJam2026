@@ -12,6 +12,7 @@ var bob := randf() * TAU
 var sprite: AnimatedSprite2D
 
 func _ready() -> void:
+	add_to_group("player_summons")
 	sprite = AnimatedSprite2D.new()
 	sprite.sprite_frames = CHARACTER_FRAMES
 	sprite.scale = Vector2(0.5, 0.5)
@@ -23,7 +24,7 @@ func recall() -> void:
 	recalled = 2.0
 
 func _physics_process(delta: float) -> void:
-	if not is_instance_valid(owner_player):
+	if not is_instance_valid(owner_player) or (owner_player is Player and (owner_player.dead or owner_player.controls_locked)):
 		queue_free()
 		return
 	bob += delta * 6.0

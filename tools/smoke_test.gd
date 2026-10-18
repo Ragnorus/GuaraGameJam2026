@@ -27,7 +27,14 @@ func _run() -> void:
 		_fail("No player in " + path)
 		return
 	player.health = 10000
-	player.global_position.x = float(scene.get("boss_trigger_x")) + 100.0
+	var route := scene.get("yeral_route") as YeralRoute
+	if route != null:
+		route._set_area(5)
+		player.position = Vector2(route.AREAS[5].position.x + 120.0, 564)
+		route.start_boss_intro()
+		await create_timer(route.INTRO_AUDIO.get_length() + 0.5).timeout
+	else:
+		player.global_position.x = float(scene.get("boss_trigger_x")) + 100.0
 	await create_timer(1.0).timeout
 	var boss: Node
 	for enemy in get_nodes_in_group("enemies"):

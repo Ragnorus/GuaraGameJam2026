@@ -12,7 +12,14 @@ func _frames(count: int) -> void:
 func _enter_boss(stage: Node) -> Node:
 	var player := stage.get("player") as Player
 	player.health = 1000
-	player.position = Vector2(float(stage.get("boss_trigger_x")) + 100.0, 576)
+	var route := stage.get("yeral_route") as YeralRoute
+	if route != null:
+		route._set_area(5)
+		player.position = Vector2(route.AREAS[5].position.x + 120.0, 564)
+		route.start_boss_intro()
+		await _frames(350)
+	else:
+		player.position = Vector2(float(stage.get("boss_trigger_x")) + 100.0, 576)
 	await _frames(3)
 	for enemy in get_nodes_in_group("enemies"):
 		if enemy is BossYeral or enemy is BossEvilGenius:

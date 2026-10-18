@@ -33,6 +33,7 @@ var meter_max := 100.0
 var minions: Array = []
 var max_minions := MAX_MINIONS
 var dead := false
+var controls_locked := false
 var jumps_remaining := MAX_JUMPS
 var dash_time := 0.0
 var dash_cooldown := 0.0
@@ -84,6 +85,9 @@ func _update_outline_frame() -> void:
 
 func _physics_process(delta: float) -> void:
 	action_time = maxf(0.0, action_time - delta)
+	if controls_locked:
+		velocity = Vector2.ZERO
+		return
 	if dead:
 		velocity.x = 0.0
 		velocity.y += GRAVITY * delta
@@ -163,11 +167,14 @@ func _update_animation() -> void:
 		player_sprite.play(animation)
 
 func _shoot() -> void:
+	if dead or controls_locked:
+		return
 	shoot_cd = 0.25
 	if action_time <= 0.0 or action_animation == &"shoot" or action_animation == &"land":
 		_play_action(&"shoot")
 	var p := Projectile.new()
 	p.character_art = true
+	p.owner_player = self
 	p.position = global_position + Vector2(facing * 22, -6)
 	p.velocity = Vector2(facing * 650, 0)
 	p.damage = 1
@@ -177,6 +184,8 @@ func _clean_minions() -> void:
 	minions = minions.filter(func(m): return is_instance_valid(m))
 
 func _spawn_minion() -> void:
+	if dead or controls_locked:
+		return
 	var m := Minion.new()
 	m.owner_player = self
 	m.global_position = global_position + Vector2(-facing * 30, -20)
@@ -184,6 +193,8 @@ func _spawn_minion() -> void:
 	minions.append(m)
 
 func _summon() -> void:
+	if dead or controls_locked:
+		return
 	_clean_minions()
 	if summon_cd > 0.0 or minions.size() >= max_minions:
 		return
@@ -192,6 +203,8 @@ func _summon() -> void:
 	_play_action(&"summon")
 
 func _ultimate() -> void:
+	if dead or controls_locked:
+		return
 	meter = 0.0
 	_play_action(&"ultimate")
 	ultimate_beam.position = Vector2(facing * 32, -9)
@@ -213,6 +226,8 @@ func _ultimate() -> void:
 	stats_changed.emit()
 
 func add_meter(amount: float) -> void:
+	if dead or controls_locked:
+		return
 	meter = minf(meter_max, meter + amount)
 	stats_changed.emit()
 
@@ -227,7 +242,7 @@ func heal(amount: int) -> int:
 	return restored
 
 func take_damage(amount: int) -> void:
-	if invuln > 0.0 or dead:
+	if invuln > 0.0 or dead or controls_locked:
 		return
 	amount = GameSettings.incoming_damage(amount)
 	GameAudio.play(get_tree(), "hurt")
@@ -237,9 +252,32 @@ func take_damage(amount: int) -> void:
 	_play_action(&"hurt")
 	stats_changed.emit()
 	if health <= 0:
-		dead = true
-		_play_action(&"death")
-		ultimate_beam.hide()
-		army_effect.hide()
-		died.emit()
+		die()
 	_update_animation()
+
+func clear_attacks() -> void:
+	for minion in get_tree().get_nodes_in_group("player_summons"):
+		if minion.owner_player == self:
+			minion.set_physics_process(false)
+			minion.hide()
+			minion.queue_free()
+	for projectile in get_tree().get_nodes_in_group("player_shots"):
+		if projectile.owner_player == self:
+			projectile.set_physics_process(false)
+			projectile.hide()
+			projectile.queue_free()
+	minions.clear()
+	ultimate_beam.hide()
+	army_effect.hide()
+
+func die() -> void:
+	if dead:
+		return
+	dead = true
+	controls_locked = false
+	health = 0
+	dash_time = 0.0
+	clear_attacks()
+	_play_action(&"death")
+	stats_changed.emit()
+	died.emit()

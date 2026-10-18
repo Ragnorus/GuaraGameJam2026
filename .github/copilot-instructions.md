@@ -3,6 +3,7 @@
 Godot 4.5 2D action platformer (GDScript). Scripts in `scripts/`, scenes in `scenes/`, Node helper tools in `tools/`.
 
 ## Skills (read before working in that area)
+- `godot-development` - typed GDScript, physics, cinematics, audio/asset lifecycle and runtime regression testing.
 - `guara-game-design` – premise, abilities, boss roster, demo scope.
 - `guara-art` – palette, sprite sheets, slicing tools, naming/scale rules, background layout.
 - `yeral-hints` – Yeral's on-hit hint dialogue (`scripts/yeral_hints.gd`).

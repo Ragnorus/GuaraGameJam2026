@@ -37,6 +37,7 @@ Each boss needs a distinct look, gimmick and unlockable reward.
 Full-game idea: every boss drops a collectible Guara Relic that changes minion behavior. Endgame reveal: Ragn0rus controls the Guaras with the forbidden hot dog.
 
 ## Demo scope
+Current Yeral route follows the user's five-area sketch: Area 1 city -> Area 2 sewer descent -> Area 3 sergeant room (fixed blocks over lethal acid) -> Area 4 moving-block sewer ascent -> Area 5 city -> animated warehouse entrance and locked Yeral voice/comic introduction -> original two-form boss battle. City scenery appears only in Areas 1 and 5. See `scripts/yeral_route.gd`; do not restore random platforms in the sergeant room.
 Focus on one polished level and one boss fight. (Implementation currently uses Yeral as the demo boss; the Evil Genius's script is the second level's boss.)
 1. Tutorial - The Gamer's Awakening: move, jump, attack, first minion.
 2. Level 1 - Bichema's World: money-minion mobs, platforms, hidden upgrades, minion targeting.

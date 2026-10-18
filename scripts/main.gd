@@ -42,6 +42,7 @@ var gate_hint_cd := 0.0
 # Right edge of the boss arena; Yeral's lair is wider so the fight has room to move.
 var arena_right := LEVEL_END + 500.0
 var camera: Camera2D
+var yeral_route: YeralRoute
 # Camera limits ease towards these so the view never shows past the next uncleared gate.
 var cam_left := LEVEL_LEFT
 var cam_right := LEVEL_END
@@ -286,20 +287,17 @@ func _add_platform_sprite(body: Node2D, rect: Rect2) -> void:
 
 func _build_world() -> void:
 	if not bichema_level:
-		arena_right = LEVEL_END + 1000.0
+		yeral_route = YeralRoute.new()
+		add_child(yeral_route)
+		yeral_route.build(self)
+		return
 	_build_background()
 	_build_props()
 	var world_left := 0.0 if bichema_level else LEVEL_LEFT
 	_add_block(Rect2(world_left, FLOOR_Y, arena_right - world_left, 100), "floor", bichema_level)
 	_add_block(Rect2(world_left - 40, -800, 40, 1500), "wall", bichema_level)
 	_add_block(Rect2(arena_right, -800, 40, 1500), "wall", bichema_level)
-	var platforms: Array = [
-		Rect2(350, 480, 140, 20), Rect2(600, 400, 140, 20),
-		Rect2(850, 480, 140, 20), Rect2(1100, 380, 160, 20),
-		Rect2(1400, 470, 140, 20),
-	]
 	if bichema_level:
-		platforms = []
 		for i in range(bichema_rooms.size()):
 			for rect: Rect2 in bichema_rooms[i]["platforms"]:
 				_add_block(rect, "platform", i != 0)
@@ -335,10 +333,6 @@ func _build_world() -> void:
 			Vector2(1350.0, FLOOR_Y - 40.0), Vector2(pub_x + 1200.0, FLOOR_Y - 40.0),
 			Vector2(factory_x + 650.0, FLOOR_Y - 40.0),
 		]
-	else:
-		platforms.append_array(_random_platforms(platforms, gate_xs))
-		for rect: Rect2 in platforms:
-			_add_block(rect, "platform")
 	player = Player.new()
 	player.collision_mask |= PLATFORM_LAYER
 	player.position = Vector2(100, FLOOR_Y - 60)
@@ -392,45 +386,6 @@ func _spawn_pickup(kind: int, at: Vector2) -> void:
 	pickup.kind = kind
 	pickup.position = at
 	add_child(pickup)
-
-# Extra platforms at random spots each run (gaps between the fixed ones, plus a few in the boss arena).
-# Heights stay within a double jump of the floor or a neighbouring platform.
-func _random_platforms(fixed: Array, gate_xs: Array) -> Array:
-	var rng := RandomNumberGenerator.new()
-	rng.randomize()
-	var placed: Array = []
-	var taken: Array = fixed.duplicate()
-	var x := 260.0
-	while x < LEVEL_END - 420.0:
-		var w := rng.randf_range(110.0, 170.0)
-		var r := Rect2(x, rng.randf_range(300.0, 500.0), w, 20.0)
-		if _platform_fits(r, taken, gate_xs):
-			placed.append(r)
-			taken.append(r)
-		x += rng.randf_range(170.0, 300.0)
-	var arena_x := LEVEL_END - 260.0
-	while arena_x < arena_right - 260.0:
-		var r := Rect2(arena_x, rng.randf_range(400.0, 480.0), rng.randf_range(120.0, 170.0), 20.0)
-		if _platform_fits(r, taken, gate_xs):
-			placed.append(r)
-			taken.append(r)
-		arena_x += rng.randf_range(300.0, 420.0)
-	return placed
-
-func _platform_fits(r: Rect2, taken: Array, gate_xs: Array) -> bool:
-	for gx in gate_xs:
-		if gx > r.position.x - 40.0 and gx < r.end.x + 40.0:
-			return false
-	for t in taken:
-		if r.grow_individual(50.0, 70.0, 50.0, 70.0).intersects(t):
-			return false
-	# Platforms floating too high need a lower step nearby, otherwise they are unreachable.
-	if r.position.y < 380.0:
-		for t in taken:
-			if t.position.y >= 380.0 and absf(t.get_center().x - r.get_center().x) < 300.0:
-				return true
-		return false
-	return true
 
 # Invisible energy barrier that blocks the player until its zone's mobs are dead.
 func _add_gate(x: float) -> StaticBody2D:
@@ -557,6 +512,9 @@ func _process(delta: float) -> void:
 		if error != OK:
 			push_error("Could not restart level: %s" % error_string(error))
 		return
+	if yeral_route != null:
+		yeral_route.update(delta)
+		return
 	_update_gates()
 	if bichema_level:
 		_update_bichema_background()
@@ -566,41 +524,23 @@ func _process(delta: float) -> void:
 
 func _start_boss() -> void:
 	boss_started = true
-	_add_block(Rect2(boss_gate_x, -200, 30, FLOOR_Y + 200), "wall", bichema_level)
-	cam_left = arena_right - VIEW_WIDTH if bichema_level else minf(LEVEL_END - 340.0, arena_right - VIEW_WIDTH)
+	_add_block(Rect2(boss_gate_x, -200, 30, FLOOR_Y + 200), "wall", true)
+	cam_left = arena_right - VIEW_WIDTH
 	if is_instance_valid(camera):
-		if bichema_level:
-			cam_right = arena_right
-			camera.limit_left = int(cam_left)
-			camera.limit_right = int(cam_right)
-			camera.force_update_scroll()
-		else:
-			camera.limit_left = int(minf(cam_left, camera.get_screen_center_position().x - VIEW_WIDTH / 2.0))
-	if bichema_level:
-		var genius := BossEvilGenius.new()
-		genius.position = Vector2(boss_spawn_x, FLOOR_Y - 112)
-		genius.target = player
-		add_child(genius)
-		genius.health_changed.connect(_on_boss_health)
-		genius.defeated.connect(_on_boss_defeated)
-		genius.transformed.connect(_on_ema_transformed)
-		genius.speech.connect(_say)
-		genius.activate()
-		message.text = "THE EVIL GENIUS"
-	else:
-		var yeral := BossYeral.new()
-		yeral.position = Vector2(boss_spawn_x, FLOOR_Y - 96)
-		yeral.target = player
-		yeral.floor_y = FLOOR_Y
-		yeral.arena_min = LEVEL_END - 280.0
-		yeral.arena_max = arena_right - 60.0
-		add_child(yeral)
-		yeral.health_changed.connect(_on_boss_health)
-		yeral.defeated.connect(_on_boss_defeated)
-		yeral.transformed.connect(_on_yeral_transformed)
-		yeral.speech.connect(_say)
-		yeral.activate()
-		message.text = "YERAL, THE SPOILERMAN"
+		cam_right = arena_right
+		camera.limit_left = int(cam_left)
+		camera.limit_right = int(cam_right)
+		camera.force_update_scroll()
+	var genius := BossEvilGenius.new()
+	genius.position = Vector2(boss_spawn_x, FLOOR_Y - 112)
+	genius.target = player
+	add_child(genius)
+	genius.health_changed.connect(_on_boss_health)
+	genius.defeated.connect(_on_boss_defeated)
+	genius.transformed.connect(_on_ema_transformed)
+	genius.speech.connect(_say)
+	genius.activate()
+	message.text = "THE EVIL GENIUS"
 	message_timer.start(2.0)
 
 func _on_yeral_transformed() -> void:
@@ -665,5 +605,8 @@ func _on_player_died() -> void:
 	if finished:
 		return
 	message_timer.stop()
+	player.clear_attacks()
+	if yeral_route != null:
+		yeral_route.cancel_intro()
 	var new_high := GameSettings.commit_score()
 	message.text = "You died. Score: %d%s\nPress R to restart" % [GameSettings.score, "  NEW HIGH SCORE!" if new_high else ""]

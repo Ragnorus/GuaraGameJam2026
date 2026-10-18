@@ -18,8 +18,11 @@ var texture_outline_color := Color.TRANSPARENT
 var coin_pop := false
 var character_art := false
 var sprite: AnimatedSprite2D
+var owner_player: Player
 
 func _ready() -> void:
+	if owner_player != null:
+		add_to_group("player_shots")
 	collision_layer = 0
 	collision_mask = 0xFFFFFFFF & ~4  # pass through floating platforms (main.gd PLATFORM_LAYER)
 	var shape := CircleShape2D.new()
@@ -48,6 +51,9 @@ func _ready() -> void:
 		sprite.play(&"projectile")
 
 func _physics_process(delta: float) -> void:
+	if owner_player != null and (not is_instance_valid(owner_player) or owner_player.dead or owner_player.controls_locked):
+		queue_free()
+		return
 	if sprite != null and velocity.x != 0.0:
 		sprite.flip_h = velocity.x < 0.0
 	position += velocity * delta
@@ -64,6 +70,8 @@ func _draw() -> void:
 		draw_circle(Vector2.ZERO, radius, color)
 
 func _on_body_entered(body: Node) -> void:
+	if is_queued_for_deletion() or (owner_player != null and (not is_instance_valid(owner_player) or owner_player.dead or owner_player.controls_locked)):
+		return
 	if body.is_in_group(target_group) and body.has_method("take_damage"):
 		body.take_damage(damage)
 		_spawn_coin_pop()
