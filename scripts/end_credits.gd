@@ -6,8 +6,9 @@ const MENU := "res://scenes/main_menu.tscn"
 const INTRO_DURATION := 6.0
 const ROLL_DURATION := 30.0
 const TITLE_DURATION := 6.0
+const TEAM_DURATION := 6.0
 const FADE_DURATION := 1.5
-const TOTAL_DURATION := INTRO_DURATION + ROLL_DURATION + TITLE_DURATION + FADE_DURATION
+const TOTAL_DURATION := INTRO_DURATION + ROLL_DURATION + TITLE_DURATION + TEAM_DURATION + FADE_DURATION
 const MEMBERS := ["Shaggy......Ese es ponce?!", "Zinnaxef", "Ragn0rus", "Ludo", "Kpi", "Samurai Porcupine"]
 const CAST: Array[SpriteFrames] = [
 	preload("res://assets/character_frames.tres"),
@@ -26,6 +27,7 @@ var song: AudioStreamPlayer
 var opening: Label
 var roll: VBoxContainer
 var closing: Label
+var team_card: VBoxContainer
 var fade: ColorRect
 var cameos: Node2D
 var retry: Button
@@ -54,6 +56,18 @@ func _ready() -> void:
 		roll.add_child(_label(member, 32))
 	closing = _label("Guaras Game Jam 2026", 52)
 	add_child(closing)
+	team_card = VBoxContainer.new()
+	team_card.add_theme_constant_override("separation", 12)
+	add_child(team_card)
+	team_card.add_child(_label("Game built by The Nalgondigas", 36))
+	var picture := TextureRect.new()
+	picture.texture = preload("res://assets/ui/the_nalgondigas.png")
+	picture.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	picture.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	picture.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	picture.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	picture.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	team_card.add_child(picture)
 	fade = ColorRect.new()
 	fade.color = Color.BLACK
 	fade.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -95,6 +109,10 @@ func _layout() -> void:
 		label.size = Vector2(size.x * 0.56, size.y * 0.4)
 	roll.size.x = size.x * 0.56
 	roll.position.x = size.x * 0.22
+	var attribution := team_card.get_child(0) as Label
+	attribution.add_theme_font_size_override("font_size", maxi(14, roundi(36.0 * font_scale)))
+	team_card.position = size * 0.04
+	team_card.size = size * 0.92
 	retry.position = Vector2(size.x * 0.5 - 160.0, size.y - 80.0)
 	retry.size.x = 320.0
 
@@ -132,8 +150,11 @@ func _update_cards() -> void:
 	var progress := clampf((elapsed - INTRO_DURATION) / ROLL_DURATION, 0.0, 1.0)
 	roll.position.y = lerpf(size.y + 30.0, -roll.size.y - 30.0, progress)
 	var title_start := INTRO_DURATION + ROLL_DURATION
-	closing.visible = elapsed >= title_start
+	var team_start := title_start + TITLE_DURATION
+	closing.visible = elapsed >= title_start and elapsed < team_start
 	closing.modulate.a = clampf((elapsed - title_start) / FADE_DURATION, 0.0, 1.0)
+	team_card.visible = elapsed >= team_start
+	team_card.modulate.a = clampf((elapsed - team_start) / FADE_DURATION, 0.0, 1.0)
 	var fade_out := clampf((elapsed - (TOTAL_DURATION - FADE_DURATION)) / FADE_DURATION, 0.0, 1.0)
 	fade.color.a = maxf(1.0 - clampf(elapsed / FADE_DURATION, 0.0, 1.0), fade_out)
 	song.volume_db = linear_to_db(maxf(0.0001, (1.0 - fade_out) * clampf(elapsed / FADE_DURATION, 0.0, 1.0)))
@@ -156,6 +177,7 @@ func _finish() -> void:
 	var error := get_tree().change_scene_to_file(MENU)
 	if error != OK:
 		push_error("Could not open credits main menu: %s" % error_string(error))
+		team_card.hide()
 		closing.text = "Could not open the main menu."
 		closing.show()
 		closing.modulate.a = 1.0
