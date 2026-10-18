@@ -26,6 +26,8 @@ description: "Godot 4.5 development and validation for THE NIGHT UNC. Use when i
 
 ## Project regression entry points
 - `tests/yeral_route.gd`: five-area traversal, fixed acid-room jumps, moving-platform ascent, intro lock/voice and lethal acid.
+- `tests/sergeant_actions.gd`: Football Sergeant charge/punch knockback, scream stun + stars + input lock, stun guard, missed-charge falls (block, bank and acid landings), acid immunity with jump-pose recovery to the nearest block, deferred mid-air rage, autonomous constant movement/attacks, protected roid-rage transform and faster/stronger rage attacks, death cleanup. See `game-testing` for harness and preview patterns.
+- Player status effects: enemies should call `Player.hit_by(damage, knockback, stun)` (returns false when ignored). Knockback/stun skip all input; `clear_status()` runs on death and room transitions.
 - `tests/death_safety.gd`: normal/ultimate summons, queued projectiles and dead-player action/score safety in both stages.
 - `tests/player_actions.gd`, `tests/yeral_actions.gd`, `tests/bichema_actions.gd`: actor combat and animation behavior.
 - `tests/level_progression.gd`: transformation, restart and stage advancement.

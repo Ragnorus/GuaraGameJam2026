@@ -31,6 +31,9 @@ func _run() -> void:
 			fliers += 1
 			enemy.queue_free()
 			continue
+		if enemy is Sergeant:
+			enemy.queue_free()
+			continue
 		assert(enemy is Robot, "Every first-stage ground mob must use robot art")
 		if robot == null:
 			robot = enemy as Robot

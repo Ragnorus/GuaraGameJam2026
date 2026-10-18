@@ -9,7 +9,13 @@ const TITLES := ["AREA 1 - CITY APPROACH", "AREA 2 - SEWER DESCENT",
 	"AREA 3 - SERGEANT ROOM", "AREA 4 - SEWER ASCENT", "AREA 5 - CITY WAREHOUSE", "YERAL'S WAREHOUSE"]
 const SERGEANT_PLATFORMS: Array[Rect2] = [
 	Rect2(2760, 1200, 240, 20), Rect2(3120, 1080, 240, 20), Rect2(3480, 1200, 240, 20)]
+const SERGEANT_ACID := Rect2(2750, 1380, 1130, 60)
+const SERGEANT_BANKS: Array[Rect2] = [Rect2(2560, 1320, 190, 120), Rect2(3880, 1200, 280, 240)]
 const INTRO_TEXT := "I AM YERAL THE SPOILERMAN! Muwahahahahahaha!!!"
+const NEW_ENEMY_TEXT := "BEWARE! NEW ENEMY!"
+const INTRO_BUBBLE_POS := Vector2(530, 160)
+const BUBBLE_TAIL_TIP := Vector2(460, 210)
+const BUBBLE_SIZE := Vector2(600, 140)
 const INTRO_AUDIO := preload("res://assets/audio/yeral_intro.wav")
 
 var stage: Node2D
@@ -19,12 +25,13 @@ var intro_complete := false
 var backgrounds: Array[Node2D] = []
 var room_enemies: Array[Array] = []
 var moving_blocks: Array[MovingPlatform] = []
-var sergeant: Robot
+var sergeant: Sergeant
 var boss: BossYeral
 var voice: AudioStreamPlayer
 var curtain: ColorRect
 var speech: PanelContainer
 var speech_label: Label
+var bubble_timer: Tween
 var hint_cooldown := 0.0
 var acid_time := 0.0
 var cinematic: Tween
@@ -57,14 +64,16 @@ func build(parent_stage: Node2D) -> void:
 	_spawn_flyer(0, 850.0)
 	_spawn_robot(1, Vector2(1610, 1062))
 	_spawn_robot(1, Vector2(2260, 1282))
-	sergeant = _spawn_robot(2, Vector2(3240, 1042))
-	sergeant.health = GameSettings.scale_health(12)
-	sergeant.points = 5
-	sergeant.scale = Vector2(1.25, 1.25)
-	sergeant.position.y = 1035.0
-	sergeant.collision_mask |= stage.PLATFORM_LAYER
-	sergeant.zone_min = 3150.0
-	sergeant.zone_max = 3330.0
+	sergeant = Sergeant.new()
+	sergeant.platforms = SERGEANT_PLATFORMS
+	sergeant.acid_rect = SERGEANT_ACID
+	sergeant.banks = SERGEANT_BANKS
+	sergeant.platform_index = 1
+	sergeant.target = stage.player
+	sergeant.position = Vector2(SERGEANT_PLATFORMS[1].get_center().x, SERGEANT_PLATFORMS[1].position.y - Sergeant.BODY.y / 2.0)
+	sergeant.speech.connect(_on_sergeant_speech)
+	stage.add_child(sergeant)
+	room_enemies[2].append(sergeant)
 	_spawn_robot(4, Vector2(5860, 562))
 	_spawn_robot(4, Vector2(6500, 562))
 	_spawn_flyer(4, 6220.0)
@@ -146,10 +155,10 @@ func _build_geometry() -> void:
 	_block(Rect2(1280, 1100, 450, 340))
 	_block(Rect2(1730, 1210, 340, 230))
 	_block(Rect2(2070, 1320, 490, 120))
-	_block(Rect2(2560, 1320, 190, 120))
+	_block(SERGEANT_BANKS[0])
 	for rect in SERGEANT_PLATFORMS:
 		_block(rect, true)
-	_block(Rect2(3880, 1200, 280, 240))
+	_block(SERGEANT_BANKS[1])
 	_block(Rect2(4160, 1320, 240, 120))
 	_block(Rect2(4710, 1080, 230, 20), true)
 	_block(Rect2(5180, 850, 260, 20), true)
@@ -163,7 +172,6 @@ func _build_geometry() -> void:
 			Rect2(AREAS[5].end.x, -200, 40, 920)]:
 		stage._add_block(rect, "wall", true)
 	_sign(Vector2(980, 480), "SEWER ACCESS\nDOWN >")
-	_sign(Vector2(2660, 960), "SERGEANT AHEAD\nFIXED PLATFORMS / LETHAL ACID")
 	_sign(Vector2(4220, 925), "RIDE THE MOVING BLOCKS\nTO THE UPPER EXIT >")
 	_sign(Vector2(5190, 930), "CITY EXIT\nUP >")
 	_sign(Vector2(6540, 365), "WAREHOUSE\nENTER >")
@@ -228,12 +236,13 @@ func _build_overlay() -> void:
 	style.content_margin_top = 14
 	style.content_margin_bottom = 14
 	speech.add_theme_stylebox_override("panel", style)
-	speech.position = Vector2(530, 160)
-	speech.size = Vector2(600, 140)
+	speech.position = INTRO_BUBBLE_POS
+	speech.size = BUBBLE_SIZE
 	speech_label = Label.new()
 	speech_label.text = INTRO_TEXT
 	speech_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	speech_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	speech_label.custom_minimum_size = Vector2(556, 0)
 	speech_label.add_theme_font_size_override("font_size", 28)
 	speech_label.add_theme_color_override("font_color", Color8(8, 13, 10))
 	speech.add_child(speech_label)
@@ -321,6 +330,7 @@ func _transition(next: int) -> void:
 	transitioning = true
 	stage.player.controls_locked = true
 	stage.player.clear_attacks()
+	stage.player.clear_status()
 	stage.player.dash_time = 0.0
 	stage.player.action_time = 0.0
 	stage.player.player_sprite.show()
@@ -341,6 +351,8 @@ func _transition(next: int) -> void:
 		stage.camera.force_update_scroll()
 		stage.message.text = TITLES[next]
 		stage.message_timer.start(2.0)
+		if next == 2:
+			_warn_new_enemy()
 	)
 	cinematic.tween_property(curtain, "color:a", 0.0, 0.55)
 	cinematic.tween_callback(func() -> void:
@@ -374,6 +386,11 @@ func start_boss_intro() -> void:
 	boss.speech.connect(stage._say)
 	boss.sprite.play(&"announce")
 	boss.pose_time = INTRO_AUDIO.get_length() + 1.0
+	if bubble_timer != null and bubble_timer.is_valid():
+		bubble_timer.kill()
+	speech_label.text = INTRO_TEXT
+	speech.size = BUBBLE_SIZE
+	speech.position = INTRO_BUBBLE_POS
 	speech.show()
 	speech.scale = Vector2(0.85, 0.85)
 	create_tween().tween_property(speech, "scale", Vector2.ONE, 0.25).set_trans(Tween.TRANS_BACK)
@@ -397,10 +414,41 @@ func start_boss_intro() -> void:
 func cancel_intro() -> void:
 	if cinematic != null and cinematic.is_valid():
 		cinematic.kill()
+	if bubble_timer != null and bubble_timer.is_valid():
+		bubble_timer.kill()
 	voice.stop()
 	speech.hide()
 	curtain.color.a = 0.0
 	stage.player.modulate.a = 1.0
+
+func _warn_new_enemy() -> void:
+	var delay := create_tween()
+	delay.tween_interval(2.0)
+	delay.tween_callback(func() -> void:
+		if area_index == 2 and not stage.player.dead and not stage.finished:
+			stage.message.text = NEW_ENEMY_TEXT
+			stage.message_timer.start(2.5)
+	)
+
+func _on_sergeant_speech(text: String, duration: float) -> void:
+	if not is_instance_valid(sergeant) or stage.player.dead:
+		return
+	# Same comic bubble as Yeral's intro line, with its tail placed over the sergeant's head.
+	var head := sergeant.global_position + Vector2(0.0, -Sergeant.BODY.y / 2.0 - 70.0)
+	var screen := get_viewport().get_canvas_transform() * head
+	var view := get_viewport().get_visible_rect().size
+	speech_label.text = text
+	speech.size = BUBBLE_SIZE
+	speech.position = Vector2(clampf(screen.x - BUBBLE_TAIL_TIP.x, 0.0, view.x - BUBBLE_SIZE.x),
+			maxf(0.0, screen.y - BUBBLE_TAIL_TIP.y))
+	speech.show()
+	speech.scale = Vector2(0.85, 0.85)
+	create_tween().tween_property(speech, "scale", Vector2.ONE, 0.25).set_trans(Tween.TRANS_BACK)
+	if bubble_timer != null and bubble_timer.is_valid():
+		bubble_timer.kill()
+	bubble_timer = create_tween()
+	bubble_timer.tween_interval(duration)
+	bubble_timer.tween_callback(speech.hide)
 
 func _draw() -> void:
 	if area_index not in [2, 3]:

@@ -39,6 +39,12 @@ var dash_time := 0.0
 var dash_cooldown := 0.0
 var dash_direction := 1
 var dash_vector := Vector2.RIGHT
+# Enemy hits can shove the player (no steering while airborne from the shove) or stun them in place.
+var knockback_time := 0.0
+var stun_time := 0.0
+var stun_guard := 0.0
+var stun_fx: Node2D
+var stun_spin := 0.0
 
 func _ready() -> void:
 	player_sprite = AnimatedSprite2D.new()
@@ -67,6 +73,12 @@ func _ready() -> void:
 	army_effect.hide()
 	add_child(army_effect)
 	army_effect.animation_finished.connect(army_effect.hide)
+	stun_fx = Node2D.new()
+	stun_fx.position.y = -50.0
+	stun_fx.z_index = 5
+	stun_fx.hide()
+	stun_fx.draw.connect(_draw_stun)
+	add_child(stun_fx)
 	add_to_group("player")
 	var shape := RectangleShape2D.new()
 	shape.size = Vector2(42, 72)
@@ -99,10 +111,24 @@ func _physics_process(delta: float) -> void:
 	invuln = maxf(0.0, invuln - delta)
 	dash_cooldown = maxf(0.0, dash_cooldown - delta)
 	dash_time = maxf(0.0, dash_time - delta)
+	knockback_time = maxf(0.0, knockback_time - delta)
+	stun_time = maxf(0.0, stun_time - delta)
+	stun_guard = maxf(0.0, stun_guard - delta)
+	stun_fx.visible = stun_time > 0.0
+	if stun_fx.visible:
+		stun_spin += delta * 7.0
+		stun_fx.queue_redraw()
 	if is_on_floor():
 		jumps_remaining = MAX_JUMPS
 	if not is_on_floor():
 		velocity.y += GRAVITY * delta
+	if stun_time > 0.0 or knockback_time > 0.0:
+		dash_time = 0.0
+		if knockback_time <= 0.0 and is_on_floor():
+			velocity.x = move_toward(velocity.x, 0.0, 2400.0 * delta)
+		move_and_slide()
+		_update_animation()
+		return
 	var dir := Input.get_axis("move_left", "move_right")
 	if dir != 0.0:
 		facing = 1 if dir > 0.0 else -1
@@ -255,6 +281,45 @@ func take_damage(amount: int) -> void:
 		die()
 	_update_animation()
 
+# Damage plus optional shove/stun. Returns false when the hit is ignored (invulnerable, dead or in a cinematic).
+func hit_by(amount: int, knockback := Vector2.ZERO, stun := 0.0) -> bool:
+	if invuln > 0.0 or dead or controls_locked:
+		return false
+	take_damage(amount)
+	if dead:
+		return true
+	if knockback != Vector2.ZERO:
+		velocity = knockback
+		knockback_time = 0.35
+	if stun > 0.0 and stun_guard <= 0.0:
+		stun_time = stun
+		stun_guard = stun + 1.5
+		velocity.x = 0.0 if knockback == Vector2.ZERO else velocity.x
+	dash_time = 0.0
+	return true
+
+func clear_status() -> void:
+	knockback_time = 0.0
+	stun_time = 0.0
+	stun_guard = 0.0
+	if is_instance_valid(stun_fx):
+		stun_fx.hide()
+
+func _draw_stun() -> void:
+	# Three gold stars orbit the head while stunned.
+	stun_fx.draw_arc(Vector2.ZERO, 22.0, 0.0, TAU, 32, Color(1.0, 0.86, 0.3, 0.35), 2.0)
+	for i in range(3):
+		var angle := stun_spin + i * TAU / 3.0
+		var at := Vector2(cos(angle) * 22.0, sin(angle) * 7.0)
+		var points := PackedVector2Array()
+		for p in range(10):
+			var r := 7.0 if p % 2 == 0 else 3.0
+			var a := -PI / 2.0 + p * PI / 5.0 + stun_spin
+			points.append(at + Vector2(cos(a), sin(a)) * r)
+		stun_fx.draw_colored_polygon(points, Color(1.0, 0.86, 0.25))
+		points.append(points[0])
+		stun_fx.draw_polyline(points, Color(0.03, 0.05, 0.04), 1.5)
+
 func clear_attacks() -> void:
 	for minion in get_tree().get_nodes_in_group("player_summons"):
 		if minion.owner_player == self:
@@ -277,6 +342,7 @@ func die() -> void:
 	controls_locked = false
 	health = 0
 	dash_time = 0.0
+	clear_status()
 	clear_attacks()
 	_play_action(&"death")
 	stats_changed.emit()
