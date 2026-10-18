@@ -8,7 +8,7 @@ const ROLL_DURATION := 30.0
 const TITLE_DURATION := 6.0
 const FADE_DURATION := 1.5
 const TOTAL_DURATION := INTRO_DURATION + ROLL_DURATION + TITLE_DURATION + FADE_DURATION
-const MEMBERS := ["Shaggy......Ese es ponce?!", "Zinnaxef", "Ragn0rus", "Ludo", "Kpi", "Quiller"]
+const MEMBERS := ["Shaggy......Ese es ponce?!", "Zinnaxef", "Ragn0rus", "Ludo", "Kpi", "Samurai Porcupine"]
 const CAST: Array[SpriteFrames] = [
 	preload("res://assets/character_frames.tres"),
 	preload("res://assets/robot_frames.tres"),
