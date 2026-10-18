@@ -382,9 +382,9 @@ func _touch_damage() -> void:
 		var away := 1.0 if target.global_position.x > global_position.x else -1.0
 		(target as Player).hit_by(1, Vector2(away * 300.0, -280.0))
 
-func take_damage(amount: int) -> void:
+func take_damage(amount: int) -> bool:
 	if dead or state == State.TRANSFORM:
-		return
+		return false
 	health = maxi(0, health - amount)
 	flash = 0.1
 	if health <= 0:
@@ -397,6 +397,7 @@ func take_damage(amount: int) -> void:
 			_start_transform()
 	elif state == State.IDLE:
 		_set_state(State.HURT, &"hurt")
+	return true
 
 func _start_transform() -> void:
 	clear_attacks()

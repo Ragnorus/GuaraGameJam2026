@@ -111,22 +111,23 @@ func _shoot() -> void:
 	p.velocity = Vector2(dir * 320.0, 0.0)
 	get_parent().add_child(p)
 
-func take_damage(amount: int) -> void:
+func take_damage(amount: int) -> bool:
 	if dead:
-		return
+		return false
 	health -= amount
 	if health <= 0:
 		_die()
 	elif robot and anim_lock <= 0.0:
 		anim_lock = 0.25
 		sprite.play("hurt")
+	return true
 
 func _die() -> void:
+	dead = true
 	_award_points()
 	if not robot:
 		queue_free()
 		return
-	dead = true
 	remove_from_group("enemies")
 	cs.set_deferred("disabled", true)
 	sprite.play("dead")

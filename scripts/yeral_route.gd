@@ -120,7 +120,7 @@ func _on_sergeant_defeated() -> void:
 	GameSettings.shield_unlocked = true
 	GameSettings.save()
 	stage._update_hud()
-	stage._say("SHIELD BURST UNLOCKED!\nPress E / L-Stick", 3.5)
+	stage._say("SHIELD BURST UNLOCKED!\nPress Q / LB (L1)", 3.5)
 
 func _build_backdrops() -> void:
 	for i in range(AREAS.size()):

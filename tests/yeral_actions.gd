@@ -33,12 +33,8 @@ func _run() -> void:
 	assert(boss.is_on_floor() and boss.sprite.animation == &"idle")
 	assert(boss.sprite.flip_h, "Yeral must face the player, not the source sheet's default direction")
 
-	# A fake warning must be visually indistinguishable from a real warning.
-	for attack in ["volley", "charge", "trap", "nothing"]:
-		boss.pending = attack
-		boss.pending_time = 2.0
-		await _frames(2)
-		assert(boss.sprite.animation == &"announce", "Art must not spoil the actual queued attack")
+	await _check_telegraphs(boss)
+	boss.pending = "nothing"
 	boss.pending_time = 0.01
 	await _frames(2)
 	assert(boss.sprite.animation == &"taunt")
@@ -88,10 +84,34 @@ func _run() -> void:
 	await _frames(30)
 	assert(boss.sprite.animation == &"idle")
 	await _second_form(boss, player)
-	print("PASS: both forms' fake tells, charge/contact, real orbs/condiments, phase boundaries, safe warnings, jumpable sauce, transform immunity and final collapse")
+	print("PASS: both forms' readable attack tells and fake taunts, charge/contact, real orbs/condiments, phase boundaries, safe warnings, jumpable sauce, transform immunity and final collapse")
 	stage.queue_free()
 	await _frames(1)
 	quit()
+
+func _check_telegraphs(boss: BossYeral) -> void:
+	for attack in ["charge", "volley", "trap"]:
+		var start := boss.position
+		boss.pending = attack
+		boss.pending_time = BossYeral.ATTACK_TELL_TIME
+		await _frames(27)
+		var animation := &"charge" if attack == "charge" else (&"trap" if attack == "trap" else &"volley")
+		assert(boss.sprite.animation == animation and boss.sprite.frame == 0,
+				"The real attack must have a distinct held pose before danger")
+		assert(boss.position.distance_to(start) < 1.0 and get_nodes_in_group("yeral_attacks").is_empty(),
+				"The visual reaction window must not move the boss or create damaging attacks")
+		await _frames(12)
+		assert(boss.pending.is_empty(), "The held tell must lead into the real attack")
+		if attack == "charge":
+			assert(boss.position.distance_to(start) > 1.0, "The warned charge must actually move")
+		else:
+			assert(not get_nodes_in_group("yeral_attacks").is_empty(), "The warned attack must actually spawn")
+		boss.charge_time = 0.0
+		boss.velocity = Vector2.ZERO
+		boss.position = start
+		boss.pose_time = 0.0
+		boss._clear_attacks()
+		await _frames(1)
 
 func _second_form(boss: BossYeral, player: Player) -> void:
 	var defeats := [0]
@@ -126,11 +146,8 @@ func _second_form(boss: BossYeral, player: Player) -> void:
 	for boundary in [[two_thirds + 1, 1], [two_thirds, 2], [one_third + 1, 2], [one_third, 3]]:
 		boss.take_damage(boss.health - boundary[0])
 		assert(boss.phase == boundary[1], "Glizzy must retain the public health-based phase boundaries")
-	for attack in ["volley", "charge", "trap", "nothing"]:
-		boss.pending = attack
-		boss.pending_time = 2.0
-		await _frames(2)
-		assert(boss.sprite.animation == &"announce", "Glizzy's fake warning must look like the real warning")
+	await _check_telegraphs(boss)
+	boss.pending = "nothing"
 	boss.pending_time = 0.01
 	await _frames(2)
 	assert(boss.sprite.animation == &"taunt")

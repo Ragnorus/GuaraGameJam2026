@@ -451,8 +451,8 @@ func _build_hud() -> void:
 	dialogue.add_theme_font_size_override("font_size", 22)
 	layer.add_child(dialogue)
 	var help := Label.new()
-	help.text = "Move A/D/LS/D-pad  Jump Space/A  Smash J/X  Dash Shift/LB  Summon K/Y  Recall L/RB  Army U/R3  Shield Q/LT  Pause Esc/B/Start  Restart R"
-	help.position = Vector2(16, 690)
+	help.text = "Move A/D/LS/D-pad  Jump Space/A(Cross)  Smash J/X(Square)/RT(R2)  Dash Shift/B(Circle)\nSummon K/Y(Triangle)  Recall L/RB(R1)  Army U/R3  Shield Q/LB(L1)  Pause Esc/Start(Options)  Restart R"
+	help.position = Vector2(16, 668)
 	layer.add_child(help)
 	score_label = Label.new()
 	score_label.position = Vector2(880, 12)
@@ -473,7 +473,7 @@ func _update_hud() -> void:
 	meter_bar.max_value = player.meter_max
 	meter_bar.value = player.meter
 	hud_label.text = "HP %d/%d%s" % [player.health, player.max_health,
-			("   SHIELD " + ("READY (Q)" if player.shield_cd <= 0.0 else "%.0fs" % ceilf(player.shield_cd))) if GameSettings.shield_unlocked else ""]
+			("   SHIELD " + ("READY (Q/LB/L1)" if player.shield_cd <= 0.0 else "%.0fs" % ceilf(player.shield_cd))) if GameSettings.shield_unlocked else ""]
 	if player.mecha_time > 0.0:
 		hud_label.text += "   MECHA %ds" % ceili(player.mecha_time)
 	hud_label.position = Vector2(24, 74)

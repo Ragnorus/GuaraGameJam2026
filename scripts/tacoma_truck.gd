@@ -125,13 +125,14 @@ func _ram_player() -> void:
 		hit_this_charge = player.hit_by(GameSettings.incoming_damage(2),
 				Vector2(charge_direction * 650.0, -340.0))
 
-func take_damage(amount: int) -> void:
+func take_damage(amount: int) -> bool:
 	if dead or drive_state == DriveState.INTRO:
-		return
+		return false
 	health -= amount
 	queue_redraw()
 	if health <= 0:
 		_die()
+	return true
 
 func _die() -> void:
 	dead = true

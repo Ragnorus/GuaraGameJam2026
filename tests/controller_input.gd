@@ -7,13 +7,13 @@ func _initialize() -> void:
 	_check_motion(&"move_left", JOY_AXIS_LEFT_X, -1.0)
 	_check_motion(&"move_right", JOY_AXIS_LEFT_X, 1.0)
 	_check_button(&"jump", JOY_BUTTON_A)
-	_check_button(&"dash", JOY_BUTTON_LEFT_SHOULDER)
+	_check_button(&"dash", JOY_BUTTON_B)
 	_check_button(&"shoot", JOY_BUTTON_X)
 	_check_motion(&"shoot", JOY_AXIS_TRIGGER_RIGHT, 1.0)
 	_check_button(&"summon", JOY_BUTTON_Y)
 	_check_button(&"recall", JOY_BUTTON_RIGHT_SHOULDER)
 	_check_button(&"ultimate", JOY_BUTTON_RIGHT_STICK)
-	_check_motion(&"shield", JOY_AXIS_TRIGGER_LEFT, 1.0)
+	_check_button(&"shield", JOY_BUTTON_LEFT_SHOULDER)
 	var shield_stick := InputEventJoypadButton.new()
 	shield_stick.button_index = JOY_BUTTON_LEFT_STICK
 	assert(not InputMap.action_has_event(&"shield", shield_stick), "L3 must no longer activate Shield Burst")
@@ -38,17 +38,10 @@ func _initialize() -> void:
 
 func _check_synthetic_input() -> void:
 	await process_frame
-	var shield_event := InputEventJoypadButton.new()
-	var shield_event := InputEventJoypadMotion.new()
-	shield_event.axis = JOY_AXIS_TRIGGER_LEFT
-	shield_event.axis_value = 1.0
-	Input.parse_input_event(shield_event)
-	Input.flush_buffered_events()
-	assert(Input.is_action_pressed(&"shield"), "Left trigger must activate Shield Burst")
-	var shield_release := InputEventJoypadMotion.new()
-	shield_release.axis = JOY_AXIS_TRIGGER_LEFT
-	shield_release.axis_value = 0.0
-	Input.parse_input_event(shield_release)
+	_button(JOY_BUTTON_LEFT_SHOULDER, true)
+	assert(Input.is_action_pressed(&"shield"), "LB must activate Shield Burst")
+	assert(not Input.is_action_pressed(&"dash"), "LB must not activate Dash")
+	_button(JOY_BUTTON_LEFT_SHOULDER, false)
 	var jump_event := InputEventJoypadButton.new()
 	jump_event.button_index = JOY_BUTTON_A
 	jump_event.pressed = true
@@ -83,6 +76,7 @@ func _check_synthetic_input() -> void:
 	neutral_stick.axis_value = 0.0
 	Input.parse_input_event(neutral_stick)
 	await process_frame
+	await _check_level_input()
 
 	assert(change_scene_to_file("res://scenes/main_menu.tscn") == OK)
 	await process_frame
@@ -125,8 +119,120 @@ func _check_synthetic_input() -> void:
 	await process_frame
 	assert(current_scene.scene_file_path == "res://scenes/main_menu.tscn", "B must return from submenus")
 	assert(not Input.is_action_pressed(&"shield"), "B must cancel without activating Shield Burst")
-	print("PASS: controller gameplay, title/menu navigation, confirm/cancel, and repeated setup")
+	print("PASS: controller stage dash/shield/pause, keyboard controls, title/menu navigation, confirm/cancel, and repeated setup")
 	quit()
+
+func _frames(count: int) -> void:
+	for i in range(count):
+		await physics_frame
+		await process_frame
+
+func _button(button: int, pressed: bool) -> void:
+	var event := InputEventJoypadButton.new()
+	event.button_index = button
+	event.pressed = pressed
+	Input.parse_input_event(event)
+	Input.flush_buffered_events()
+
+func _key(key: Key, pressed: bool) -> void:
+	var event := InputEventKey.new()
+	event.keycode = key
+	event.physical_keycode = key
+	event.pressed = pressed
+	Input.parse_input_event(event)
+	Input.flush_buffered_events()
+
+func _check_level_input() -> void:
+	GameSettings.loaded = true
+	GameSettings.music_on = false
+	GameSettings.sfx_on = false
+	GameSettings.dash_unlocked = true
+	GameSettings.shield_unlocked = true
+	YeralRoute.checkpoint = 0
+	assert(change_scene_to_file("res://scenes/main.tscn") == OK)
+	await _frames(3)
+	var stage := current_scene
+	var player := stage.get("player") as Player
+	# Keep the input fixture in normal form and away from unrelated combat.
+	for child in stage.get_children():
+		if child is Pickup and child.kind == Pickup.Kind.MECHA:
+			child.queue_free()
+	for enemy in get_nodes_in_group("enemies"):
+		enemy.set_physics_process(false)
+	player.invuln = 100.0
+	await _frames(3)
+
+	var start_x := player.position.x
+	_button(JOY_BUTTON_B, true)
+	await _frames(2)
+	assert(not paused and player.dash_time > 0.0 and player.position.x > start_x, "B must dash in the real stage without opening pause")
+	_button(JOY_BUTTON_B, false)
+	await _frames(20)
+	player.dash_cooldown = 0.0
+	_button(JOY_BUTTON_LEFT_SHOULDER, true)
+	await _frames(2)
+	assert(player.shield_cd > 0.0 and player.dash_time == 0.0 and player.dash_cooldown == 0.0, "LB must shield without starting a dash")
+	_button(JOY_BUTTON_LEFT_SHOULDER, false)
+	player.shield_cd = 0.0
+	_button(JOY_BUTTON_LEFT_STICK, true)
+	await _frames(2)
+	assert(player.shield_cd == 0.0, "L3 must not activate Shield Burst")
+	_button(JOY_BUTTON_LEFT_STICK, false)
+	var trigger := InputEventJoypadMotion.new()
+	trigger.axis = JOY_AXIS_TRIGGER_LEFT
+	trigger.axis_value = 1.0
+	Input.parse_input_event(trigger)
+	Input.flush_buffered_events()
+	await _frames(2)
+	assert(player.shield_cd == 0.0, "LT must not activate Shield Burst")
+	trigger = InputEventJoypadMotion.new()
+	trigger.axis = JOY_AXIS_TRIGGER_LEFT
+	trigger.axis_value = 0.0
+	Input.parse_input_event(trigger)
+	Input.flush_buffered_events()
+
+	_button(JOY_BUTTON_START, true)
+	await _frames(2)
+	assert(paused, "Start must pause active gameplay")
+	_button(JOY_BUTTON_START, false)
+	_button(JOY_BUTTON_B, true)
+	await _frames(2)
+	assert(not paused, "B must still resume a paused game")
+	_button(JOY_BUTTON_B, false)
+	await _frames(20)
+	_key(KEY_ESCAPE, true)
+	await _frames(2)
+	assert(paused, "Esc must pause active gameplay")
+	_key(KEY_ESCAPE, false)
+	_key(KEY_ESCAPE, true)
+	await _frames(2)
+	assert(not paused, "Esc must resume paused gameplay")
+	_key(KEY_ESCAPE, false)
+
+	player.dash_cooldown = 0.0
+	_key(KEY_SHIFT, true)
+	await _frames(2)
+	assert(player.dash_time > 0.0 and not paused, "Keyboard Shift must still dash")
+	_key(KEY_SHIFT, false)
+	await _frames(20)
+	_key(KEY_Q, true)
+	await _frames(2)
+	assert(player.shield_cd > 0.0, "Keyboard Q must still shield")
+	_key(KEY_Q, false)
+	start_x = player.position.x
+	_key(KEY_D, true)
+	await _frames(3)
+	_key(KEY_D, false)
+	assert(player.position.x > start_x, "Keyboard D must still move the player")
+	_key(KEY_SPACE, true)
+	await _frames(2)
+	_key(KEY_SPACE, false)
+	assert(player.velocity.y < 0.0, "Keyboard Space must still jump")
+	_key(KEY_J, true)
+	await _frames(2)
+	_key(KEY_J, false)
+	assert(not get_nodes_in_group("player_shots").is_empty(), "Keyboard J must still fire")
+	await _frames(1)
 
 func _check_button(action: StringName, button: int) -> void:
 	var event := InputEventJoypadButton.new()

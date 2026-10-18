@@ -76,14 +76,14 @@ func _fire() -> void:
 	p.velocity = Vector2(facing * BOLT_SPEED, 0.0)
 	get_parent().add_child(p)
 
-func take_damage(amount: int) -> void:
+func take_damage(amount: int) -> bool:
 	if dead:
-		return
+		return false
 	health -= amount
 	flash = 0.12
 	queue_redraw()
 	if health > 0:
-		return
+		return true
 	dead = true
 	remove_from_group("enemies")
 	collision_layer = 0
@@ -93,6 +93,7 @@ func take_damage(amount: int) -> void:
 	var tween := create_tween()
 	tween.tween_property(self, "modulate:a", 0.0, 0.4)
 	tween.tween_callback(queue_free)
+	return true
 
 func _draw() -> void:
 	if flash > 0.0:

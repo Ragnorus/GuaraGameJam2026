@@ -32,9 +32,9 @@ func _update_locomotion() -> void:
 	if sprite.animation != &"hurt":
 		sprite.play(&"walk" if moving else &"idle")
 
-func take_damage(amount: int) -> void:
+func take_damage(amount: int) -> bool:
 	if dying:
-		return
+		return false
 	health -= amount
 	if health <= 0:
 		dying = true
@@ -52,6 +52,7 @@ func take_damage(amount: int) -> void:
 	else:
 		sprite.stop()
 		sprite.play(&"hurt")
+	return true
 
 func _on_animation_finished() -> void:
 	if dying:

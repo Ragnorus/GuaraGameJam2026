@@ -16,13 +16,13 @@ func _start_reward() -> Node:
 	return current_scene
 
 func _toggle_pause() -> void:
-	var event := InputEventAction.new()
-	event.action = &"ui_cancel"
+	var event := InputEventJoypadButton.new()
+	event.button_index = JOY_BUTTON_START
 	event.pressed = true
 	Input.parse_input_event(event)
 	await _frames(2)
-	event = InputEventAction.new()
-	event.action = &"ui_cancel"
+	event = InputEventJoypadButton.new()
+	event.button_index = JOY_BUTTON_START
 	event.pressed = false
 	Input.parse_input_event(event)
 	await _frames(1)

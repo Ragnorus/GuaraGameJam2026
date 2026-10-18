@@ -1,7 +1,7 @@
 class_name PauseMenu
 extends CanvasLayer
 
-# Esc opens this over a level: resume, restart or return to the main menu.
+# Esc/Start opens this over a level; menu cancel also resumes when paused.
 
 var panel: Control
 
@@ -25,6 +25,11 @@ func _ready() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if not event.is_action_pressed("ui_cancel"):
 		return
+	if not get_tree().paused:
+		var pause_key: bool = event is InputEventKey and (event.keycode == KEY_ESCAPE or event.physical_keycode == KEY_ESCAPE)
+		var pause_button: bool = event is InputEventJoypadButton and event.button_index == JOY_BUTTON_START
+		if not pause_key and not pause_button:
+			return
 	var level := get_parent()
 	if level != null and level.get("finished") and level.get("yeral_reward") == null:
 		return

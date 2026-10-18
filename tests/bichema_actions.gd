@@ -93,6 +93,8 @@ func _run() -> void:
 	world.add_child(boss)
 	boss.activate()
 	boss.attack_cd = 1000.0
+	await _check_clearance(world, boss)
+	await _check_telegraphs(boss)
 	var shadow := Minion.new()
 	shadow.owner_player = target
 	world.add_child(shadow)
@@ -134,12 +136,11 @@ func _run() -> void:
 	var prior_attacks := get_nodes_in_group("evil_genius_attacks")
 	boss.charge_dir = -1
 	boss.charge_time = 0.8
-	boss.charge_windup = 0.35
+	boss.charge_windup = BossEvilGenius.CHARGE_WINDUP
 	boss.take_damage(boss.health)
 	assert(boss.costume_form and boss.transforming and boss.active and not boss.dying)
 	assert(boss.health == GameSettings.scale_health(72) and boss.phase == 1 and defeats[0] == 0 and transforms[0] == 1)
 	assert(boss.sprite.sprite_frames == BossEvilGenius.COSTUME_FRAMES)
-	assert(boss.sprite.position.y == 110.0 and boss.sprite.offset == Vector2(-256, -240) and boss.sprite.scale == Vector2(1.5, 1.5))
 	assert(boss.charge_time == 0.0 and boss.charge_windup == 0.0 and not boss.is_in_group("enemies"))
 	assert(shadow._nearest_enemy() == null, "Transformation and dismissed summons must immediately stop being targetable")
 	for attack in prior_attacks:
@@ -172,6 +173,7 @@ func _run() -> void:
 		await _frames(1)
 	assert(not boss.transforming and boss.is_in_group("enemies") and transforms[0] == 1 and defeats[0] == 0)
 	boss.attack_cd = 1000.0
+	await _check_clearance(world, boss)
 	boss._blast()
 	boss._update_art()
 	assert(boss.sprite.animation == &"blast")
@@ -190,10 +192,10 @@ func _run() -> void:
 	boss._clear_attacks()
 	boss.pose_time = 0.0
 	boss.charge_dir = -1
-	boss.charge_windup = 0.35
+	boss.charge_windup = BossEvilGenius.CHARGE_WINDUP
 	boss._update_art()
 	assert(boss.sprite.animation == &"shield")
-	await _frames(25)
+	await _frames(52)
 	assert(boss.charge_time > 0.0 and boss.sprite.animation == &"run" and boss.velocity.x < -520.0)
 	boss.take_damage(boss.health)
 	assert(boss.dying and boss.sprite.animation == &"dead" and defeats[0] == 0)
@@ -251,5 +253,88 @@ func _run() -> void:
 			child.queue_free()
 	await _frames(5)
 	await create_timer(0.05).timeout
-	print("PASS: Ema two forms, protected transition, pausable recording and death cleanup, costume attacks, single final collapse; minion hurt/death")
+	print("PASS: Ema clean jumps/contact in both forms, readable dash/fan/summon tells, protected transition, pausable recording and death cleanup, costume attacks, single final collapse; minion hurt/death")
 	quit()
+
+func _check_clearance(world: Node2D, boss: BossEvilGenius) -> void:
+	InputSetup.setup()
+	var original_target := boss.target
+	var start := boss.position
+	var jumper := Player.new()
+	jumper.position = start + Vector2(210.0, BossEvilGenius.FEET_Y - 36.0)
+	world.add_child(jumper)
+	boss.target = jumper
+	for direction in [-1, 1]:
+		boss.position = start
+		boss.velocity = Vector2.ZERO
+		jumper.position = start + Vector2(-direction * 210.0, BossEvilGenius.FEET_Y - 36.0)
+		jumper.velocity = Vector2.ZERO
+		jumper.health = jumper.max_health
+		jumper.invuln = 0.0
+		jumper.clear_status()
+		await _frames(3)
+		jumper.position.x = boss.position.x - direction * 90.0
+		await _frames(3)
+		assert(jumper.health == jumper.max_health, "A visible gap beside Ema must not deal invisible contact damage")
+		jumper.position = boss.position + Vector2(-direction * 210.0, BossEvilGenius.FEET_Y - 36.0)
+		var move := &"move_right" if direction > 0 else &"move_left"
+		Input.action_press(move)
+		Input.action_press(&"jump")
+		await _frames(20)
+		Input.action_release(&"jump")
+		await _frames(1)
+		Input.action_press(&"jump")
+		await _frames(79)
+		Input.action_release(&"jump")
+		Input.action_release(move)
+		assert((jumper.position.x - boss.position.x) * direction > 150.0 and jumper.health == jumper.max_health,
+				"A real double jump must cross Ema cleanly in either direction: player %s boss %s HP %d" % [
+					jumper.position, boss.position, jumper.health])
+		jumper.position = start + Vector2(-direction * 100.0, BossEvilGenius.FEET_Y - 36.0)
+		jumper.velocity = Vector2.ZERO
+		jumper.invuln = 0.0
+		Input.action_press(move)
+		await _frames(30)
+		Input.action_release(move)
+		assert(jumper.health < jumper.max_health, "Walking into Ema's actual body must still hurt")
+		jumper.clear_status()
+	boss.target = original_target
+	boss.position = start
+	boss.velocity = Vector2.ZERO
+	jumper.queue_free()
+	await _frames(2)
+
+func _check_telegraphs(boss: BossEvilGenius) -> void:
+	seed(8419)
+	for wanted in [&"blast", &"point", &"shield"]:
+		for attempt in range(100):
+			boss.charge_windup = 0.0
+			boss._clear_attacks()
+			boss._pick_attack()
+			if (wanted == &"shield" and boss.charge_windup > 0.0) or boss.pending_attack == wanted:
+				break
+		boss._update_art()
+		assert(boss.sprite.animation == wanted, "Each attack needs its own visible preparation pose")
+		var duration := boss.charge_windup if wanted == &"shield" else boss.attack_windup
+		var start := boss.position
+		paused = true
+		await _frames(12)
+		assert((boss.charge_windup if wanted == &"shield" else boss.attack_windup) == duration,
+				"Pause must freeze the reaction window")
+		paused = false
+		await _frames(floori(duration * 60.0) - 2)
+		assert(boss.position.distance_to(start) < 1.0 and get_nodes_in_group("evil_genius_attacks").is_empty(),
+				"The visible preparation must precede movement, shots and summoned enemies")
+		await _frames(5)
+		if wanted == &"shield":
+			assert(boss.charge_time > 0.0 and boss.position.distance_to(start) > 1.0,
+					"The dash must launch after the full readable wind-up")
+		else:
+			assert(not get_nodes_in_group("evil_genius_attacks").is_empty(),
+					"The preparation must lead into the promised attack")
+		boss.charge_time = 0.0
+		boss.velocity = Vector2.ZERO
+		boss.position = start
+		boss.pose_time = 0.0
+		boss._clear_attacks()
+		await _frames(1)

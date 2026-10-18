@@ -11,7 +11,14 @@ const SCALE := 1.5
 const FRAMES := preload("res://assets/neon_lawyer_frames.tres")
 const COSTUME_FRAMES := preload("res://assets/ema_costume_frames.tres")
 const PINK_SUIT_TRANSFORM_AUDIO := preload("res://assets/audio/evil_genius_pink_suit.wav")
-const BODY := Vector2(120, 220)
+const BODY := Vector2(84, 196)
+const FEET_Y := 110.0
+const BODY_OFFSET := Vector2(0, FEET_Y - BODY.y / 2.0)
+const PLAYER_HALF := Vector2(21, 36)
+const CONTACT_SLOP := 1.0
+const CHARGE_WINDUP := 0.8
+const BLAST_WINDUP := 0.55
+const SUMMON_WINDUP := 0.6
 const MAX_MINIONS := 5
 const LINES_BLAST := ["Citation needed.", "I have the data on that.", "Actually... you're wrong.", "Let me fact-check you."]
 const LINES_SUMMON := ["Meet my research assistants.", "Peer review, activate!", "I'm the alpha AND the omega."]
@@ -24,6 +31,8 @@ var target: Node2D
 var attack_cd := 2.0
 var charge_time := 0.0
 var charge_windup := 0.0
+var pending_attack: StringName = &""
+var attack_windup := 0.0
 var charge_dir := 1
 var pose_time := 0.0
 var pose := &""
@@ -39,17 +48,19 @@ func _ready() -> void:
 	max_health = GameSettings.scale_health(max_health)
 	health = max_health
 	add_to_group("enemies")
-	var shape := RectangleShape2D.new()
-	shape.size = BODY
+	var shape := CapsuleShape2D.new()
+	shape.radius = BODY.x / 2.0
+	shape.height = BODY.y
 	var cs := CollisionShape2D.new()
 	cs.shape = shape
+	cs.position = BODY_OFFSET
 	add_child(cs)
 	sprite = AnimatedSprite2D.new()
 	sprite.sprite_frames = FRAMES
 	sprite.scale = Vector2(SCALE, SCALE)
 	sprite.centered = false
 	sprite.offset = Vector2(-256, -240)
-	sprite.position.y = BODY.y / 2.0
+	sprite.position.y = FEET_Y
 	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	add_child(sprite)
 	sprite.animation_finished.connect(_on_animation_finished)
@@ -80,6 +91,16 @@ func _physics_process(delta: float) -> void:
 		velocity.x = 0.0
 		if charge_windup <= 0.0:
 			charge_time = 0.8
+	elif attack_windup > 0.0:
+		velocity.x = 0.0
+		attack_windup -= delta
+		if attack_windup <= 0.0:
+			var attack := pending_attack
+			pending_attack = &""
+			if attack == &"blast":
+				_blast()
+			else:
+				_summon()
 	elif charge_time > 0.0:
 		charge_time -= delta
 		velocity.x = charge_dir * 520.0 * mult
@@ -92,11 +113,19 @@ func _physics_process(delta: float) -> void:
 			_pick_attack()
 			attack_cd = 2.2 / mult
 	move_and_slide()
-	if target.has_method("take_damage") \
-			and absf(target.global_position.x - global_position.x) < 95.0 \
-			and absf(target.global_position.y - global_position.y) < 125.0:
-		target.take_damage(2)
+	_touch_damage()
 	_update_art()
+
+func _touch_damage() -> void:
+	if not target.has_method("take_damage"):
+		return
+	# Match the capsule, allowing only the physics solver's small separation at body contact.
+	var distance := (target.global_position - (global_position + BODY_OFFSET)).abs()
+	var corner := Vector2(maxf(0.0, distance.x - PLAYER_HALF.x),
+			maxf(0.0, distance.y - PLAYER_HALF.y - (BODY.y - BODY.x) / 2.0))
+	var radius := BODY.x / 2.0 + CONTACT_SLOP
+	if corner.length_squared() < radius * radius:
+		target.take_damage(2)
 
 func _update_art() -> void:
 	var next := &"idle"
@@ -104,10 +133,12 @@ func _update_art() -> void:
 		next = &"dead"
 	elif transforming:
 		next = &"transform"
-	elif pose_time > 0.0 and pose == &"hurt":
-		next = &"hurt"
 	elif charge_windup > 0.0:
 		next = &"shield"
+	elif attack_windup > 0.0:
+		next = pending_attack
+	elif pose_time > 0.0 and pose == &"hurt":
+		next = &"hurt"
 	elif charge_time > 0.0:
 		next = &"run"
 	elif pose_time > 0.0:
@@ -122,18 +153,47 @@ func _update_art() -> void:
 	if sprite.animation != next:
 		sprite.play(next)
 	sprite.modulate = Color(1.0, 0.45, 0.45) if flash > 0.0 and not transforming else Color.WHITE
+	queue_redraw()
+
+func _draw() -> void:
+	if not active or dying or transforming:
+		return
+	var gold := Color8(255, 224, 145)
+	var dark := Color8(8, 13, 18)
+	if charge_windup > 0.0:
+		var progress := 1.0 - charge_windup / CHARGE_WINDUP
+		var start := Vector2(charge_dir * 56.0, FEET_Y - 6.0)
+		var tip := start + Vector2(charge_dir * (90.0 + progress * 35.0), 0)
+		gold.a = 0.65 + 0.35 * absf(sin(progress * PI * 3.0))
+		for width in [9.0, 4.0]:
+			var color := dark if width == 9.0 else gold
+			draw_line(start, tip, color, width, true)
+			draw_line(tip, tip + Vector2(-charge_dir * 22.0, -16), color, width, true)
+			draw_line(tip, tip + Vector2(-charge_dir * 22.0, 16), color, width, true)
+	elif attack_windup > 0.0:
+		var side := -1.0 if sprite.flip_h else 1.0
+		var center := Vector2(side * 65.0, -30)
+		var duration := BLAST_WINDUP if pending_attack == &"blast" else SUMMON_WINDUP
+		var radius := 12.0 + 16.0 * (1.0 - attack_windup / duration)
+		draw_arc(center, radius, 0, TAU, 24, dark, 8.0, true)
+		draw_arc(center, radius, 0, TAU, 24, gold, 3.0, true)
 
 func _pick_attack() -> void:
 	if not active or transforming or dying or not is_instance_valid(target):
 		return
 	var r := randi() % 3
+	velocity.x = 0.0
 	if r == 0:
-		_blast()
+		pending_attack = &"blast"
+		attack_windup = BLAST_WINDUP
+		_say(LINES_BLAST)
 	elif r == 1:
-		_summon()
+		pending_attack = &"point"
+		attack_windup = SUMMON_WINDUP
+		_say(LINES_SUMMON)
 	else:
 		charge_dir = 1 if target.global_position.x > global_position.x else -1
-		charge_windup = 0.35
+		charge_windup = CHARGE_WINDUP
 		_say(LINES_CHARGE)
 
 func _blast() -> void:
@@ -141,7 +201,6 @@ func _blast() -> void:
 		return
 	pose = &"blast"
 	pose_time = 0.5
-	_say(LINES_BLAST)
 	var count := 1 + phase
 	var dir := 1.0 if target.global_position.x > global_position.x else -1.0
 	for i in range(count):
@@ -167,7 +226,6 @@ func _summon() -> void:
 		return
 	pose = &"point"
 	pose_time = 0.6
-	_say(LINES_SUMMON)
 	var alive := 0
 	for e in get_tree().get_nodes_in_group("enemies"):
 		if e is TruffleAndroid:
@@ -181,9 +239,9 @@ func _summon() -> void:
 		b.add_to_group("evil_genius_attacks")
 		get_parent().add_child(b)
 
-func take_damage(amount: int) -> void:
+func take_damage(amount: int) -> bool:
 	if not active or transforming or dying:
-		return
+		return false
 	GameAudio.play(get_tree(), "squeak")
 	var old_phase := phase
 	health = maxi(0, health - amount)
@@ -199,8 +257,11 @@ func take_damage(amount: int) -> void:
 		pose = &"hurt"
 		pose_time = 0.5
 		attack_cd = maxf(attack_cd, 1.0)
+	return true
 
 func _clear_attacks() -> void:
+	pending_attack = &""
+	attack_windup = 0.0
 	for attack in get_tree().get_nodes_in_group("evil_genius_attacks"):
 		attack.process_mode = Node.PROCESS_MODE_DISABLED
 		attack.remove_from_group("enemies")
@@ -260,7 +321,7 @@ func _die() -> void:
 	lawyer.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	lawyer.scale = Vector2(0.5, 0.5)
 	var side := -1.0 if sprite.flip_h else 1.0
-	lawyer.position = Vector2(side * 170.0, BODY.y / 2.0 - lawyer.texture.get_height() * 0.25)
+	lawyer.position = Vector2(side * 170.0, FEET_Y - lawyer.texture.get_height() * 0.25)
 	lawyer.flip_h = side < 0.0
 	lawyer.modulate.a = 0.0
 	add_child(lawyer)

@@ -118,9 +118,9 @@ func _physics_process(delta: float) -> void:
 func target_floor_y() -> float:
 	return hover_y + HOVER_HEIGHT
 
-func take_damage(amount: int) -> void:
+func take_damage(amount: int) -> bool:
 	if dying:
-		return
+		return false
 	health -= amount
 	if health <= 0:
 		dying = true
@@ -129,9 +129,10 @@ func take_damage(amount: int) -> void:
 		remove_from_group("enemies")
 		collision_layer = 0
 		cs.set_deferred("disabled", true)
-		return
+		return true
 	modulate = Color(2.5, 2.5, 2.5)
 	create_tween().tween_property(self, "modulate", Color.WHITE, 0.15)
+	return true
 
 func _wing_points(side: float, flap: float) -> PackedVector2Array:
 	var pts := PackedVector2Array()

@@ -62,9 +62,9 @@ func _fire() -> void:
 		p.add_to_group("evil_genius_attacks")
 	get_parent().add_child(p)
 
-func take_damage(amount: int) -> void:
+func take_damage(amount: int) -> bool:
 	if dying:
-		return
+		return false
 	health -= amount
 	if health <= 0:
 		dying = true
@@ -80,6 +80,7 @@ func take_damage(amount: int) -> void:
 	elif anim_lock <= 0.0:
 		anim_lock = 0.25
 		sprite.play(&"hurt")
+	return true
 
 func _on_animation_finished() -> void:
 	if dying and sprite.animation == &"dead":

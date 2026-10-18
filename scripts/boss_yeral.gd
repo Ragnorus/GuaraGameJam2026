@@ -8,6 +8,7 @@ signal speech(text: String, duration: float)
 
 const GRAVITY := 1500.0
 const HINT_COOLDOWN := 3.0
+const ATTACK_TELL_TIME := 0.6
 const YERAL_FRAMES := preload("res://assets/yeral_frames.tres")
 const GLIZZY_FRAMES := preload("res://assets/glizzy_frames.tres")
 
@@ -191,6 +192,7 @@ func _process(delta: float) -> void:
 		return
 	pose_time = maxf(0.0, pose_time - delta)
 	var animation := sprite.animation
+	var telling := pending != "" and pending_time <= ATTACK_TELL_TIME
 	if charge_time > 0.0:
 		sprite.flip_h = charge_dir < 0
 		animation = &"charge"
@@ -198,12 +200,22 @@ func _process(delta: float) -> void:
 		if is_instance_valid(target):
 			sprite.flip_h = target.global_position.x < global_position.x
 		if pending != "":
-			# Honest and fake warnings must not reveal different visual tells.
 			animation = &"announce"
+			if telling:
+				match pending:
+					"charge":
+						animation = &"charge"
+					"volley":
+						animation = &"spray" if glizzy and mustard_next else &"volley"
+					"trap":
+						animation = &"trap"
 		elif pose_time <= 0.0:
 			animation = &"idle"
 	if sprite.animation != animation:
 		sprite.play(animation)
+	if telling and pending != "nothing":
+		sprite.pause()
+		sprite.frame = 0
 	sprite.modulate = Color(3, 3, 3) if flash > 0.0 else Color.WHITE
 
 func _physics_process(delta: float) -> void:
@@ -241,7 +253,7 @@ func _physics_process(delta: float) -> void:
 			and absf(target.global_position.y - global_position.y) < 130.0:
 		target.take_damage(2)
 
-# Each attack has an announcement; it may be honest, fake, or swapped for another.
+# The boast can lie; the final held pose always previews the real attack.
 func _announce() -> void:
 	var attacks := ["volley", "charge", "trap"]
 	var real: String = attacks[randi() % attacks.size()]
@@ -279,6 +291,7 @@ func _execute(a: String) -> void:
 		"charge":
 			charge_dir = 1 if target.global_position.x > global_position.x else -1
 			charge_time = 0.85 if glizzy else 0.7
+			sprite.play(&"charge")
 		"trap":
 			_trap()
 			sprite.play(&"trap")
@@ -330,9 +343,9 @@ func _trap() -> void:
 		z.add_to_group("yeral_attacks")
 		get_parent().add_child(z)
 
-func take_damage(amount: int) -> void:
+func take_damage(amount: int) -> bool:
 	if not active or transforming or dying:
-		return
+		return false
 	health = maxi(0, health - amount)
 	flash = 0.1
 	phase = 1 if health > max_health * 2.0 / 3.0 else (2 if health > max_health / 3.0 else 3)
@@ -342,7 +355,7 @@ func take_damage(amount: int) -> void:
 			_transform()
 		else:
 			_die()
-		return
+		return true
 	if glizzy and pending.is_empty() and charge_time <= 0.0:
 		pose_time = 0.2
 		sprite.stop()
@@ -351,6 +364,7 @@ func take_damage(amount: int) -> void:
 		hint_cd = HINT_COOLDOWN
 		speech.emit(("Glizzy Gobler: " if glizzy else "Yeral: ") + hints[hint_index % hints.size()], 3.5)
 		hint_index += 1
+	return true
 
 func _clear_attacks() -> void:
 	for attack in get_tree().get_nodes_in_group("yeral_attacks"):

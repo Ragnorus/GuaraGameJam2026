@@ -2,12 +2,14 @@ class_name Minion
 extends Node2D
 
 const SPEED := 280.0
+const MAX_BAT_HITS := 2
 const CHARACTER_FRAMES := preload("res://assets/character_frames.tres")
 
 var owner_player: Node2D
 var lifetime := 0.0
 var recalled := 0.0
 var attack_cd := 0.0
+var successful_hits := 0
 var bob := randf() * TAU
 var sprite: AnimatedSprite2D
 
@@ -24,7 +26,7 @@ func recall() -> void:
 	recalled = 2.0
 
 func _physics_process(delta: float) -> void:
-	if not is_instance_valid(owner_player) or (owner_player is Player and (owner_player.dead or owner_player.controls_locked)):
+	if is_queued_for_deletion() or not is_instance_valid(owner_player) or (owner_player is Player and (owner_player.dead or owner_player.controls_locked)):
 		queue_free()
 		return
 	bob += delta * 6.0
@@ -55,9 +57,13 @@ func _physics_process(delta: float) -> void:
 		attack_cd = 0.5
 		if sprite.animation != &"shadow_spawn":
 			sprite.play(&"shadow_attack")
-		target.take_damage(1)
-		if owner_player.has_method("add_meter"):
-			owner_player.add_meter(2.0)
+		if target.take_damage(1):
+			successful_hits += 1
+			if owner_player.has_method("add_meter"):
+				owner_player.add_meter(2.0)
+			if successful_hits >= MAX_BAT_HITS:
+				queue_free()
+				return
 
 func _nearest_enemy() -> Node2D:
 	var best: Node2D = null

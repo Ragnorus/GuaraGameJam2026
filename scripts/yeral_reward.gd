@@ -31,7 +31,7 @@ func _ready() -> void:
 	screen.resized.connect(_layout)
 	title = _label("YERAL'S POWER", 38)
 	screen.add_child(title)
-	power = _label("DASH ACQUIRED!\nShift / LB   |   Jump during a dash to rise", 26)
+	power = _label("DASH ACQUIRED!\nShift / B (Circle)   |   Jump during a dash to rise", 26)
 	screen.add_child(power)
 	hero = AnimatedSprite2D.new()
 	hero.sprite_frames = Player.CHARACTER_FRAMES
