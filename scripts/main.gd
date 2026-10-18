@@ -474,6 +474,8 @@ func _update_hud() -> void:
 	meter_bar.value = player.meter
 	hud_label.text = "HP %d/%d%s" % [player.health, player.max_health,
 			("   SHIELD " + ("READY (Q)" if player.shield_cd <= 0.0 else "%.0fs" % ceilf(player.shield_cd))) if GameSettings.shield_unlocked else ""]
+	if player.mecha_time > 0.0:
+		hud_label.text += "   MECHA %ds" % ceili(player.mecha_time)
 	hud_label.position = Vector2(24, 74)
 	hud_label.add_theme_font_size_override("font_size", 14)
 

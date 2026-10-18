@@ -20,6 +20,7 @@ Nerd with glasses, hoodie, magical controller. Abilities (implemented in `script
 - Shadow Spawn: summon minions (K).
 - Recall: reposition minions around him (L).
 - Ultimate GUARA ARMY: unleash all minions temporarily (U, needs full meter).
+- Mecha chest power-up: 20 seconds of supplied mecha art with a bright yellow outline, 3-damage gold rifle shots on J/click/X/RT (0.2s cooldown), and temporary rocket dash on Shift/LB even before Dash unlock. Starting/late chests in both stages; another refreshes the timer. Same health, run speed, jumps, collision size and support abilities; acid is still lethal. Protected assembly/revert preserve gravity; pause/cinematics freeze lifetime, and death/restart discard the form.
 
 ## Boss roster (name - theme; mechanics; reward)
 Each boss needs a distinct look, gimmick and unlockable reward.

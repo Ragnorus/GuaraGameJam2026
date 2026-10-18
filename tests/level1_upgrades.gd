@@ -54,6 +54,10 @@ func _run() -> void:
 	var stage := current_scene
 	var route := stage.get("yeral_route") as YeralRoute
 	var player := stage.get("player") as Player
+	# Keep these normal-form movement/shield scenarios separate from the mecha pickup regression.
+	for child in stage.get_children():
+		if child is Pickup and child.kind == Pickup.Kind.MECHA:
+			child.queue_free()
 	assert(route.room_enemies[0].any(func(e): return e is Turret), "Area 1 teaches the turret")
 	assert(route.room_enemies[1].any(func(e): return e is Hopper), "Area 2 has a hopper")
 	assert(route.room_enemies[3].any(func(e): return e is WingedMob) and route.room_enemies[3].any(func(e): return e is Turret))

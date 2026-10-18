@@ -61,6 +61,8 @@ func build(parent_stage: Node2D) -> void:
 		stage._spawn_pickup(Pickup.Kind.COIN, at)
 	for at in [Vector2(1080, 550), Vector2(2420, 550), Vector2(6700, 550)]:
 		stage._spawn_pickup(Pickup.Kind.MEDALLA, at)
+	for at in [Vector2(260, 560), Vector2(6680, 560)]:
+		stage._spawn_pickup(Pickup.Kind.MECHA, at)
 	_set_area(0)
 
 func _build_geometry() -> void:

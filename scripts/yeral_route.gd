@@ -90,6 +90,8 @@ func build(parent_stage: Node2D) -> void:
 		stage._spawn_pickup(Pickup.Kind.COIN, at)
 	for at in [Vector2(2420, 1270), Vector2(4285, 1270), Vector2(6870, 550)]:
 		stage._spawn_pickup(Pickup.Kind.MEDALLA, at)
+	for at in [Vector2(260, 560), Vector2(6700, 560)]:
+		stage._spawn_pickup(Pickup.Kind.MECHA, at)
 	_build_overlay()
 	_set_area(0)
 	if checkpoint > 0:

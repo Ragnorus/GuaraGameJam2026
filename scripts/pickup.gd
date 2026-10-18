@@ -1,10 +1,11 @@
 class_name Pickup
 extends Area2D
 
-enum Kind { MEDALLA, COIN, SMALL_HEAL }
+enum Kind { MEDALLA, COIN, SMALL_HEAL, MECHA }
 
 const MEDALLA_TEXTURE := preload("res://assets/medalla_can.png")
 const COIN_TEXTURE := preload("res://assets/coin.png")
+const MECHA_TEXTURE := preload("res://assets/mecha_chest.png")
 const HEAL_AMOUNT := 4
 const SMALL_HEAL_AMOUNT := 2
 const COIN_POINTS := 5
@@ -49,6 +50,14 @@ func _ready() -> void:
 	sprite.texture = COIN_TEXTURE if kind == Kind.COIN else MEDALLA_TEXTURE
 	sprite.scale = Vector2(0.4, 0.4) if kind == Kind.SMALL_HEAL else Vector2(0.65, 0.65)
 	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	if kind == Kind.MECHA:
+		sprite.texture = MECHA_TEXTURE
+		sprite.scale = Vector2.ONE * 0.8
+		var outline := ShaderMaterial.new()
+		outline.shader = Player.OUTLINE_SHADER
+		outline.set_shader_parameter("frame_uv", Vector4(0.0, 0.0, 1.0, 1.0))
+		outline.set_shader_parameter("outline_color", Player.MECHA_OUTLINE_COLOR)
+		sprite.material = outline
 	add_child(sprite)
 
 func _process(delta: float) -> void:
@@ -73,6 +82,10 @@ func _on_body_entered(body: Node2D) -> void:
 	elif kind == Kind.COIN:
 		GameSettings.add_score(COIN_POINTS)
 		_show_popup("+%d" % COIN_POINTS, Color8(255, 220, 80))
+	elif kind == Kind.MECHA:
+		if not player.activate_mecha():
+			return
+		_show_popup("MECHA: 20s", Player.MECHA_OUTLINE_COLOR)
 	else:
 		return
 	queue_free()

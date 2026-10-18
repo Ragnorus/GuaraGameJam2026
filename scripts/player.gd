@@ -19,6 +19,10 @@ const SHIELD_COOLDOWN := 6.0
 const MAX_MINIONS := 4
 const CHARACTER_FRAMES := preload("res://assets/character_frames.tres")
 const OUTLINE_SHADER := preload("res://scripts/player_outline.gdshader")
+const MECHA_FRAMES := preload("res://assets/mecha_frames.tres")
+const MECHA_BOLT := preload("res://assets/mecha_bolt.png")
+const MECHA_DURATION := 20.0
+const MECHA_OUTLINE_COLOR := Color(1.0, 0.92, 0.2, 1.0)
 
 var player_sprite: AnimatedSprite2D
 var ultimate_beam: AnimatedSprite2D
@@ -52,6 +56,8 @@ var stun_fx: Node2D
 var stun_spin := 0.0
 var jump_buffer := 0.0
 var shield_cd := 0.0
+var mecha_time := 0.0
+var mecha_transition: StringName = &""
 func _ready() -> void:
 	player_sprite = AnimatedSprite2D.new()
 	player_sprite.sprite_frames = CHARACTER_FRAMES
@@ -94,22 +100,72 @@ func _ready() -> void:
 
 func _update_outline_frame() -> void:
 	# animation_changed can arrive before the previous animation's frame is reset.
-	var frame := mini(player_sprite.frame, CHARACTER_FRAMES.get_frame_count(player_sprite.animation) - 1)
-	var texture := CHARACTER_FRAMES.get_frame_texture(player_sprite.animation, frame) as AtlasTexture
+	var frames := player_sprite.sprite_frames
+	var frame := mini(player_sprite.frame, frames.get_frame_count(player_sprite.animation) - 1)
+	var texture := frames.get_frame_texture(player_sprite.animation, frame) as AtlasTexture
 	var atlas_size := texture.atlas.get_size()
 	var start := (texture.region.position + Vector2(0.5, 0.5)) / atlas_size
 	var end := (texture.region.end - Vector2(0.5, 0.5)) / atlas_size
 	(player_sprite.material as ShaderMaterial).set_shader_parameter("frame_uv", Vector4(start.x, start.y, end.x, end.y))
 
+func activate_mecha() -> bool:
+	if dead or controls_locked or stun_time > 0.0 or knockback_time > 0.0 or mecha_transition != &"":
+		return false
+	mecha_time = MECHA_DURATION
+	if player_sprite.sprite_frames != MECHA_FRAMES:
+		_set_mecha_visuals(true)
+		_start_mecha_transition(&"transform")
+	stats_changed.emit()
+	return true
+
+func _set_mecha_visuals(powered: bool) -> void:
+	player_sprite.stop()
+	player_sprite.animation = &"idle"
+	player_sprite.sprite_frames = MECHA_FRAMES if powered else CHARACTER_FRAMES
+	player_sprite.centered = not powered
+	player_sprite.scale = Vector2.ONE * (0.8 if powered else 0.5)
+	player_sprite.offset = Vector2(-128, -232) if powered else Vector2(0, -72)
+	(player_sprite.material as ShaderMaterial).set_shader_parameter("outline_color",
+			MECHA_OUTLINE_COLOR if powered else Color(1.0, 0.85, 0.48, 0.95))
+	player_sprite.play(&"idle")
+	_update_outline_frame()
+
+func _start_mecha_transition(animation: StringName) -> void:
+	mecha_transition = animation
+	dash_time = 0.0
+	jump_buffer = 0.0
+	action_time = 0.0
+	_play_action(animation)
+	_update_animation()
+
 func _physics_process(delta: float) -> void:
-	action_time = maxf(0.0, action_time - delta)
 	if controls_locked:
 		velocity = Vector2.ZERO
 		return
+	action_time = maxf(0.0, action_time - delta)
 	if dead:
 		velocity.x = 0.0
 		velocity.y += GRAVITY * delta
 		move_and_slide()
+		_update_animation()
+		return
+	if mecha_transition == &"" and mecha_time > 0.0:
+		var before := mecha_time
+		mecha_time = maxf(0.0, mecha_time - delta)
+		if mecha_time <= 0.0:
+			_start_mecha_transition(&"revert")
+		if mecha_time <= 0.0 or ceilf(mecha_time) != ceilf(before):
+			stats_changed.emit()
+	if mecha_transition != &"":
+		velocity.x = 0.0
+		if not is_on_floor():
+			velocity.y += GRAVITY * delta
+		move_and_slide()
+		if action_time <= 0.0:
+			var reverting := mecha_transition == &"revert"
+			mecha_transition = &""
+			if reverting:
+				_set_mecha_visuals(false)
 		_update_animation()
 		return
 	shoot_cd = maxf(0.0, shoot_cd - delta)
@@ -145,7 +201,7 @@ func _physics_process(delta: float) -> void:
 	var dir := Input.get_axis("move_left", "move_right")
 	if dir != 0.0:
 		facing = 1 if dir > 0.0 else -1
-	if Input.is_action_just_pressed("dash") and dash_cooldown <= 0.0 and GameSettings.dash_unlocked:
+	if Input.is_action_just_pressed("dash") and dash_cooldown <= 0.0 and (GameSettings.dash_unlocked or mecha_time > 0.0):
 		dash_time = DASH_DURATION
 		dash_cooldown = DASH_COOLDOWN
 		dash_direction = facing
@@ -188,10 +244,13 @@ func _physics_process(delta: float) -> void:
 	_update_animation()
 
 func _play_action(animation: StringName) -> void:
+	if mecha_transition != &"" and animation != mecha_transition and animation != &"death":
+		return
 	if action_time > 0.0 and action_animation == &"hurt" and animation != &"hurt" and animation != &"death":
 		return
 	action_animation = animation
-	action_time = CHARACTER_FRAMES.get_frame_count(animation) / CHARACTER_FRAMES.get_animation_speed(animation)
+	var frames := player_sprite.sprite_frames
+	action_time = frames.get_frame_count(animation) / frames.get_animation_speed(animation)
 	player_sprite.stop()
 	player_sprite.play(animation)
 
@@ -199,6 +258,8 @@ func _update_animation() -> void:
 	var animation: StringName
 	if dead:
 		animation = &"death"
+	elif mecha_transition != &"":
+		animation = mecha_transition
 	elif action_time > 0.0 and action_animation == &"hurt":
 		animation = &"hurt"
 	elif dash_time > 0.0:
@@ -210,7 +271,7 @@ func _update_animation() -> void:
 	else:
 		animation = &"run" if absf(velocity.x) > 1.0 else &"idle"
 	player_sprite.flip_h = (dash_direction if dash_time > 0.0 and dash_vector.x != 0.0 else facing) < 0
-	player_sprite.visible = dead or animation == &"hurt" or invuln <= 0.0 or int(invuln * 20) % 2 != 0
+	player_sprite.visible = dead or mecha_transition != &"" or animation == &"hurt" or invuln <= 0.0 or int(invuln * 20) % 2 != 0
 	# Red flash right after a hit, fading out as the blink starts.
 	var flash := clampf((invuln - 0.8) / 0.2, 0.0, 1.0) if not dead else 0.0
 	player_sprite.modulate = Color(1.0, 1.0 - 0.6 * flash, 1.0 - 0.6 * flash)
@@ -218,21 +279,25 @@ func _update_animation() -> void:
 		player_sprite.play(animation)
 
 func _shoot() -> void:
-	if dead or controls_locked:
+	if dead or controls_locked or mecha_transition != &"":
 		return
-	shoot_cd = 0.25
+	var powered := mecha_time > 0.0
+	shoot_cd = 0.2 if powered else 0.25
 	if action_time <= 0.0 or action_animation == &"shoot" or action_animation == &"land":
 		_play_action(&"shoot")
 	var p := Projectile.new()
-	p.character_art = true
+	p.character_art = not powered
+	if powered:
+		p.texture = MECHA_BOLT
+		p.texture_scale = Vector2.ONE * 0.8
 	p.owner_player = self
-	p.position = global_position + Vector2(facing * 22, -6)
-	p.velocity = Vector2(facing * 650, 0)
-	p.damage = 1
+	p.position = global_position + Vector2(facing * (42 if powered else 22), 3 if powered else -6)
+	p.velocity = Vector2(facing * (850 if powered else 650), 0)
+	p.damage = 3 if powered else 1
 	get_parent().add_child(p)
 
 func shield_burst() -> bool:
-	if dead or controls_locked or stun_time > 0.0 or not GameSettings.shield_unlocked or shield_cd > 0.0:
+	if dead or controls_locked or mecha_transition != &"" or stun_time > 0.0 or not GameSettings.shield_unlocked or shield_cd > 0.0:
 		return false
 	shield_cd = SHIELD_COOLDOWN
 	invuln = maxf(invuln, 0.6)
@@ -250,7 +315,7 @@ func _clean_minions() -> void:
 	minions = minions.filter(func(m): return is_instance_valid(m))
 
 func _spawn_minion() -> void:
-	if dead or controls_locked:
+	if dead or controls_locked or mecha_transition != &"":
 		return
 	var m := Minion.new()
 	m.owner_player = self
@@ -259,7 +324,7 @@ func _spawn_minion() -> void:
 	minions.append(m)
 
 func _summon() -> void:
-	if dead or controls_locked:
+	if dead or controls_locked or mecha_transition != &"":
 		return
 	_clean_minions()
 	if summon_cd > 0.0 or minions.size() >= max_minions:
@@ -269,7 +334,7 @@ func _summon() -> void:
 	_play_action(&"summon")
 
 func _ultimate() -> void:
-	if dead or controls_locked:
+	if dead or controls_locked or mecha_transition != &"":
 		return
 	meter = 0.0
 	_play_action(&"ultimate")
@@ -308,7 +373,7 @@ func heal(amount: int) -> int:
 	return restored
 
 func take_damage(amount: int) -> void:
-	if invuln > 0.0 or dead or controls_locked:
+	if invuln > 0.0 or dead or controls_locked or mecha_transition != &"":
 		return
 	amount = GameSettings.incoming_damage(amount)
 	GameAudio.play(get_tree(), "hurt")
@@ -327,7 +392,7 @@ func take_damage(amount: int) -> void:
 
 # Damage plus optional shove/stun. Returns false when the hit is ignored (invulnerable, dead or in a cinematic).
 func hit_by(amount: int, knockback := Vector2.ZERO, stun := 0.0) -> bool:
-	if invuln > 0.0 or dead or controls_locked:
+	if invuln > 0.0 or dead or controls_locked or mecha_transition != &"":
 		return false
 	var vx := velocity.x
 	take_damage(amount)
@@ -390,6 +455,10 @@ func die() -> void:
 	dead = true
 	controls_locked = false
 	health = 0
+	mecha_time = 0.0
+	mecha_transition = &""
+	if player_sprite.sprite_frames == MECHA_FRAMES:
+		_set_mecha_visuals(false)
 	dash_time = 0.0
 	clear_status()
 	clear_attacks()
