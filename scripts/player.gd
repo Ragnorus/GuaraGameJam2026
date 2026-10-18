@@ -11,6 +11,11 @@ const MAX_JUMPS := 2
 const DASH_SPEED := 700.0
 const DASH_DURATION := 0.16
 const DASH_COOLDOWN := 0.7
+const JUMP_CUT := 0.45
+const JUMP_BUFFER := 0.12
+const HIT_KNOCKBACK := 170.0
+const HIT_KNOCKBACK_TIME := 0.14
+const SHIELD_COOLDOWN := 6.0
 const MAX_MINIONS := 4
 const CHARACTER_FRAMES := preload("res://assets/character_frames.tres")
 const OUTLINE_SHADER := preload("res://scripts/player_outline.gdshader")
@@ -45,7 +50,8 @@ var stun_time := 0.0
 var stun_guard := 0.0
 var stun_fx: Node2D
 var stun_spin := 0.0
-
+var jump_buffer := 0.0
+var shield_cd := 0.0
 func _ready() -> void:
 	player_sprite = AnimatedSprite2D.new()
 	player_sprite.sprite_frames = CHARACTER_FRAMES
@@ -111,6 +117,13 @@ func _physics_process(delta: float) -> void:
 	invuln = maxf(0.0, invuln - delta)
 	dash_cooldown = maxf(0.0, dash_cooldown - delta)
 	dash_time = maxf(0.0, dash_time - delta)
+	if shield_cd > 0.0:
+		var before := shield_cd
+		shield_cd = maxf(0.0, shield_cd - delta)
+		# Refresh the HUD countdown once per whole second and when the shield is ready again.
+		if shield_cd <= 0.0 or ceilf(shield_cd) != ceilf(before):
+			stats_changed.emit()
+	jump_buffer = maxf(0.0, jump_buffer - delta)
 	knockback_time = maxf(0.0, knockback_time - delta)
 	stun_time = maxf(0.0, stun_time - delta)
 	stun_guard = maxf(0.0, stun_guard - delta)
@@ -144,10 +157,17 @@ func _physics_process(delta: float) -> void:
 		velocity = dash_vector * DASH_SPEED
 	else:
 		velocity.x = dir * SPEED
-	if Input.is_action_just_pressed("jump") and dash_time <= 0.0 and jumps_remaining > 0:
+	if Input.is_action_just_pressed("jump"):
+		jump_buffer = JUMP_BUFFER
+	if jump_buffer > 0.0 and dash_time <= 0.0 and jumps_remaining > 0:
+		jump_buffer = 0.0
 		air_animation = &"jump" if jumps_remaining == MAX_JUMPS else &"double_jump"
 		velocity.y = JUMP_VELOCITY
 		jumps_remaining -= 1
+	# Releasing jump early cuts the rise, so jump height is controlled by how long the button is held.
+	if Input.is_action_just_released("jump") and not Input.is_action_just_pressed("jump") \
+			and velocity.y < JUMP_VELOCITY * 0.35 and dash_time <= 0.0:
+		velocity.y *= JUMP_CUT
 	var was_on_floor := is_on_floor()
 	move_and_slide()
 	if not was_on_floor and is_on_floor() and action_time <= 0.0:
@@ -163,6 +183,8 @@ func _physics_process(delta: float) -> void:
 				m.recall()
 	if Input.is_action_just_pressed("ultimate") and meter >= meter_max:
 		_ultimate()
+	if Input.is_action_just_pressed("shield"):
+		shield_burst()
 	_update_animation()
 
 func _play_action(animation: StringName) -> void:
@@ -189,6 +211,9 @@ func _update_animation() -> void:
 		animation = &"run" if absf(velocity.x) > 1.0 else &"idle"
 	player_sprite.flip_h = (dash_direction if dash_time > 0.0 and dash_vector.x != 0.0 else facing) < 0
 	player_sprite.visible = dead or animation == &"hurt" or invuln <= 0.0 or int(invuln * 20) % 2 != 0
+	# Red flash right after a hit, fading out as the blink starts.
+	var flash := clampf((invuln - 0.8) / 0.2, 0.0, 1.0) if not dead else 0.0
+	player_sprite.modulate = Color(1.0, 1.0 - 0.6 * flash, 1.0 - 0.6 * flash)
 	if player_sprite.animation != animation:
 		player_sprite.play(animation)
 
@@ -205,6 +230,21 @@ func _shoot() -> void:
 	p.velocity = Vector2(facing * 650, 0)
 	p.damage = 1
 	get_parent().add_child(p)
+
+func shield_burst() -> bool:
+	if dead or controls_locked or stun_time > 0.0 or not GameSettings.shield_unlocked or shield_cd > 0.0:
+		return false
+	shield_cd = SHIELD_COOLDOWN
+	invuln = maxf(invuln, 0.6)
+	_play_action(&"recall")
+	var ring := ShieldBurst.new()
+	ring.position = global_position
+	ring.z_index = 20
+	get_parent().add_child(ring)
+	ShieldBurst.apply(global_position, get_tree())
+	GameAudio.play(get_tree(), "boss")
+	stats_changed.emit()
+	return true
 
 func _clean_minions() -> void:
 	minions = minions.filter(func(m): return is_instance_valid(m))
@@ -275,6 +315,10 @@ func take_damage(amount: int) -> void:
 	health -= amount
 	invuln = 1.0
 	velocity.y = -250.0
+	# A short shove away from where the player faces, so contact hits read clearly.
+	velocity.x = -facing * HIT_KNOCKBACK
+	knockback_time = HIT_KNOCKBACK_TIME
+	dash_time = 0.0
 	_play_action(&"hurt")
 	stats_changed.emit()
 	if health <= 0:
@@ -285,10 +329,14 @@ func take_damage(amount: int) -> void:
 func hit_by(amount: int, knockback := Vector2.ZERO, stun := 0.0) -> bool:
 	if invuln > 0.0 or dead or controls_locked:
 		return false
+	var vx := velocity.x
 	take_damage(amount)
 	if dead:
 		return true
-	if knockback != Vector2.ZERO:
+	if knockback == Vector2.ZERO:
+		velocity.x = vx
+		knockback_time = 0.0
+	else:
 		velocity = knockback
 		knockback_time = 0.35
 	if stun > 0.0 and stun_guard <= 0.0:
@@ -299,6 +347,7 @@ func hit_by(amount: int, knockback := Vector2.ZERO, stun := 0.0) -> bool:
 	return true
 
 func clear_status() -> void:
+	jump_buffer = 0.0
 	knockback_time = 0.0
 	stun_time = 0.0
 	stun_guard = 0.0

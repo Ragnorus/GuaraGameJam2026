@@ -24,11 +24,13 @@ Related: `godot-development` (implementation rules), `guara-dev-workflow` (deplo
 - Autonomy: run the real AI for several hundred frames. Assert it keeps moving, attacks repeatedly, and never idles still for long.
 - Death: during each state, including mid-air; cleanup of attacks and summons; no damage after death; room exit unlocking.
 - Player death, restart, pause and difficulty.
+- `tests/level1_upgrades.gd` covers Level 1 checkpoints (including boss-intro restart), variable jumps and the 0.12s landing buffer, loot expiry/healing, turret/hopper, optional guards, hit recoil, and Shield Burst unlock/range/cooldown/death/stun/cinematic guards. Reset checkpoint state between independent scenarios. Reset hit status before a test that shoots immediately after taking damage.
 
 ## Running
 - Import first after adding assets/scripts: `godot --headless --path . --editor --import --rendering-method gl_compatibility --quit`.
 - Run each suite as `godot --headless --path . --fixed-fps 60 --script res://tests/<name>.gd` inside a bounded timeout (about 120s); a failed `assert` leaves Godot waiting in the debugger. Kill the process by PID.
 - Scan stdout and stderr for `SCRIPT ERROR`, `SHADER ERROR` and `ERROR` even when the PASS line printed.
+- Ensure wrapper scripts actually pass `--fixed-fps 60`; merely calling their helper with frame counts is not deterministic.
 - After an actor change, run its own suite, then the regressions: `yeral_route`, `death_safety`, `level_progression`, `robot_actions`, `yeral_actions`, `platform_visibility`, `difficulty_score`, `pickups`, `story_intro`. `player_actions` has a known upstream vertical-dash failure; do not treat that one as new.
 - Validation runs can rewrite `assets/*.import`. Restore only the churn that your run produced.
 

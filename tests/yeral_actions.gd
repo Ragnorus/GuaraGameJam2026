@@ -195,9 +195,8 @@ func _second_form(boss: BossYeral, player: Player) -> void:
 	assert(puddle.warn > 0.0 and player.health == health and not puddle.splash.visible, "A sauce warning must be harmless")
 	player.set_physics_process(true)
 	Input.action_press(&"jump")
-	await _frames(1)
-	Input.action_release(&"jump")
 	await _frames(10)
+	Input.action_release(&"jump")
 	assert(player.position.y < puddle.position.y - 55.0, "The player's real jump must clear the sauce hit zone")
 	player.set_physics_process(false)
 	player.invuln = 0.0

@@ -67,7 +67,7 @@ func _check_jump(stage: Node, index: int) -> void:
 	for i in range(110):
 		if i == 0 or i == 24:
 			Input.action_press(&"jump")
-		if i == 1 or i == 25:
+		if i == 18 or i == 42:
 			Input.action_release(&"jump")
 		await _frames(1)
 		highest_feet = minf(highest_feet, _feet_y(player))

@@ -26,7 +26,7 @@ func _run() -> void:
 	var yeral := preload("res://scenes/main.tscn").instantiate()
 	root.add_child(yeral)
 	await _frames(2)
-	assert(_pickup_count(yeral) == 8, "Yeral must place six coins and two medalla cans")
+	assert(_pickup_count(yeral) == 15, "Yeral must place twelve coins (two secret trios) and three medalla cans")
 	var player := yeral.get("player") as Player
 	var can := _find_pickup(yeral, Pickup.Kind.MEDALLA)
 	assert(can != null)

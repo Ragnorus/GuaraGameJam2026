@@ -144,6 +144,7 @@ func _die() -> void:
 func _award_points() -> void:
 	GameSettings.add_score(points)
 	GameAudio.play(get_tree(), "kill")
+	Pickup.drop_loot(self, target)
 	var popup := Label.new()
 	popup.text = "+%d" % points
 	popup.add_theme_font_size_override("font_size", 22)

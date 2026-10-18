@@ -49,7 +49,7 @@ func _build_text() -> String:
 	lines.append("")
 	lines.append("CONTROLS")
 	lines.append("Move A/D or arrows / Left Stick or D-pad; Jump Space/W/Up or A; Dash Shift or LB; Controller Smash J/left click or X.")
-	lines.append("Summon minions K or Y; Recall L or RB; GUARA ARMY U or R3 (full meter); Restart R; Pause Esc/B/Start. Menus: D-pad/Left Stick, A to accept, B/Start to go back.")
+	lines.append("Summon minions K or Y; Recall L or RB; GUARA ARMY U or R3 (full meter); SHIELD BURST E or L3 (unlocked by beating the Football Sergeant); Restart R (retries from your last checkpoint in Yeral's level); Pause Esc/B/Start. Menus: D-pad/Left Stick, A to accept, B/Start to go back.")
 	lines.append("")
 	lines.append("MENU")
 	lines.append("Start Game begins at the first level. Level Select replays a specific level. Settings has difficulty, resolution, fullscreen, music and sound.")

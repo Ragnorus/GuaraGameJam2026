@@ -17,21 +17,21 @@ func _jump_to(player: Player, target_x: float, double_jump := false) -> void:
 	var direction := &"move_right" if target_x > player.position.x else &"move_left"
 	Input.action_press(direction)
 	Input.action_press(&"jump")
-	await _frames(1)
+	await _frames(16)
 	Input.action_release(&"jump")
 	for i in range(160):
-		if double_jump and i == 19:
+		if double_jump and i == 3:
 			Input.action_press(&"jump")
-		if i == 20:
+		if i > 3 and player.velocity.y >= 0.0:
 			Input.action_release(&"jump")
 		if absf(player.position.x - target_x) < 6.0:
 			Input.action_release(direction)
 		await _frames(1)
-		if player.is_on_floor() and i > 15:
+		if player.is_on_floor() and i > 5:
 			break
 	Input.action_release(direction)
 	Input.action_release(&"jump")
-	assert(not player.dead and player.is_on_floor(), "The tested route jump must land safely")
+	assert(not player.dead and player.is_on_floor(), "Jump to %s failed at %s hp %d" % [target_x, player.position, player.health])
 
 func _run() -> void:
 	GameSettings.loaded = true
@@ -99,6 +99,7 @@ func _run() -> void:
 	player.position.x = route.AREAS[2].end.x - 80
 	await _frames(85)
 	assert(route.area_index == 3)
+	_clear(route, 3)
 	var moving := route.moving_blocks[0]
 	player.position = Vector2(4250, 1284)
 	player.velocity = Vector2.ZERO
@@ -192,6 +193,7 @@ func _run() -> void:
 	assert(not route.voice.playing and not route.speech.visible)
 	await _frames(350)
 	assert(not route.boss.active and player.dead, "Death must cancel delayed boss activation")
+	YeralRoute.checkpoint = 0
 	Input.action_press(&"restart")
 	await _frames(1)
 	Input.action_release(&"restart")

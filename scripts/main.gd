@@ -381,11 +381,14 @@ func _build_world() -> void:
 				break
 	_update_hud()
 
-func _spawn_pickup(kind: int, at: Vector2) -> void:
+func _spawn_pickup(kind: int, at: Vector2, dropped := false) -> Pickup:
 	var pickup := Pickup.new()
 	pickup.kind = kind
 	pickup.position = at
+	if dropped:
+		pickup.lifetime = Pickup.DROP_LIFETIME
 	add_child(pickup)
+	return pickup
 
 # Invisible energy barrier that blocks the player until its zone's mobs are dead.
 func _add_gate(x: float) -> StaticBody2D:
@@ -476,7 +479,7 @@ func _build_hud() -> void:
 	dialogue.add_theme_font_size_override("font_size", 22)
 	layer.add_child(dialogue)
 	var help := Label.new()
-	help.text = "Move A/D/LS/D-pad  Jump Space/A  Smash J/X  Dash Shift/LB  Summon K/Y  Recall L/RB  Army U/R3  Pause Esc/B/Start  Restart R"
+	help.text = "Move A/D/LS/D-pad  Jump Space/A  Smash J/X  Dash Shift/LB  Summon K/Y  Recall L/RB  Army U/R3  Shield E/L3  Pause Esc/B/Start  Restart R"
 	help.position = Vector2(16, 690)
 	layer.add_child(help)
 	score_label = Label.new()
@@ -497,8 +500,9 @@ func _update_hud() -> void:
 	hp_bar.value = player.health
 	meter_bar.max_value = player.meter_max
 	meter_bar.value = player.meter
-	hud_label.text = "HP %d/%d" % [player.health, player.max_health]
-	hud_label.position = Vector2(24, 12)
+	hud_label.text = "HP %d/%d%s" % [player.health, player.max_health,
+			("   SHIELD " + ("READY (E)" if player.shield_cd <= 0.0 else "%.0fs" % ceilf(player.shield_cd))) if GameSettings.shield_unlocked else ""]
+	hud_label.position = Vector2(24, 74)
 	hud_label.add_theme_font_size_override("font_size", 14)
 
 func _process(delta: float) -> void:
@@ -579,6 +583,7 @@ func _on_boss_defeated() -> void:
 	GameSettings.complete_level()
 	if not bichema_level:
 		GameSettings.dash_unlocked = true
+		YeralRoute.checkpoint = 0
 		GameSettings.save()
 	GameAudio.play(get_tree(), "boss")
 	var score_text := "\nBoss +%d  |  Score: %d%s" % [GameSettings.BOSS_POINTS, GameSettings.score,
@@ -609,4 +614,5 @@ func _on_player_died() -> void:
 	if yeral_route != null:
 		yeral_route.cancel_intro()
 	var new_high := GameSettings.commit_score()
-	message.text = "You died. Score: %d%s\nPress R to restart" % [GameSettings.score, "  NEW HIGH SCORE!" if new_high else ""]
+	var retry := "Press R to retry from the checkpoint" if yeral_route != null and YeralRoute.checkpoint > 0 else "Press R to restart"
+	message.text = "You died. Score: %d%s\n%s" % [GameSettings.score, "  NEW HIGH SCORE!" if new_high else "", retry]

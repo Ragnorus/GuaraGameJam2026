@@ -31,5 +31,6 @@ description: "Godot 4.5 development and validation for THE NIGHT UNC. Use when i
 - `tests/death_safety.gd`: normal/ultimate summons, queued projectiles and dead-player action/score safety in both stages.
 - `tests/player_actions.gd`, `tests/yeral_actions.gd`, `tests/bichema_actions.gd`: actor combat and animation behavior.
 - `tests/level_progression.gd`: transformation, restart and stage advancement.
+- `tests/level1_upgrades.gd`: checkpoints, buffered/variable jumps, loot, turret/hopper, hit feedback and Shield Burst. Shield damage must ignore inactive-room enemies and cinematic bosses; `enemy_shots`/`sergeant_attacks` are the clearable hostile-effect groups.
 - `tests/bichema_background.gd`: stage-two camera coverage, traversal and real painted-ledge landing.
 - `tools/smoke_test.gd`: bounded two-form boss lifecycle smoke.

@@ -18,6 +18,9 @@ const BUBBLE_TAIL_TIP := Vector2(460, 210)
 const BUBBLE_SIZE := Vector2(600, 140)
 const INTRO_AUDIO := preload("res://assets/audio/yeral_intro.wav")
 
+static var checkpoint := 0
+const CHECKPOINT_FLOORS := [600.0, 1100.0, 1320.0, 1320.0, 600.0, 600.0]
+
 var stage: Node2D
 var area_index := 0
 var transitioning := false
@@ -62,8 +65,10 @@ func build(parent_stage: Node2D) -> void:
 	_spawn_robot(0, Vector2(600, 562))
 	_spawn_robot(0, Vector2(1000, 562))
 	_spawn_flyer(0, 850.0)
+	_spawn_turret(0, Vector2(1200, 578))
 	_spawn_robot(1, Vector2(1610, 1062))
 	_spawn_robot(1, Vector2(2260, 1282))
+	_spawn_hopper(1, Vector2(1950, 1172))
 	sergeant = Sergeant.new()
 	sergeant.platforms = SERGEANT_PLATFORMS
 	sergeant.acid_rect = SERGEANT_ACID
@@ -72,17 +77,48 @@ func build(parent_stage: Node2D) -> void:
 	sergeant.target = stage.player
 	sergeant.position = Vector2(SERGEANT_PLATFORMS[1].get_center().x, SERGEANT_PLATFORMS[1].position.y - Sergeant.BODY.y / 2.0)
 	sergeant.speech.connect(_on_sergeant_speech)
+	sergeant.defeated.connect(_on_sergeant_defeated)
 	stage.add_child(sergeant)
 	room_enemies[2].append(sergeant)
+	_spawn_flyer(3, 4900.0, 880.0)
+	_spawn_turret(3, Vector2(5410, 826))
 	_spawn_robot(4, Vector2(5860, 562))
 	_spawn_robot(4, Vector2(6500, 562))
 	_spawn_flyer(4, 6220.0)
-	for at in [Vector2(400, 550), Vector2(1810, 1150), Vector2(2880, 1160), Vector2(3600, 1160), Vector2(4830, 1040), Vector2(6100, 550)]:
+	for at in [Vector2(400, 550), Vector2(1810, 1150), Vector2(2880, 1160), Vector2(3600, 1160), Vector2(4830, 1040), Vector2(6100, 550),
+			Vector2(150, 320), Vector2(190, 320), Vector2(230, 320), Vector2(6170, 280), Vector2(6210, 280), Vector2(6250, 280)]:
 		stage._spawn_pickup(Pickup.Kind.COIN, at)
-	for at in [Vector2(2420, 1270), Vector2(6870, 550)]:
+	for at in [Vector2(2420, 1270), Vector2(4285, 1270), Vector2(6870, 550)]:
 		stage._spawn_pickup(Pickup.Kind.MEDALLA, at)
 	_build_overlay()
 	_set_area(0)
+	if checkpoint > 0:
+		_restore_checkpoint.call_deferred()
+
+func _restore_checkpoint() -> void:
+	var cp := checkpoint
+	for room in range(cp):
+		for enemy in room_enemies[room]:
+			if is_instance_valid(enemy):
+				enemy.queue_free()
+		room_enemies[room].clear()
+	_set_area(cp)
+	stage.player.position = Vector2(AREAS[cp].position.x + 90.0, CHECKPOINT_FLOORS[cp] - 36.0)
+	stage.player.velocity = Vector2.ZERO
+	stage.camera.reset_smoothing()
+	stage.camera.force_update_scroll()
+	stage.message.text = "CHECKPOINT\n" + TITLES[cp]
+	stage.message_timer.start(2.5)
+	if cp == 5:
+		start_boss_intro()
+
+func _on_sergeant_defeated() -> void:
+	if GameSettings.shield_unlocked:
+		return
+	GameSettings.shield_unlocked = true
+	GameSettings.save()
+	stage._update_hud()
+	stage._say("SHIELD BURST UNLOCKED!\nPress E / L-Stick", 3.5)
 
 func _build_backdrops() -> void:
 	for i in range(AREAS.size()):
@@ -168,6 +204,9 @@ func _build_geometry() -> void:
 	_block(Rect2(7040, 600, 1280, 120))
 	_block(Rect2(5900, 450, 180, 20), true)
 	_block(Rect2(6380, 480, 180, 20), true)
+	# Secret ledges: off the main path, each holding a coin trio.
+	_block(Rect2(120, 360, 140, 20), true)
+	_block(Rect2(6140, 320, 180, 20), true)
 	for rect in [Rect2(-40, -200, 40, 920), Rect2(1280, 720, 20, 380),
 			Rect2(AREAS[5].end.x, -200, 40, 920)]:
 		stage._add_block(rect, "wall", true)
@@ -211,13 +250,32 @@ func _spawn_robot(room: int, at: Vector2) -> Robot:
 	room_enemies[room].append(enemy)
 	return enemy
 
-func _spawn_flyer(room: int, x: float) -> void:
+func _spawn_flyer(room: int, x: float, y := -1.0) -> void:
 	var enemy := WingedMob.new()
-	enemy.position = Vector2(x, 600.0 - WingedMob.HOVER_HEIGHT)
+	enemy.position = Vector2(x, (600.0 - WingedMob.HOVER_HEIGHT) if y < 0.0 else y)
 	enemy.target = stage.player
 	enemy.zone_min = AREAS[room].position.x
 	enemy.zone_max = AREAS[room].end.x
 	enemy.points = room + 1
+	stage.add_child(enemy)
+	room_enemies[room].append(enemy)
+
+func _spawn_hopper(room: int, at: Vector2) -> void:
+	var enemy := Hopper.new()
+	enemy.position = at
+	enemy.target = stage.player
+	enemy.zone_min = AREAS[room].position.x
+	enemy.zone_max = AREAS[room].end.x
+	enemy.points = room + 2
+	stage.add_child(enemy)
+	room_enemies[room].append(enemy)
+
+func _spawn_turret(room: int, at: Vector2) -> void:
+	var enemy := Turret.new()
+	enemy.position = at
+	enemy.target = stage.player
+	enemy.zone_min = AREAS[room].position.x
+	enemy.zone_max = AREAS[room].end.x
 	stage.add_child(enemy)
 	room_enemies[room].append(enemy)
 
@@ -289,7 +347,7 @@ func _set_area(index: int) -> void:
 
 func _room_clear() -> bool:
 	for enemy in room_enemies[area_index]:
-		if is_instance_valid(enemy) and not enemy.dead:
+		if is_instance_valid(enemy) and not enemy.dead and enemy.get("optional") != true:
 			return false
 	return true
 
@@ -349,8 +407,9 @@ func _transition(next: int) -> void:
 		stage.player.modulate.a = 1.0
 		stage.camera.reset_smoothing()
 		stage.camera.force_update_scroll()
-		stage.message.text = TITLES[next]
+		stage.message.text = TITLES[next] + ("\nGET READY!" if next == 5 else "\nCHECKPOINT")
 		stage.message_timer.start(2.0)
+		checkpoint = next
 		if next == 2:
 			_warn_new_enemy()
 	)

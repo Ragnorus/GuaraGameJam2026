@@ -23,6 +23,8 @@ var owner_player: Player
 func _ready() -> void:
 	if owner_player != null:
 		add_to_group("player_shots")
+	elif target_group == "player":
+		add_to_group("enemy_shots")
 	collision_layer = 0
 	collision_mask = 0xFFFFFFFF & ~4  # pass through floating platforms (main.gd PLATFORM_LAYER)
 	var shape := CircleShape2D.new()

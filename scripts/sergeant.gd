@@ -3,6 +3,7 @@ extends CharacterBody2D
 
 signal speech(text: String, duration: float)
 signal acid_escaped
+signal defeated
 
 enum State { IDLE, LEAP, CHARGE, PUNCH, SCREAM, HURT, TRANSFORM, DEAD, FALL }
 
@@ -419,6 +420,7 @@ func _die() -> void:
 	sprite.speed_scale = 1.0
 	GameSettings.add_score(points)
 	GameAudio.play(get_tree(), "kill")
+	defeated.emit()
 	var popup := Label.new()
 	popup.text = "+%d" % points
 	popup.add_theme_font_size_override("font_size", 22)

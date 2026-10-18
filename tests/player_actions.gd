@@ -15,6 +15,12 @@ func _tap(action: StringName) -> void:
 	Input.action_release(action)
 	await _frames(1)
 
+func _hold_jump() -> void:
+	Input.action_press(&"jump")
+	await _frames(14)
+	Input.action_release(&"jump")
+	await _frames(1)
+
 func _run() -> void:
 	GameSettings.dash_unlocked = true
 	var stage := preload("res://scenes/main.tscn").instantiate()
@@ -56,7 +62,7 @@ func _run() -> void:
 
 	await _tap(&"jump")
 	assert(player.velocity.y < 0.0 and player.player_sprite.animation == &"jump")
-	await _tap(&"jump")
+	await _hold_jump()
 	assert(player.jumps_remaining == 0 and player.player_sprite.animation == &"double_jump")
 	await _tap(&"shoot")
 	assert(player.player_sprite.animation == &"shoot" and not player.is_on_floor())

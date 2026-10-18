@@ -31,7 +31,7 @@ func _run() -> void:
 			fliers += 1
 			enemy.queue_free()
 			continue
-		if enemy is Sergeant:
+		if enemy is Sergeant or enemy is Turret:
 			enemy.queue_free()
 			continue
 		assert(enemy is Robot, "Every first-stage ground mob must use robot art")
@@ -75,6 +75,7 @@ func _run() -> void:
 	player.position = robot.position
 	await _frames(1)
 	assert(player.health == player_health - 1, "Robot must retain Bug contact damage")
+	player.clear_status()
 	player.position = robot.position - Vector2(100, 0)
 	player.facing = 1
 	Input.action_press(&"shoot")
