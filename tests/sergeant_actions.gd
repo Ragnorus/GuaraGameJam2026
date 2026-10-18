@@ -305,4 +305,5 @@ func _run() -> void:
 	GameAudio.stop_music()
 	await create_timer(0.4).timeout
 	print("SERGEANT ACTIONS OK")
+	await preload("res://tests/test_cleanup.gd").finish(self)
 	quit()

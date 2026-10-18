@@ -50,6 +50,7 @@ func _run() -> void:
 	GameAudio.stop_music()
 	await create_timer(0.4).timeout
 	print("STAGE MUSIC OK: actual level routing, private loops, same-track reuse, Tacoma restore, Music settings, story and menu isolation")
+	await preload("res://tests/test_cleanup.gd").finish(self)
 	quit()
 
 func _capture_loop() -> void:

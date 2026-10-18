@@ -50,4 +50,5 @@ func _run() -> void:
 		stage.free()
 		await _frames(1)
 	print("PASS: both stages despawn normal/ultimate summons and shots on death; queued hits, dead actions, meter and score cannot advance")
+	await preload("res://tests/test_cleanup.gd").finish(self)
 	quit()

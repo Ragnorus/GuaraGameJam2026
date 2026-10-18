@@ -312,4 +312,5 @@ func _run() -> void:
 			child.queue_free()
 	await _frames(5)
 	await create_timer(0.05).timeout
+	await preload("res://tests/test_cleanup.gd").finish(self)
 	quit()

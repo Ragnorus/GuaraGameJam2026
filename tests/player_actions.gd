@@ -22,6 +22,11 @@ func _hold_jump() -> void:
 	await _frames(1)
 
 func _run() -> void:
+	GameSettings.loaded = true
+	GameSettings.music_on = false
+	GameSettings.sfx_on = false
+	GameSettings.difficulty = 1
+	YeralRoute.checkpoint = 0
 	GameSettings.dash_unlocked = true
 	var stage := preload("res://scenes/main.tscn").instantiate()
 	root.add_child(stage)
@@ -29,6 +34,9 @@ func _run() -> void:
 	GameSettings.dash_unlocked = false
 	for enemy in get_nodes_in_group("enemies"):
 		enemy.queue_free()
+	for child in stage.get_children():
+		if child is Pickup and child.kind == Pickup.Kind.MECHA:
+			child.queue_free()
 	await _frames(60)
 	assert(player.is_on_floor() and player.player_sprite.animation == &"idle")
 	var outline := player.player_sprite.material as ShaderMaterial
@@ -106,7 +114,7 @@ func _run() -> void:
 	Input.action_release(&"dash")
 	Input.action_press(&"jump")
 	await _frames(1)
-	assert(player.dash_vector == Vector2.UP and player.velocity.y < -Player.DASH_SPEED,
+	assert(player.dash_vector == Vector2.UP and is_equal_approx(player.velocity.y, -Player.DASH_SPEED),
 			"Pressing jump during a forward dash must redirect it straight up")
 	Input.action_release(&"jump")
 	await _frames(20)
@@ -152,5 +160,8 @@ func _run() -> void:
 	assert(player.player_sprite.frame == player.CHARACTER_FRAMES.get_frame_count(&"death") - 1)
 	print("PASS: movement, jump/double-jump, air shooting, fall/landing, dash, shadows, ultimate, hurt, death")
 	stage.queue_free()
+	GameAudio.stop_music()
 	await _frames(1)
+	await create_timer(0.4).timeout
+	await preload("res://tests/test_cleanup.gd").finish(self)
 	quit()

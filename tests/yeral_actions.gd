@@ -87,6 +87,7 @@ func _run() -> void:
 	print("PASS: both forms' readable attack tells and fake taunts, charge/contact, real orbs/condiments, phase boundaries, safe warnings, jumpable sauce, transform immunity and final collapse")
 	stage.queue_free()
 	await _frames(1)
+	await preload("res://tests/test_cleanup.gd").finish(self)
 	quit()
 
 func _check_telegraphs(boss: BossYeral) -> void:

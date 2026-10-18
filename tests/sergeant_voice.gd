@@ -80,6 +80,7 @@ func _run() -> void:
 	await create_timer(0.4).timeout
 	assert(not is_instance_valid(voice), "Scene exit frees the voice")
 	print("SERGEANT VOICE OK: attack timing, scream/rage/pain/death, guards, pause, cleanup and SFX settings")
+	await preload("res://tests/test_cleanup.gd").finish(self)
 	quit()
 
 func _capture(voice: SergeantVoice) -> void:

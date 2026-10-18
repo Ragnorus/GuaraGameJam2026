@@ -58,6 +58,8 @@ description: Development workflow and accumulated session knowledge for El Seño
 Deployed page is a canvas: use screenshots and console logs, not DOM reading. Console on load should show only engine/WebGL/"single-threaded" lines.
 
 ## Working practices that worked
+
+- Enemy `Pickup.drop_loot` defers the stage `_spawn_pickup` call itself, so physics signal callbacks never attach new Area2D shapes while queries flush; `_spawn_pickup` still returns an attached pickup for synchronous callers. `tests/loot_physics.gd` exercises actual signals/projectile kills. Test shutdown calls `await preload("res://tests/test_cleanup.gd").finish(self)`: stop/release audio, free root children, then drain 350ms of wall time for the mixer even under fixed FPS. Player fixtures exclude Mecha chests; painted-ledge jumps hold the first jump and use double jumps rather than short taps. Camera assertions follow the continuous route, with crossfade/edge coverage in `bichema_background_transition`.
 - Edit with proper file edits; write previews to a scratch folder, not into the repo.
 - Slice/preview art with the Node tools before wiring into Godot; never alter originals.
 - Document behavior changes in `README.md` ("Menus, difficulty and score" section) and in skills.

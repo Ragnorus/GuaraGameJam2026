@@ -51,4 +51,5 @@ func _run() -> void:
 	assert(GameSettings.score == 0, "A level restart must drop points earned in that attempt")
 	GameSettings.begin_run()
 	print("PASS: four difficulties scale health/damage/aggression monotonically; mob and boss points; level restart score")
+	await preload("res://tests/test_cleanup.gd").finish(self)
 	quit()

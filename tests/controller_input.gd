@@ -120,6 +120,7 @@ func _check_synthetic_input() -> void:
 	assert(current_scene.scene_file_path == "res://scenes/main_menu.tscn", "B must return from submenus")
 	assert(not Input.is_action_pressed(&"shield"), "B must cancel without activating Shield Burst")
 	print("PASS: controller stage dash/shield/pause, keyboard controls, title/menu navigation, confirm/cancel, and repeated setup")
+	await preload("res://tests/test_cleanup.gd").finish(self)
 	quit()
 
 func _frames(count: int) -> void:

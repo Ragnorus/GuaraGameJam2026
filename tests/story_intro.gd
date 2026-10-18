@@ -109,6 +109,7 @@ func _run() -> void:
 	GameAudio.stop_music()
 	await create_timer(0.3).timeout
 	print("PASS: full story layout, scrolling, resize, keyboard/controller/button skip, automatic completion, replay and level-select bypass")
+	await preload("res://tests/test_cleanup.gd").finish(self)
 	quit()
 
 func _new_intro() -> StoryIntro:

@@ -201,4 +201,5 @@ func _run() -> void:
 	assert(current_scene != dead_stage and current_scene.scene_file_path == "res://scenes/bichema_level.tscn")
 	assert(not (current_scene.get("player") as Player).dead)
 	print("PASS: entrance/transform/second-form restart; both health pools and phases; final collapse -> Bichema's World -> credits; player death blocks victory")
+	await preload("res://tests/test_cleanup.gd").finish(self)
 	quit()

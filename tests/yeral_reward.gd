@@ -107,4 +107,5 @@ func _run() -> void:
 	GameAudio.stop_music()
 	await _frames(3)
 	print("YERAL REWARD OK: original sprite, energy phases, exact bubble/voice, locks, mute timing, pause, dash handoff, death and reload cleanup")
+	await preload("res://tests/test_cleanup.gd").finish(self)
 	quit()

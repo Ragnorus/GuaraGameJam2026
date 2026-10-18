@@ -35,7 +35,7 @@ static func drop_loot(from: Node2D, player: Node) -> void:
 			and int(player.get("health")) < int(player.get("max_health"))
 	var drop := roll_drop(randf(), hurt)
 	if drop >= 0:
-		stage._spawn_pickup(drop, from.global_position + Vector2(0.0, -12.0), true)
+		stage.call_deferred("_spawn_pickup", drop, from.global_position + Vector2(0.0, -12.0), true)
 
 func _ready() -> void:
 	collision_layer = 0

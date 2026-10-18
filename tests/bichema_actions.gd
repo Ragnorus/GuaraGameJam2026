@@ -254,6 +254,7 @@ func _run() -> void:
 	await _frames(5)
 	await create_timer(0.05).timeout
 	print("PASS: Ema clean jumps/contact in both forms, readable dash/fan/summon tells, protected transition, pausable recording and death cleanup, costume attacks, single final collapse; minion hurt/death")
+	await preload("res://tests/test_cleanup.gd").finish(self)
 	quit()
 
 func _check_clearance(world: Node2D, boss: BossEvilGenius) -> void:

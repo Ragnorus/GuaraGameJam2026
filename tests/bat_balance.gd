@@ -262,4 +262,5 @@ func _run() -> void:
 	await _frames(1)
 	await _camping()
 	print("PASS: two accepted hits per bat, unchanged cooldown, protected/lethal hits, recall, lifetimes, owner cleanup and real pub camping")
+	await preload("res://tests/test_cleanup.gd").finish(self)
 	quit()

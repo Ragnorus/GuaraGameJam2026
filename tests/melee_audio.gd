@@ -135,6 +135,7 @@ func _run() -> void:
 	GameAudio.stop_music()
 	await create_timer(0.3).timeout
 	print("MELEE AUDIO OK: mob contact, invulnerability/recoil, punch/miss/rage, boss forms, swoop/hop/ram, guards and cleanup")
+	await preload("res://tests/test_cleanup.gd").finish(self)
 	quit()
 
 func _check_output(source: Node2D, player: Player) -> void:

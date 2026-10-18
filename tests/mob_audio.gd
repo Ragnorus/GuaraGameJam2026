@@ -100,6 +100,7 @@ func _run() -> void:
 	if DisplayServer.get_name() != "headless":
 		await _check_output()
 	print("MOB AUDIO OK: all mob damage/death paths, spatial limits, inactive/dead guards, pause, SFX controls and cleanup")
+	await preload("res://tests/test_cleanup.gd").finish(self)
 	quit()
 
 func _check_output() -> void:

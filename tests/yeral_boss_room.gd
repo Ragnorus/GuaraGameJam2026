@@ -36,6 +36,7 @@ func _run() -> void:
 	assert(is_equal_approx(music.volume_db, normal_volume), "Music restores after the opening line")
 	route.boss.set_physics_process(false)
 	route.boss.active = false
+	route.boss.collision_layer = 0
 	player.invuln = 1000.0
 	for rect in YeralRoute.BOSS_PLATFORMS:
 		var found := false
@@ -55,19 +56,24 @@ func _run() -> void:
 		if index > 0:
 			Input.action_press(action)
 		Input.action_press(&"jump")
-		await _frames(24)
-		Input.action_release(&"jump")
-		await _frames(1)
-		Input.action_press(&"jump")
-		await _frames(2)
-		Input.action_release(&"jump")
+		var airborne := false
+		var second_jump := false
 		for frame in range(150):
+			if not player.is_on_floor():
+				airborne = true
+			if airborne and not second_jump and player.velocity.y > -80.0:
+				Input.action_release(&"jump")
+				await _frames(1)
+				Input.action_press(&"jump")
+				second_jump = true
 			if index > 0 and absf(player.position.x - rect.get_center().x) < 8.0:
 				Input.action_release(action)
 			await _frames(1)
-			if player.is_on_floor():
+			if airborne and player.is_on_floor():
 				break
+		Input.action_release(&"jump")
 		Input.action_release(action)
+		await _frames(2)
 		assert(player.is_on_floor() and absf(player.position.y + 36.0 - rect.position.y) < 2.0, "Real jump lands on boss platform %d at %s" % [index, player.position])
 	# Cancel/death and scene exit must restore the music as well.
 	route._duck_intro_music()
@@ -83,6 +89,7 @@ func _run() -> void:
 	GameAudio.stop_music()
 	await create_timer(0.4).timeout
 	print("YERAL BOSS ROOM OK: intro music duck/restore, recorded voice, three real platform jumps, safe floor, one-way collision and cleanup")
+	await preload("res://tests/test_cleanup.gd").finish(self)
 	quit()
 
 func _capture_voice(route: YeralRoute) -> void:

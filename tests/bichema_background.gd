@@ -23,18 +23,14 @@ func _check_view(stage: Node, expected_index: int) -> Rect2:
 	assert(panorama.get_rect().size.is_equal_approx(texture_size), "Use the complete supplied painting")
 	var painted: Rect2 = panorama.get_global_transform_with_canvas() * panorama.get_rect()
 	var viewport := panorama.get_viewport().get_visible_rect()
-	assert(painted.grow(1.1).encloses(viewport), "The active painting must cover the actual viewport")
+	var backstop := stage.get_node("BichemaBackgroundBackstop") as Polygon2D
+	var coverage := Rect2(backstop.polygon[0], backstop.polygon[2] - backstop.polygon[0])
+	var world_view: Rect2 = panorama.get_viewport().get_canvas_transform().affine_inverse() * viewport
+	assert(coverage.grow(1.1).encloses(world_view), "The route backstop must cover the viewport while adjacent paintings crossfade")
 	assert(is_equal_approx(painted.size.x / painted.size.y, texture_size.x / texture_size.y), "Preserve source aspect ratio")
 	var painted_ground := panorama.to_global(Vector2(0, float(room["ground"]))).y
 	assert(absf(painted_ground - 600.0) < 1.1, "Every complete painting must meet the same route ground")
 	return panorama.get_viewport().get_canvas_transform().affine_inverse() * viewport
-
-func _check_image_edge(stage: Node, left: bool) -> void:
-	var panorama := stage.get("bichema_background") as Sprite2D
-	var painted: Rect2 = panorama.get_global_transform_with_canvas() * panorama.get_rect()
-	var viewport := panorama.get_viewport().get_visible_rect()
-	var edge := painted.position.x - viewport.position.x if left else painted.end.x - viewport.end.x
-	assert(absf(edge) < 2.1, "Camera limits must expose each painting's original outer edge")
 
 func _set_view(stage: Node, area: int, x: float, y: float, expected_room: int) -> void:
 	var route := stage.get("bichema_route") as BichemaRoute
@@ -44,9 +40,8 @@ func _set_view(stage: Node, area: int, x: float, y: float, expected_room: int) -
 	player.velocity = Vector2.ZERO
 	await _frames(3)
 	var left_view := _check_view(stage, expected_room)
-	_check_image_edge(stage, true)
+	assert(left_view.position.x >= -1.1 and left_view.end.x <= route.AREAS[5].end.x + 1.1, "Camera stays within the continuous route")
 	var room: Dictionary = stage.get("bichema_rooms")[expected_room]
-	assert(absf(left_view.position.x - (room["rect"] as Rect2).position.x) < 2.1)
 	var end_x: float = (room["rect"] as Rect2).end.x - 40.0
 	var end_area := 0
 	for i in range(route.AREAS.size()):
@@ -57,17 +52,16 @@ func _set_view(stage: Node, area: int, x: float, y: float, expected_room: int) -
 	player.position = Vector2(end_x, 564.0)
 	await _frames(3)
 	var right_view := _check_view(stage, expected_room)
-	_check_image_edge(stage, false)
-	assert(absf(right_view.end.x - (room["rect"] as Rect2).end.x) < 2.1)
+	assert(right_view.position.x >= -1.1 and right_view.end.x <= route.AREAS[5].end.x + 1.1)
 
 func _jump_to(player: Player, target_x: float, double_jump := false) -> void:
 	var direction := &"move_right" if target_x > player.position.x else &"move_left"
 	Input.action_press(direction)
 	Input.action_press(&"jump")
-	await _frames(1)
+	await _frames(24)
 	Input.action_release(&"jump")
 	for i in range(160):
-		if double_jump and i == 19:
+		if double_jump and i == 3:
 			Input.action_press(&"jump")
 		if i == 20:
 			Input.action_release(&"jump")
@@ -115,7 +109,7 @@ func _check_jump(stage: Node, index: int) -> void:
 	assert(highest_feet < initial_feet - 100.0 and player.is_on_floor(), "Coverage must be exercised through an actual airborne jump and landing")
 
 func _transition(route: BichemaRoute, player: Player, area: int, next_area: int, exit_x: float) -> void:
-	var truck_start_x := route.truck.position.x
+	var truck_start_x := route.truck.position.x if is_instance_valid(route.truck) else 0.0
 	var health_before := player.health
 	player.position = Vector2(exit_x, 564.0)
 	route.update(0.0)
@@ -148,6 +142,9 @@ func _run() -> void:
 	var stage := current_scene
 	var player := stage.get("player") as Player
 	var route := stage.get("bichema_route") as BichemaRoute
+	for child in stage.get_children():
+		if child is Pickup and child.kind == Pickup.Kind.MECHA:
+			child.queue_free()
 	player.health = 10000
 	for enemy in get_nodes_in_group("enemies"):
 		enemy.set_physics_process(false)
@@ -236,7 +233,7 @@ func _run() -> void:
 
 	var factory_ledge: Rect2 = stage.get("bichema_rooms")[2]["platforms"][1]
 	var factory_landing_x := factory_ledge.position.x + 20.0
-	await _jump_to(player, factory_landing_x)
+	await _jump_to(player, factory_landing_x, true)
 	assert(absf(player.position.y + 36.0 - factory_ledge.position.y) < 2.0,
 			"Use the factory's painted upper walkway instead of an arbitrary pit")
 	await _walk_to(player, 5300.0)
@@ -264,4 +261,8 @@ func _run() -> void:
 	assert(boss != null and boss.global_position.x > float(stage.get("boss_trigger_x"))
 			and boss.global_position.x < factory.end.x)
 	print("PASS: complete paintings align to one safe ground path; six stage-one gates; Tacoma drive-in/ramming; real pub/factory ledges; final factory boss entry")
+	stage.queue_free()
+	GameAudio.stop_music()
+	await create_timer(0.4).timeout
+	await preload("res://tests/test_cleanup.gd").finish(self)
 	quit()

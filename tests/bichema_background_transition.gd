@@ -99,4 +99,5 @@ func _run() -> void:
 	stage.queue_free()
 	await process_frame
 	print("PASS: Bichema paintings cover the route and crossfade smoothly at every join")
+	await preload("res://tests/test_cleanup.gd").finish(self)
 	quit()

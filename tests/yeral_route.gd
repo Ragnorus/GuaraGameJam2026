@@ -212,4 +212,5 @@ func _run() -> void:
 	print("PASS: death cancels intro activation/audio; restart resets the route and cinematic")
 	current_scene.free()
 	await _frames(3)
+	await preload("res://tests/test_cleanup.gd").finish(self)
 	quit()

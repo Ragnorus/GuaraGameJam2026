@@ -270,4 +270,5 @@ func _run() -> void:
 	GameAudio.stop_music()
 	await create_timer(0.3).timeout
 	print("PASS: robot movement/combat/death; Tacoma entrance, pause, warning, charge, recovery, dodge, damage and fight-only music")
+	await preload("res://tests/test_cleanup.gd").finish(self)
 	quit()
