@@ -1,6 +1,6 @@
 ---
 name: godot-development
-description: "Godot 4.5 development and validation for THE NIGHT UNC. Use when implementing or debugging GDScript, scenes, physics, moving platforms, Area2D collisions, cinematics, lifecycle cleanup, imported assets, audio or regression testing."
+description: "Godot 4.5 development and validation for El Señor De La Noche. Use when implementing or debugging GDScript, scenes, physics, moving platforms, Area2D collisions, cinematics, lifecycle cleanup, imported assets, audio or regression testing."
 ---
 
 # Godot development

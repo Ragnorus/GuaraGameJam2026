@@ -91,6 +91,7 @@ func _physics_process(delta: float) -> void:
 		velocity.x = 0.0
 		if charge_windup <= 0.0:
 			charge_time = 0.8
+			MeleeAudio.strike(self, target)
 	elif attack_windup > 0.0:
 		velocity.x = 0.0
 		attack_windup -= delta
@@ -125,7 +126,7 @@ func _touch_damage() -> void:
 			maxf(0.0, distance.y - PLAYER_HALF.y - (BODY.y - BODY.x) / 2.0))
 	var radius := BODY.x / 2.0 + CONTACT_SLOP
 	if corner.length_squared() < radius * radius:
-		target.take_damage(2)
+		MeleeAudio.contact(self, target, 2)
 
 func _update_art() -> void:
 	var next := &"idle"

@@ -95,6 +95,7 @@ func _physics_process(delta: float) -> void:
 			position.y = hover_y + sin(time * 30.0) * 3.0
 			if state_time <= 0.0:
 				state = "swoop"
+				MeleeAudio.strike(self, target, true)
 				state_time = 1.4
 				var aim: Vector2 = (target.global_position if is_instance_valid(target) else global_position + Vector2(0, 200))
 				swoop_dir = (aim - global_position).normalized()

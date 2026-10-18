@@ -1,4 +1,4 @@
-# Vibe coding THE NIGHT UNC – quick start
+# Vibe coding El Señor De La Noche – quick start
 
 No coding experience needed. You describe what you want and Copilot writes the code.
 

@@ -251,7 +251,7 @@ func _physics_process(delta: float) -> void:
 	if target.has_method("take_damage") \
 			and absf(target.global_position.x - global_position.x) < 95.0 \
 			and absf(target.global_position.y - global_position.y) < 130.0:
-		target.take_damage(2)
+		MeleeAudio.contact(self, target, 2, glizzy)
 
 # The boast can lie; the final held pose always previews the real attack.
 func _announce() -> void:
@@ -289,6 +289,7 @@ func _execute(a: String) -> void:
 			sprite.play(&"spray" if glizzy and mustard_next else &"volley")
 			_volley()
 		"charge":
+			MeleeAudio.strike(self, target, glizzy)
 			charge_dir = 1 if target.global_position.x > global_position.x else -1
 			charge_time = 0.85 if glizzy else 0.7
 			sprite.play(&"charge")

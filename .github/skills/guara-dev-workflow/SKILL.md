@@ -1,9 +1,9 @@
 ---
 name: guara-dev-workflow
-description: Development workflow and accumulated session knowledge for THE NIGHT UNC - deploy pipeline, git practices, menus/difficulty/score systems, procedural audio and web-audio gotchas, levels/bosses, tooling, and open issues. Use when continuing development on a new machine or touching menus, audio, settings, deployment or levels.
+description: Development workflow and accumulated session knowledge for El Señor De La Noche - deploy pipeline, git practices, menus/difficulty/score systems, procedural audio and web-audio gotchas, levels/bosses, tooling, and open issues. Use when continuing development on a new machine or touching menus, audio, settings, deployment or levels.
 ---
 
-# THE NIGHT UNC – dev workflow & session knowledge
+# El Señor De La Noche – dev workflow & session knowledge
 
 ## Project & deploy
 - Repo: Ragnorus/GuaraGameJam2026, branch `main`. Godot 4.5.
@@ -31,6 +31,8 @@ description: Development workflow and accumulated session knowledge for THE NIGH
 - Score: mobs give 1–5 points (`clampi(1 + int(5*x/LEVEL_END), 1, 5)`), bosses 10, coins 5. Medalla cans heal up to 4 HP and stay available when health is full. High score stored per difficulty; HUD and score handling in `main.gd`. Regression: `tests/pickups.gd`.
 
 ## Audio (procedural music/effects and recorded voice)
+
+- Enemy melee: `MeleeAudio` (`scripts/melee_audio.gd`) reuses one spatial SFX player per actor. Sergeant punches cue once at their active animation frame, including misses/rage; charges, swoops and hops cue at launch; contact impacts cue only on accepted player damage without changing default recoil. Regular/animal recordings and the unused future sword recording are unchanged from `melee sounds.zip`; `assets/audio/melee/melee.txt` contains the supplied free-use license and qubodup/Iwan Gabovitch + remaxim credits. Run `tests/melee_audio.gd` in real time, rendered with Compatibility for actual mixer output/mute/pause checks.
 
 - Regular mob voices: `MobVoice` (`scripts/mob_voice.gd`) uses the 15 unchanged supplied Michel Baradari WAVs under `assets/audio/monsters/`. `Bug` creates one spatial SFX player; Robot, Hopper, TruffleAndroid, WingedMob and Turret wire attack/pain/death cues. Tacoma explicitly disables this voice to preserve its mini-boss audio. Range is 700px; existing playback suppresses repeated non-death cues. Death reparents the player into the level so short corpse lifetimes do not cut off the cry; finished audio frees itself, pause is respected, and scene exit stops/clears streams. Hidden/disabled/far mobs and dead targets cannot start cues. `tests/mob_audio.gd` runs in real time without `--fixed-fps` for mixer cleanup; rendered mode additionally captures Master output to prove SFX unmuted > 0 and muted = 0. The archive has no license document: verify redistribution terms before publishing; see `assets/audio/monsters/ATTRIBUTION.txt`.
 - The main menu calls `GameAudio.start_music(tree, true)` to loop a private duplicate of `assets/audio/lord_of_the_night.mp3`, copied unchanged from the user's local recording. Submenus retain playback. The story/level's default `start_music(tree)` replaces it with procedural gameplay music; repeated calls in the same mode preserve the player. Credits use `seal_kiss_from_a_rose.mp3` unchanged and do not loop. `story_intro` and `end_credits` verify separate songs, switching, single-player ownership, looping and mute.

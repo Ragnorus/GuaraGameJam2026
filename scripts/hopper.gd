@@ -29,6 +29,7 @@ func _physics_process(delta: float) -> void:
 		windup -= delta
 		sprite.scale = Vector2(0.26, 0.2)
 		if windup <= 0.0:
+			MeleeAudio.strike(self, target, true)
 			sprite.scale = Vector2(0.24, 0.24)
 			if is_instance_valid(target):
 				dir = 1 if target.global_position.x > global_position.x else -1

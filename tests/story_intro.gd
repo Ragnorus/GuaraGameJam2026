@@ -11,6 +11,9 @@ func _run() -> void:
 	GameSettings.loaded = true
 	GameSettings.music_on = false
 	GameSettings.sfx_on = false
+	assert(ProjectSettings.get_setting("application/config/name") == "El Señor De La Noche")
+	assert(StoryIntro.STORY.contains("El Señor De La Noche"))
+	assert(not StoryIntro.STORY.to_lower().contains("night unc"))
 	var menu := load("res://scenes/main_menu.tscn").instantiate() as Control
 	root.add_child(menu)
 	current_scene = menu

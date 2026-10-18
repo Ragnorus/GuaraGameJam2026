@@ -12,7 +12,7 @@ Deeming entertainment as: “not a productive way to spend time”, it aggressiv
 
 This is where we find our heroes, The Guaras, a ragtag group of resistance fighters who banded together to recover the gaming matrix and restore permissions to play. The have created a plan to entrap "The Super Intelligence" by creating a honey pot trap to overwhelm the Algorithm, little did they know that inside the trap, which was set up inside the algorithmic profile of Guara member Emanuel, it began to get trapped inside the deep algorithm thinking that Emanuel's knowledge was worth consuming, it searched and consumed until it found it the title called "ARAM God", due to more logical errors and Bugs it understood that Emanuel's Algorithm was an actual god, thus it decided to merge completely with it and now it has fused into a new being, Penema.
 
-The Guaras have been losing the battle thus far, the only one left is the Main Character, a silent vigilante master of the night, known as, The night Unc. this is his battle to release his friends from the grasp of Penema and the erection of a monument to his new rule."""
+The Guaras have been losing the battle thus far, the only one left is the Main Character, a silent vigilante master of the night, known as, El Señor De La Noche. this is his battle to release his friends from the grasp of Penema and the erection of a monument to his new rule."""
 
 var scroll_position := -80.0
 var crawl_height := 0.0
@@ -49,7 +49,7 @@ func _build_crawl() -> void:
 	add_child(text_viewport)
 	var text := Label.new()
 	text_viewport.add_child(text)
-	text.text = "THE NIGHT UNC\n\nTHE RISE OF PENEMA\n\n" + STORY
+	text.text = "El Señor De La Noche\n\nTHE RISE OF PENEMA\n\n" + STORY
 	text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	text.horizontal_alignment = HORIZONTAL_ALIGNMENT_FILL
 	text.add_theme_font_size_override("font_size", 34)

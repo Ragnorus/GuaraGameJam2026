@@ -1,6 +1,6 @@
 ---
 name: game-testing
-description: Gameplay testing for THE NIGHT UNC - headless Godot regression scripts, deterministic scenario setup, AI/physics scenario checklists, bounded test runners, log scanning, import churn and rendered previews for user review. Use when writing or running tests, verifying a gameplay change, reproducing a bug, or producing a preview before asking for approval.
+description: Gameplay testing for El Señor De La Noche - headless Godot regression scripts, deterministic scenario setup, AI/physics scenario checklists, bounded test runners, log scanning, import churn and rendered previews for user review. Use when writing or running tests, verifying a gameplay change, reproducing a bug, or producing a preview before asking for approval.
 ---
 
 # Game testing

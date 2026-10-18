@@ -86,7 +86,7 @@ func _touch_damage() -> void:
 	var half := (cs.shape as RectangleShape2D).size / 2.0
 	var d := (target.global_position - (global_position + cs.position)).abs()
 	if d.x < half.x + PLAYER_HALF.x + TOUCH_MARGIN and d.y < half.y + PLAYER_HALF.y + TOUCH_MARGIN:
-		target.take_damage(1)
+		MeleeAudio.contact(self, target, 1)
 
 func _robot_update(delta: float) -> void:
 	anim_lock = maxf(0.0, anim_lock - delta)

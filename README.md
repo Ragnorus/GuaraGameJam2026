@@ -1,4 +1,4 @@
-# THE NIGHT UNC
+# El Señor De La Noche
 
 2D action platformer (Godot 4, Windows-first) for GuaraGameJam2026. Two playable stages: Yeral — The Spoilerman and his true second form, Glizzy Gobler, followed by Bichema's World — the Evil Genius, the alpha and the omega.
 
@@ -8,7 +8,7 @@
 2. Clone the repo: `git clone https://github.com/Ragnorus/GuaraGameJam2026.git`.
 3. Start Godot, click **Import**, select `project.godot` in the repo folder, then **Import & Edit**.
 4. Press **F5** (Play) to open the main menu (Start Game, Level Select, Settings, Game Info). Press **F6** to run the currently open scene.
-5. Reach the far end of a stage and defeat its boss. Depleting Yeral's first health bar transforms him into Glizzy Gobler with a fresh health pool; he cannot take damage during the transformation. Defeat the second form and wait for his collapse, then Night Unc receives Yeral's power in a Mega Man-inspired energy-absorption cinematic. His original sprites float amid green energy, followed by a comic bubble saying **"Dime a vel!"** with the supplied voice recording. The sequence locks gameplay, waits for the whole line even when SFX are muted, and fades into Ema's stage with Dash unlocked. Completing Ema's final form fades into the end credits, then returns to the main menu. Each stage starts with a fresh player. Press **R** while playing or after death to restart the current level; restarting either Yeral form restores the first encounter.
+5. Reach the far end of a stage and defeat its boss. Depleting Yeral's first health bar transforms him into Glizzy Gobler with a fresh health pool; he cannot take damage during the transformation. Defeat the second form and wait for his collapse, then El Señor De La Noche receives Yeral's power in a Mega Man-inspired energy-absorption cinematic. His original sprites float amid green energy, followed by a comic bubble saying **"Dime a vel!"** with the supplied voice recording. The sequence locks gameplay, waits for the whole line even when SFX are muted, and fades into Ema's stage with Dash unlocked. Completing Ema's final form fades into the end credits, then returns to the main menu. Each stage starts with a fresh player. Press **R** while playing or after death to restart the current level; restarting either Yeral form restores the first encounter.
 
 Debugging:
 - Errors, warnings and `print()` output show in the **Output** and **Debugger** panels at the bottom of the editor. Script errors pause the game and open the failing line.
@@ -137,6 +137,8 @@ Run `Godot --headless --path . --fixed-fps 60 --script res://tests/bichema_backg
 - Pickup regression: `Godot --headless --path . --fixed-fps 60 --script res://tests/pickups.gd` checks healing, full-health preservation, and one-time coin points; `tests/mecha_powerup.gd` exercises mecha chest collection in both stages.
 
 ## Level layout and mobs
+
+- Enemy melee attacks use the unchanged supplied recordings in `assets/audio/melee/`: generic melee for punches/charges and animal melee for swoops, hops and Glizzy charges. Sergeant punches sound once at the active frame, including misses and rage attacks; body-contact impacts sound only when damage is accepted. Actor-owned spatial players respect SFX volume/mute, pause and scene cleanup without changing recoil or attack timing. The supplied `melee.txt` credits qubodup/Iwan Gabovitch and remaxim and permits free use; the sword recording is retained for future armed attacks. Run `tests/melee_audio.gd` in real time; rendered Compatibility mode also verifies actual output/mute and pause.
 
 - Regular robots, hoppers, money minions, fliers and turrets use the 15 unchanged WAV recordings from the supplied Michel Baradari monster pack (`assets/audio/monsters/`). Grunts accompany pursuit/attack tells, pain cries accompany nonlethal hits, and defeat cries finish after the corpse disappears. Voices are spatial (700px range), limited to one per mob, routed through the saved SFX mute/volume controls, and pause with gameplay. Hidden/inactive-room mobs and dead-player encounters cannot start new cries; scene exit clears remaining audio. Boss dialogue and Tacoma fight audio are unchanged.
 - Run `Godot --headless --path . --script res://tests/mob_audio.gd` with real-time audio scheduling (without `--fixed-fps`) to check voice selection, all regular mob damage/death paths, spatial/room guards, pause and cleanup. Run the same script without `--headless`, using `--rendering-method gl_compatibility`, to additionally capture actual mixer output and assert audible/unmuted versus silent/SFX-muted samples. Fixed-FPS accelerated runs on Godot 4.5.1 can finish before the WAV mixer releases playback resources.

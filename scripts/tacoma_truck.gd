@@ -85,6 +85,7 @@ func _physics_process(delta: float) -> void:
 				if is_on_floor():
 					velocity.y = -JUMP_SPEED
 				drive_state = DriveState.CHARGE
+				MeleeAudio.strike(self, target)
 				charge_direction = dir
 				hit_this_charge = false
 				state_time = CHARGE_TIME
@@ -125,6 +126,8 @@ func _ram_player() -> void:
 			and distance.y < half.y + PLAYER_HALF.y + TOUCH_MARGIN:
 		hit_this_charge = player.hit_by(GameSettings.incoming_damage(2),
 				Vector2(charge_direction * 650.0, -340.0))
+		if hit_this_charge:
+			MeleeAudio.strike(self, target)
 
 func take_damage(amount: int) -> bool:
 	if dead or drive_state == DriveState.INTRO:

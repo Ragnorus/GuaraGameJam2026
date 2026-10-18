@@ -1,9 +1,9 @@
 ---
 name: guara-art
-description: Art direction and sprite pipeline for THE NIGHT UNC - palette, Yeral the Spoilerman / robot minion / lair sprite sheets, slicing tools, naming and scale rules, and how sprites are wired into Godot. Use when adding or changing art, slicing new sheets, or integrating sprites into scripts.
+description: Art direction and sprite pipeline for El Señor De La Noche - palette, Yeral the Spoilerman / robot minion / lair sprite sheets, slicing tools, naming and scale rules, and how sprites are wired into Godot. Use when adding or changing art, slicing new sheets, or integrating sprites into scripts.
 ---
 
-# THE NIGHT UNC art
+# El Señor De La Noche art
 
 Related: `guara-game-design` (roster, mechanics), `yeral-hints` (Yeral dialogue).
 
@@ -40,7 +40,7 @@ Yeral the Spoilerman palette (level, UI, projectiles, traps):
 5. `node tools/gen_assets.js` - generated Yeral tiles/backgrounds/legacy props only. The obsolete red-set `bichema` mode has been removed; stage two uses the supplied scenery instead.
 5b. `python assets/extract_bichema.py` - explicit crops/polygons, no recoloring/resampling; normal boss `neon_lawyer_*`, pink-costume boss `ema_costume_*` (512x256 character canvas, feet (256,240); separate pink-bolt cell), and `money_minion_*` (384x256, feet (192,240)) atlases/resources. `python tools/slice_bichema.py` validates the three complete `*_stage.png` paintings and copies them byte-for-byte into `assets/backgrounds/bichema/`, without cropping, resampling or palette fills. `python tools/slice_capital.py [outside-repo-contact.png]` cuts platforms/props into `assets/sprites/capital`; platforms begin on a continuous solid stone row at y=0, with decorative banners below. Source RGBA is retained inside explicit silhouettes. The older `slice_evil_genius.js` remains the source of the lawyer cameo.
 6. `python assets/extract_glizzy.py` - rebuilds `assets/glizzy_atlas.png` and `assets/glizzy_frames.tres` from the copied Glizzy source; requires Pillow. Explicit crops, polygon exclusions, and per-pose feet anchors preserve source pixels without neighboring poses.
-6b. Current title screen: `assets/ui/title_screen.png` is the supplied `El Señor de la Noche (1).png`, copied byte-for-byte without edits. Preserve its lettering, background and colors. `tools/build_title_screen.py` is the legacy "The Night Unc" generator using `art/sheets/title_screen_original.png`; do not run it against the current title asset, as it would overwrite the replacement.
+6b. Current title screen: `assets/ui/title_screen.png` is the supplied `El Señor de la Noche (1).png`, copied byte-for-byte without edits. Preserve its lettering, background and colors. `tools/build_title_screen.py` is the legacy title-screen generator using `art/sheets/title_screen_original.png`; do not run it against the current title asset, as it would overwrite the replacement.
 6c. `python assets/extract_pickups.py` - crops the medalla can and gold coin from the copied sheet into `assets/medalla_can.png` and `assets/coin.png`, without recoloring or resampling.
 6d. `node tools/slice_sergeant.js [outside-repo-contact.png]` - explicit boxes over `football_sergeant_sheet.png`; the black background is flood-filled to alpha from each crop border only (dark outlines inside the figure stay intact), tiny detached specks dropped, no recolor/resample. Writes `assets/sergeant_atlas.png` (448x256 cells, feet at (224,244), facing right) and `assets/sergeant_frames.tres` (normal + `rage_*` animations, `wave`/`rage_wave` fx). `jump` reuses the airborne charge stride and `rage_jump` the rage lunge; both are used for leaps and acid escapes.
 6e. `python assets/extract_turret.py` - crops the idle turret and small green bolt from the unchanged source sheet into `assets/turret.png` and `assets/turret_bolt.png`.

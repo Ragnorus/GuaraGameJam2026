@@ -70,6 +70,7 @@ var walk_dir := -1
 var attack_count := 0
 var acid_escapes := 0
 var hit_landed := false
+var melee_started := false
 var leap_from := Vector2.ZERO
 var leap_to := Vector2.ZERO
 var leap_duration := 0.75
@@ -116,6 +117,7 @@ func _set_state(next: State, animation: StringName) -> void:
 	state = next
 	state_time = 0.0
 	hit_landed = false
+	melee_started = false
 	sprite.speed_scale = _rate()
 	sprite.play(_anim(animation))
 
@@ -319,6 +321,9 @@ func _update_charge(delta: float) -> void:
 		sprite.frame = 0 if state_time < windup / 2.0 else 1
 		return
 	sprite.frame = mini(count - 1, 2 + int((state_time - windup) * 10.0 * _rate()))
+	if not melee_started:
+		melee_started = true
+		MeleeAudio.strike(self, target)
 	var rect := platforms[platform_index]
 	var speed := CHARGE_SPEED * _rate()
 	position.x += facing * speed * delta
@@ -341,6 +346,9 @@ func start_punch() -> void:
 
 func _update_punch() -> void:
 	var count := FRAMES.get_frame_count(sprite.animation)
+	if not melee_started and sprite.frame >= count - 2:
+		melee_started = true
+		MeleeAudio.strike(self, target)
 	if not hit_landed and sprite.frame >= count - 2 and _target_alive() and target is Player:
 		var d: Vector2 = target.global_position - global_position
 		hit_landed = true
@@ -380,7 +388,8 @@ func _touching(margin: float) -> bool:
 func _touch_damage() -> void:
 	if state != State.CHARGE and _touching(4.0) and target is Player:
 		var away := 1.0 if target.global_position.x > global_position.x else -1.0
-		(target as Player).hit_by(1, Vector2(away * 300.0, -280.0))
+		if (target as Player).hit_by(1, Vector2(away * 300.0, -280.0)):
+			MeleeAudio.strike(self, target)
 
 func take_damage(amount: int) -> bool:
 	if dead or state == State.TRANSFORM:
