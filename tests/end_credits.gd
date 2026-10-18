@@ -79,6 +79,7 @@ func _run() -> void:
 	assert(EndCredits.MUSIC.resource_path == "res://assets/audio/lord_of_the_night.mp3")
 	assert(menu_recording.data != EndCredits.MUSIC.data, "Menu and credits must use their separate songs")
 	assert(menu_recording.loop and not EndCredits.MUSIC.loop, "Returning to the menu loops its own copy without changing credits")
+	menu_recording = null
 	# Re-entering credits must not leave a second song or stale scene running.
 	assert(change_scene_to_file("res://scenes/end_credits.tscn") == OK)
 	await _frames(3)
