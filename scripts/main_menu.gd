@@ -2,6 +2,7 @@ extends Control
 
 const INTRO_SCENE := "res://scenes/story_intro.tscn"
 const TITLE_ART := preload("res://assets/ui/title_screen.png")
+const TITLE_STORM_SCRIPT := preload("res://scripts/title_storm.gd")
 
 var menu: Control
 var art: TextureRect
@@ -14,7 +15,7 @@ func _ready() -> void:
 	GameSettings.load_settings()
 	GameAudio.start_music(get_tree(), true)
 	MenuKit.backdrop(self)
-	# Title art: the supplied "The Night Unc" screen, unaltered, scaled to cover the window.
+	# Supplied "El Señor de la Noche" artwork, scaled to cover the window.
 	art = TextureRect.new()
 	art.texture = TITLE_ART
 	art.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
@@ -23,6 +24,8 @@ func _ready() -> void:
 	art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	art.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(art)
+	var storm := TITLE_STORM_SCRIPT.new() as Control
+	add_child(storm)
 	menu = Control.new()
 	menu.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	menu.mouse_filter = Control.MOUSE_FILTER_IGNORE
