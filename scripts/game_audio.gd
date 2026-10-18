@@ -40,6 +40,14 @@ static func start_music(tree: SceneTree) -> void:
 	_music.autoplay = true
 	tree.root.add_child.call_deferred(_music)
 
+static func stop_music() -> void:
+	if is_instance_valid(_music):
+		_music.autoplay = false
+		_music.stop()
+		_music.stream = null
+		_music.queue_free()
+	_music = null
+
 # kind: click, kill, hurt or boss
 static func play(tree: SceneTree, kind: String) -> void:
 	if tree == null:
@@ -122,5 +130,4 @@ static func _music_stream() -> AudioStreamWAV:
 			var bass := (1.0 if bass_phase < 0.5 else -1.0) * 0.14
 			samples[step * step_len + j] = lead + bass
 	return _wav(samples, true)
-
 

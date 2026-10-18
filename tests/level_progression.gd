@@ -136,11 +136,20 @@ func _run() -> void:
 	assert(ema.dying and not ema_stage.get("finished") and GameSettings.score == final_score, "Ema must complete the final collapse before score or stage clear")
 	await _frames(1)
 	assert(current_scene == ema_stage and not ema_stage.get("finished"))
-	for i in range(360):
+	var saw_ending_fade := false
+	for i in range(480):
 		if current_scene != ema_stage:
 			break
+		if ema_stage.get("ending_transition"):
+			assert((ema_stage.get("player") as Player).controls_locked)
+			for child in ema_stage.get_children():
+				if child is CanvasLayer and child.layer == 100:
+					var fade := child.get_child(0) as ColorRect
+					saw_ending_fade = saw_ending_fade or (fade.color.a > 0.0 and fade.color.a < 1.0)
 		await _frames(1)
-	assert(current_scene.scene_file_path == "res://scenes/level_select.tscn", "The last available stage must return to level selection")
+	await _frames(2)
+	assert(saw_ending_fade, "The frozen final-stage victory must visibly fade before the credits")
+	assert(current_scene.scene_file_path == "res://scenes/end_credits.tscn", "The final costume collapse must fade into the end credits")
 
 	assert(change_scene_to_file("res://scenes/main.tscn") == OK)
 	await _frames(2)
@@ -174,5 +183,5 @@ func _run() -> void:
 	await _restart()
 	assert(current_scene != dead_stage and current_scene.scene_file_path == "res://scenes/bichema_level.tscn")
 	assert(not (current_scene.get("player") as Player).dead)
-	print("PASS: entrance/transform/second-form restart; both health pools and phases; final collapse -> Bichema's World -> level select; player death blocks victory")
+	print("PASS: entrance/transform/second-form restart; both health pools and phases; final collapse -> Bichema's World -> credits; player death blocks victory")
 	quit()

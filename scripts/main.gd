@@ -33,6 +33,7 @@ var boss_gate_x := LEVEL_END - 340.0
 var boss_trigger_x := LEVEL_END - 300.0
 var boss_spawn_x := LEVEL_END + 600.0
 var finished := false
+var ending_transition := false
 var gates: Array = []
 var hp_bar: ProgressBar
 var meter_bar: ProgressBar
@@ -573,6 +574,8 @@ func _on_boss_defeated() -> void:
 	if finished or player.dead:
 		return
 	finished = true
+	player.controls_locked = true
+	player.clear_attacks()
 	process_mode = Node.PROCESS_MODE_DISABLED
 	boss_label.text = ""
 	boss_bar.visible = false
@@ -589,7 +592,7 @@ func _on_boss_defeated() -> void:
 	var score_text := "\nBoss +%d  |  Score: %d%s" % [GameSettings.BOSS_POINTS, GameSettings.score,
 			"  NEW HIGH SCORE!" if new_high else ""]
 	if bichema_level:
-		message.text = "The Evil Genius is defeated! All levels clear." + score_text + "\nReturning to level selection..."
+		message.text = "The Evil Genius is defeated! All levels clear." + score_text
 	else:
 		message.text = "Yeral and Glizzy Gobler defeated!" + score_text + "\nNext: Bichema's World"
 	message_timer.start(3.0)
@@ -599,10 +602,29 @@ func _on_message_timeout() -> void:
 		if not player.dead:
 			message.text = ""
 		return
-	var next_scene := "res://scenes/level_select.tscn" if bichema_level else "res://scenes/bichema_level.tscn"
+	if ending_transition:
+		return
+	ending_transition = true
+	if bichema_level:
+		var layer := CanvasLayer.new()
+		layer.layer = 100
+		layer.process_mode = Node.PROCESS_MODE_ALWAYS
+		add_child(layer)
+		var fade := ColorRect.new()
+		fade.color = Color(0, 0, 0, 0)
+		fade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		layer.add_child(fade)
+		var tween := layer.create_tween()
+		tween.tween_property(fade, "color:a", 1.0, 1.2)
+		tween.tween_callback(_open_next_scene.bind("res://scenes/end_credits.tscn"))
+	else:
+		_open_next_scene("res://scenes/bichema_level.tscn")
+
+func _open_next_scene(next_scene: String) -> void:
 	var error := get_tree().change_scene_to_file(next_scene)
 	if error != OK:
 		process_mode = Node.PROCESS_MODE_INHERIT
+		ending_transition = false
 		message.text = "Could not load the next level.\nPress R to restart."
 		push_error("Could not open level %s: %s" % [next_scene, error_string(error)])
 
