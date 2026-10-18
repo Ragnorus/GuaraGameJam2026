@@ -50,6 +50,7 @@ func take_damage(amount: int) -> bool:
 				child.set_deferred("disabled", true)
 		sprite.play(&"death")
 	else:
+		voice.cue(&"hurt", target)
 		sprite.stop()
 		sprite.play(&"hurt")
 	return true

@@ -1,0 +1,6 @@
+Monster sounds by Michel Baradari.
+Source: user-supplied michelbaradari-monsters.7z, monster/*.wav.
+All 15 WAV files are copied unchanged.
+
+The supplied archive contains no license or attribution document.
+Confirm the original pack's license and any required attribution before redistribution.

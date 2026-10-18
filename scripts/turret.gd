@@ -23,6 +23,7 @@ var cooldown := 1.2
 var warn_time := 0.0
 var flash := 0.0
 var turret_sprite: Sprite2D
+var voice: MobVoice
 
 
 func _ready() -> void:
@@ -36,6 +37,8 @@ func _ready() -> void:
 	shape.size = SIZE
 	cs.shape = shape
 	add_child(cs)
+	voice = MobVoice.new()
+	add_child(voice)
 	turret_sprite = Sprite2D.new()
 	turret_sprite.texture = IDLE_TEXTURE
 	turret_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
@@ -61,6 +64,7 @@ func _physics_process(delta: float) -> void:
 				cooldown -= delta * GameSettings.aggro()
 				if cooldown <= 0.0:
 					warn_time = WARN
+					voice.cue(&"attack", target)
 		else:
 			warn_time = 0.0
 	turret_sprite.flip_h = facing < 0
@@ -83,7 +87,9 @@ func take_damage(amount: int) -> bool:
 	flash = 0.12
 	queue_redraw()
 	if health > 0:
+		voice.cue(&"hurt", target)
 		return true
+	voice.cue(&"death", target)
 	dead = true
 	remove_from_group("enemies")
 	collision_layer = 0

@@ -26,6 +26,7 @@ var music: AudioStreamPlayer
 func _ready() -> void:
 	robot = false
 	super._ready()
+	voice.enabled = false
 	(cs.shape as RectangleShape2D).size = Vector2(252.0, 72.0)
 	cs.position = Vector2(0.0, -36.0)
 	health = GameSettings.scale_health(19)

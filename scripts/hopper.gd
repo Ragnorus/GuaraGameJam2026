@@ -24,6 +24,7 @@ func _physics_process(delta: float) -> void:
 		if rest <= 0.0 and is_instance_valid(target) and not target.get("dead") \
 				and absf(target.global_position.x - global_position.x) < 520.0:
 			windup = WINDUP
+			voice.cue(&"attack", target)
 	if windup > 0.0:
 		windup -= delta
 		sprite.scale = Vector2(0.26, 0.2)

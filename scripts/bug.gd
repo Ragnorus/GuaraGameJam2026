@@ -18,6 +18,8 @@ var anim_lock := 0.0
 var sprite: AnimatedSprite2D
 var cs: CollisionShape2D
 var points := 1
+var voice: MobVoice
+var was_chasing := false
 # Horizontal bounds of the room (between gates) the mob belongs to; it never leaves them.
 var zone_min := -INF
 var zone_max := INF
@@ -32,6 +34,8 @@ func _ready() -> void:
 	cs = CollisionShape2D.new()
 	cs.shape = shape
 	add_child(cs)
+	voice = MobVoice.new()
+	add_child(voice)
 	if robot:
 		speed = 80.0
 		sprite = SpriteLib.make_sprite(SpriteLib.build("robot", {
@@ -51,6 +55,9 @@ func _physics_process(delta: float) -> void:
 	if not is_on_floor():
 		velocity.y += GRAVITY * delta
 	var chasing := is_instance_valid(target) and absf(target.global_position.x - global_position.x) < 250.0
+	if chasing and not was_chasing:
+		voice.cue(&"attack", target)
+	was_chasing = chasing
 	if chasing:
 		dir = 1 if target.global_position.x > global_position.x else -1
 	elif absf(position.x - origin_x) > patrol or is_on_wall() or _at_zone_edge(dir):
@@ -93,6 +100,7 @@ func _robot_update(delta: float) -> void:
 	if shoot_cd <= 0.0 and is_instance_valid(target) \
 			and absf(target.global_position.x - global_position.x) < 400.0:
 		anim_lock = 0.7
+		voice.cue(&"attack", target)
 		sprite.play("warn")
 		return
 	var want := "run" if absf(velocity.x) > 1.0 else "idle"
@@ -115,6 +123,8 @@ func take_damage(amount: int) -> bool:
 	if dead:
 		return false
 	health -= amount
+	if health > 0:
+		voice.cue(&"hurt", target)
 	if health <= 0:
 		_die()
 	elif robot and anim_lock <= 0.0:
@@ -143,6 +153,7 @@ func _die() -> void:
 	queue_free()
 
 func _award_points() -> void:
+	voice.cue(&"death", target)
 	GameSettings.add_score(points)
 	GameAudio.play(get_tree(), "kill")
 	Pickup.drop_loot(self, target)

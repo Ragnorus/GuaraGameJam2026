@@ -35,6 +35,7 @@ func _physics_process(delta: float) -> void:
 	if shoot_cd <= 0.0 and is_instance_valid(target) \
 			and absf(target.global_position.x - global_position.x) < 400.0:
 		anim_lock = 0.7
+		voice.cue(&"attack", target)
 		sprite.play(&"warn")
 		get_tree().create_timer(0.5).timeout.connect(_fire)
 		return
@@ -66,6 +67,8 @@ func take_damage(amount: int) -> bool:
 	if dying:
 		return false
 	health -= amount
+	if health > 0:
+		voice.cue(&"hurt", target)
 	if health <= 0:
 		dying = true
 		dead = true

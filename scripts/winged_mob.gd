@@ -88,6 +88,7 @@ func _physics_process(delta: float) -> void:
 			if shoot_cd <= 0.0 and is_instance_valid(target) and not target.get("dead") \
 					and absf(target.global_position.x - global_position.x) < 320.0:
 				state = "warn"
+				voice.cue(&"attack", target)
 				state_time = 0.55 / aggro
 				sprite.play(&"fly_warn" if bichema else &"hurt")
 		"warn":
@@ -131,6 +132,7 @@ func take_damage(amount: int) -> bool:
 		cs.set_deferred("disabled", true)
 		return true
 	modulate = Color(2.5, 2.5, 2.5)
+	voice.cue(&"hurt", target)
 	create_tween().tween_property(self, "modulate", Color.WHITE, 0.15)
 	return true
 
