@@ -1,0 +1,3 @@
+# Godot writes resource metadata with LF, including on Windows.
+*.import text eol=lf
+*.uid text eol=lf

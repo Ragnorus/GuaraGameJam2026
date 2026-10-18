@@ -27,6 +27,13 @@ export_credentials.cfg
 Thumbs.db
 Desktop.ini
 node_modules/
+.venv/
+
+# Local preview task contains machine-specific executable and scratch paths.
+/.vscode/tasks.json
+
+# Local character-sheet draft (other documentation remains trackable).
+/docs/CHARACTER_SHEETS.md
 
 # Keep *.import and *.uid files tracked: they hold import settings and stable resource UIDs.
 # Only the .godot/ cache is regenerated.
