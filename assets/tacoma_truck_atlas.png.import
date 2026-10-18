@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bxh3cx100cmu2"
-path="res://.godot/imported/tacoma_truck.png-67e8c8e9dffa2c250b2f23e53f497486.ctex"
+uid="uid://celt10iu6vyyl"
+path="res://.godot/imported/tacoma_truck_atlas.png-37663fe1e1b190573c28dd2740370646.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/tacoma_truck.png"
-dest_files=["res://.godot/imported/tacoma_truck.png-67e8c8e9dffa2c250b2f23e53f497486.ctex"]
+source_file="res://assets/tacoma_truck_atlas.png"
+dest_files=["res://.godot/imported/tacoma_truck_atlas.png-37663fe1e1b190573c28dd2740370646.ctex"]
 
 [params]
 

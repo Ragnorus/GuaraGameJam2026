@@ -21,6 +21,10 @@ func _assert_ground_contact(robot: Robot, floor_y: float) -> void:
 				return
 
 func _run() -> void:
+	GameSettings.loaded = true
+	GameSettings.difficulty = 1
+	GameSettings.music_on = false
+	GameSettings.sfx_on = false
 	var stage := preload("res://scenes/main.tscn").instantiate()
 	root.add_child(stage)
 	var player := stage.get("player") as Player
@@ -120,67 +124,131 @@ func _run() -> void:
 	var ema_stage := preload("res://scenes/bichema_level.tscn").instantiate()
 	root.add_child(ema_stage)
 	var tacoma_count := 0
-	var capi_count := 0
-	var ludo_count := 0
-	var capi: TacomaBro
+	var truck: TacomaTruck
 	for enemy in get_nodes_in_group("enemies"):
-		assert(enemy is WingedMob or (enemy is TruffleAndroid and not enemy is Robot) or enemy is TacomaBro,
-				"Bichema ground enemies are truffles plus the Tacoma pair")
-		if enemy is TacomaBro:
-			if enemy.bro_name == &"capi":
-				capi = enemy
+		assert(enemy is WingedMob or (enemy is TruffleAndroid and not enemy is Robot) or enemy is TacomaTruck,
+				"Bichema ground enemies are truffles plus the Tacoma")
+		if enemy is TacomaTruck:
+			truck = enemy
 			tacoma_count += 1
-			assert(enemy.sprite.sprite_frames.has_animation(&"idle")
-					and enemy.sprite.sprite_frames.has_animation(&"run")
-					and enemy.sprite.sprite_frames.has_animation(&"attack")
-					and enemy.sprite.sprite_frames.get_animation_names().size() == 3,
-					"Tacoma Bros use only idle, run and attack animations")
-			capi_count += int(enemy.bro_name == &"capi" and enemy.sergeant)
-			ludo_count += int(enemy.bro_name == &"ludo" and not enemy.sergeant)
-	assert(tacoma_count == 2 and capi_count == 1 and ludo_count == 1)
-	assert(capi.sprite.sprite_frames.get_frame_count(&"idle") == 1,
-			"Capi idle must not alternate into an adjacent source pose")
+	assert(tacoma_count == 1)
 	var bichema_route := ema_stage.get("bichema_route") as BichemaRoute
-	bichema_route.tacoma_arrived = true
-	bichema_route._set_area(2)
+	assert(truck == bichema_route.truck and bichema_route.room_enemies[2].size() == 1
+			and truck.health == GameSettings.scale_health(19),
+			"The Bros stay in one damageable Tacoma")
 	var bichema_player := ema_stage.get("player") as Player
-	bichema_player.position = Vector2(2750.0, 564.0)
-	await _frames(3)
-	var upper_ledge: Rect2 = ema_stage.get("bichema_rooms")[1]["platforms"][4]
-	var ludo := bichema_route.room_enemies[2][1] as TacomaBro
-	assert(capi.is_on_floor() and absf(capi.position.y - 550.0) < 2.0,
-			"Capi stays on the lower pub floor")
-	assert(ludo.is_on_floor() and absf(ludo.position.y + 42.0 - upper_ledge.position.y) < 2.0,
-			"Ludo stays on the upper pub ledge")
-	ludo.shoot_cd = 100.0
-	bichema_player.position.x = ludo.position.x
-	var ludo_walk_start := ludo.position.x
-	var ludo_walk_direction := ludo.dir
-	var ludo_walk_frame := ludo.sprite.frame
-	for i in range(12):
+	bichema_player.invuln = 0.0
+	var intro_health := bichema_player.health
+	var waiting_truck_health := truck.health
+	truck.take_damage(1)
+	assert(truck.health == waiting_truck_health, "The cinematic Tacoma must not take combat damage")
+	bichema_player.position = Vector2(2480.0, 564.0)
+	bichema_route._set_area(1)
+	bichema_route._transition(2)
+	for i in range(180):
 		await _frames(1)
-		assert(ludo.dir == ludo_walk_direction,
-				"Ludo must keep walking through the target-alignment deadzone")
-	assert(absf(ludo.position.x - ludo_walk_start) > 12.0
-			and ludo.sprite.animation == &"run" and ludo.sprite.frame != ludo_walk_frame,
-			"Ludo must make visible progress through a complete run-cycle sample")
-	bichema_player.position = capi.position + Vector2(300.0, 0.0)
-	capi.dir = -1
-	capi.shoot_cd = 0.0
-	var shot: Projectile
-	for i in range(20):
-		await _frames(1)
-		for child in ema_stage.get_children():
-			if child is Projectile and child.target_group == "player":
-				shot = child as Projectile
-		if shot != null:
+		assert(bichema_player.health == intro_health, "The Tacoma entrance must preserve player HP")
+		if bichema_route.area_index == 2 and truck.visible:
+			assert(truck.position.x - bichema_player.position.x > TacomaTruck.HALF_WIDTH + Bug.PLAYER_HALF.x,
+					"The entrance must stop clear instead of crossing through the player")
+		if i == 90:
+			var paused_at := truck.position
+			var paused_frame := truck.truck_sprite.frame
+			paused = true
+			await _frames(12)
+			assert(truck.position == paused_at and truck.truck_sprite.frame == paused_frame
+					and bichema_player.controls_locked, "Pause must freeze the animated entrance")
+			paused = false
+		if not bichema_route.transitioning:
 			break
-	assert(capi.dir == 1 and capi.attack_fired and shot != null
-			and shot.velocity.x > 0.0 and shot.texture != null
-			and shot.texture.resource_path == "res://assets/tacoma_toyota_projectile.png"
-			and shot.texture_scale == Vector2.ONE * 0.2,
-			"Capi must face and fire the Toyota-logo projectile at a player 300 pixels away")
+	assert(not bichema_route.transitioning and bichema_route.tacoma_arrived
+			and truck.visible and bichema_route.room_enemies[2].size() == 1
+			and bichema_route.room_enemies[2][0] == truck,
+			"The Tacoma must enter the pub and remain as the single enemy")
+	await _frames(60)
+	assert(bichema_player.health == intro_health and truck.drive_state == TacomaTruck.DriveState.WINDUP,
+			"The player must get a full warning after regaining control")
+	truck.position = Vector2(3200.0, 600.0)
+	bichema_player.position = Vector2(3440.0, 564.0)
+	truck.velocity = Vector2.ZERO
+	truck.drive_state = TacomaTruck.DriveState.RECOVER
+	truck.state_time = TacomaTruck.RECOVER_TIME
+	await _frames(2)
+	assert(truck.is_on_floor(), "The Tacoma must stay grounded on the pub floor")
+	var health_before_charge := bichema_player.health
+	truck.drive_state = TacomaTruck.DriveState.WINDUP
+	truck.state_time = 0.001
+	truck.hit_this_charge = false
+	await _frames(1)
+	assert(truck.drive_state == TacomaTruck.DriveState.CHARGE
+			and truck.velocity.y < 0.0 and truck.position.y < 600.0,
+			"A real Tacoma charge must start with a jump")
+	assert(truck.truck_sprite.animation == &"charge", "Airborne charges must show the supplied charge art")
+	var charge_start := truck.position.x
+	await _frames(6)
+	assert(truck.position.x - charge_start >= 47.0 and truck.position.y < 560.0
+			and bichema_player.health == health_before_charge,
+			"The Tacoma must make a fast jump before reaching the player")
+	for i in range(30):
+		await _frames(1)
+		if bichema_player.health < health_before_charge:
+			break
+	assert(truck.position.x > charge_start
+			and bichema_player.health == health_before_charge - GameSettings.incoming_damage(2)
+			and bichema_player.knockback_time > 0.0,
+			"A Tacoma charge must ram and knock back a grounded player")
+
+	bichema_player.clear_status()
+	bichema_player.invuln = 0.0
+	bichema_player.velocity = Vector2.ZERO
+	bichema_player.position = Vector2(3500.0, 564.0)
+	truck.position = Vector2(3200.0, 600.0)
+	truck.velocity = Vector2.ZERO
+	truck.drive_state = TacomaTruck.DriveState.CHARGE
+	truck.charge_direction = 1
+	truck.state_time = TacomaTruck.CHARGE_TIME
+	truck.hit_this_charge = false
+	var health_before_jump := bichema_player.health
+	for i in range(75):
+		if i == 9 or i == 39:
+			Input.action_press(&"jump")
+		if i == 33 or i == 63:
+			Input.action_release(&"jump")
+		await _frames(1)
+	Input.action_release(&"jump")
+	assert(bichema_player.health == health_before_jump,
+			"A timed double jump must clear the Tacoma's charge")
+	assert(truck.drive_state == TacomaTruck.DriveState.RECOVER and truck.truck_sprite.animation == &"spin",
+			"A completed charge must land and drift into a donut recovery")
+	var spin_frame := truck.truck_sprite.frame
+	var spin_facing := truck.truck_sprite.flip_h
+	var spin_advanced := false
+	var spin_turned := false
+	bichema_player.position = truck.position - Vector2(0.0, 36.0)
+	bichema_player.velocity = Vector2.ZERO
+	bichema_player.invuln = 0.0
+	for i in range(35):
+		await _frames(1)
+		spin_advanced = spin_advanced or truck.truck_sprite.frame != spin_frame
+		spin_turned = spin_turned or truck.truck_sprite.flip_h != spin_facing
+	assert(spin_advanced and spin_turned and bichema_player.health == health_before_jump,
+			"The donut must animate through both facings without dealing recovery contact damage")
+
+	truck.set_physics_process(false)
+	truck.position = Vector2(3200.0, 600.0)
+	truck.velocity = Vector2.ZERO
+	bichema_player.clear_status()
+	bichema_player.invuln = 0.0
+	bichema_player.velocity = Vector2.ZERO
+	bichema_player.position = Vector2(3500.0, 564.0)
+	bichema_player.facing = -1
+	await _frames(2)
+	var truck_health := truck.health
+	bichema_player._shoot()
+	await _frames(30)
+	assert(truck.health == truck_health - 1,
+			"A real player projectile must damage the Tacoma")
 	ema_stage.queue_free()
 	await _frames(1)
-	print("PASS: first-stage robots, locomotion/facing, Ludo patrol, blocked idle, contact/projectile/shadow damage, corpse safety, TruffleAndroids and Tacoma Sergeant pair")
+	print("PASS: robot movement/combat/death; Tacoma protected entrance, pause, warning, hopping charge, animated donut recovery, jump dodge and projectile damage")
 	quit()

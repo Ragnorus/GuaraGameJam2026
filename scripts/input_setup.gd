@@ -32,7 +32,7 @@ static func setup() -> void:
 	_add_key("summon", [KEY_K])
 	_add_key("recall", [KEY_L])
 	_add_key("ultimate", [KEY_U])
-	_add_key("shield", [KEY_E])
+	_add_key("shield", [KEY_Q])
 	_add_key("restart", [KEY_R])
 	var mouse := InputEventMouseButton.new()
 	mouse.button_index = MOUSE_BUTTON_LEFT
@@ -48,7 +48,7 @@ static func setup() -> void:
 	_add_joy_motion("shoot", JOY_AXIS_TRIGGER_RIGHT, 1.0)
 	_add_joy_button("summon", JOY_BUTTON_Y)
 	_add_joy_button("recall", JOY_BUTTON_RIGHT_SHOULDER)
-	_add_joy_button("shield", JOY_BUTTON_LEFT_STICK)
+	_add_joy_motion("shield", JOY_AXIS_TRIGGER_LEFT, 1.0)
 	_add_joy_button("ultimate", JOY_BUTTON_RIGHT_STICK)
 
 	_add_joy_button("ui_accept", JOY_BUTTON_A)

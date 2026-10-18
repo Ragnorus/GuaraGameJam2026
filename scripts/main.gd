@@ -451,7 +451,7 @@ func _build_hud() -> void:
 	dialogue.add_theme_font_size_override("font_size", 22)
 	layer.add_child(dialogue)
 	var help := Label.new()
-	help.text = "Move A/D/LS/D-pad  Jump Space/A  Smash J/X  Dash Shift/LB  Summon K/Y  Recall L/RB  Army U/R3  Shield E/L3  Pause Esc/B/Start  Restart R"
+	help.text = "Move A/D/LS/D-pad  Jump Space/A  Smash J/X  Dash Shift/LB  Summon K/Y  Recall L/RB  Army U/R3  Shield Q/LT  Pause Esc/B/Start  Restart R"
 	help.position = Vector2(16, 690)
 	layer.add_child(help)
 	score_label = Label.new()
@@ -473,7 +473,7 @@ func _update_hud() -> void:
 	meter_bar.max_value = player.meter_max
 	meter_bar.value = player.meter
 	hud_label.text = "HP %d/%d%s" % [player.health, player.max_health,
-			("   SHIELD " + ("READY (E)" if player.shield_cd <= 0.0 else "%.0fs" % ceilf(player.shield_cd))) if GameSettings.shield_unlocked else ""]
+			("   SHIELD " + ("READY (Q)" if player.shield_cd <= 0.0 else "%.0fs" % ceilf(player.shield_cd))) if GameSettings.shield_unlocked else ""]
 	hud_label.position = Vector2(24, 74)
 	hud_label.add_theme_font_size_override("font_size", 14)
 

@@ -1,0 +1,91 @@
+[gd_resource type="SpriteFrames" load_steps=12 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/tacoma_truck_atlas.png" id="1"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_truck_idle"]
+atlas = ExtResource("1")
+region = Rect2(0, 0, 640, 320)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_truck_drive_0"]
+atlas = ExtResource("1")
+region = Rect2(640, 0, 640, 320)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_truck_drive_1"]
+atlas = ExtResource("1")
+region = Rect2(1280, 0, 640, 320)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_truck_drive_2"]
+atlas = ExtResource("1")
+region = Rect2(1920, 0, 640, 320)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_truck_drive_3"]
+atlas = ExtResource("1")
+region = Rect2(0, 320, 640, 320)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_truck_drive_4"]
+atlas = ExtResource("1")
+region = Rect2(640, 320, 640, 320)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_truck_charge"]
+atlas = ExtResource("1")
+region = Rect2(1280, 320, 640, 320)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_truck_drift_0"]
+atlas = ExtResource("1")
+region = Rect2(1920, 320, 640, 320)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_truck_drift_1"]
+atlas = ExtResource("1")
+region = Rect2(0, 640, 640, 320)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_truck_donut"]
+atlas = ExtResource("1")
+region = Rect2(640, 640, 640, 320)
+
+[resource]
+animations = [{
+"frames": [
+{"duration": 1.0, "texture": SubResource("AtlasTexture_truck_idle")}
+],
+"loop": true,
+"name": &"idle",
+"speed": 5.0
+}, {
+"frames": [
+{"duration": 1.0, "texture": SubResource("AtlasTexture_truck_drive_0")},
+{"duration": 1.0, "texture": SubResource("AtlasTexture_truck_drive_1")},
+{"duration": 1.0, "texture": SubResource("AtlasTexture_truck_drive_2")},
+{"duration": 1.0, "texture": SubResource("AtlasTexture_truck_drive_3")},
+{"duration": 1.0, "texture": SubResource("AtlasTexture_truck_drive_4")}
+],
+"loop": true,
+"name": &"drive",
+"speed": 12.0
+}, {
+"frames": [
+{"duration": 1.0, "texture": SubResource("AtlasTexture_truck_charge")}
+],
+"loop": true,
+"name": &"charge",
+"speed": 8.0
+}, {
+"frames": [
+{"duration": 1.0, "texture": SubResource("AtlasTexture_truck_drift_0")},
+{"duration": 1.0, "texture": SubResource("AtlasTexture_truck_drift_1")}
+],
+"loop": true,
+"name": &"drift",
+"speed": 8.0
+}, {
+"frames": [
+{"duration": 1.0, "texture": SubResource("AtlasTexture_truck_donut")},
+{"duration": 1.0, "texture": SubResource("AtlasTexture_truck_drift_0")},
+{"duration": 1.0, "texture": SubResource("AtlasTexture_truck_drift_1")},
+{"duration": 1.0, "texture": SubResource("AtlasTexture_truck_drift_0")},
+{"duration": 1.0, "texture": SubResource("AtlasTexture_truck_drive_2")},
+{"duration": 1.0, "texture": SubResource("AtlasTexture_truck_donut")}
+],
+"loop": true,
+"name": &"spin",
+"speed": 9.0
+}]

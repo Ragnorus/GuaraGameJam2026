@@ -1,15 +1,40 @@
-"""Rebuild Tacoma Bros' combat frames and Toyota projectile from supplied sheets."""
+"""Rebuild Tacoma Bros' combat/vehicle frames and Toyota projectile from supplied sheets."""
 
 import argparse
 from pathlib import Path
 
-from PIL import Image, ImageChops, ImageFilter
+from PIL import Image, ImageChops, ImageDraw, ImageFilter
 
 
 ROOT = Path(__file__).resolve().parent.parent
 CANVAS = (256, 256)
 FEET_Y = 240
-TRUCK_CROP = (0, 360, 400, 490)
+TRUCK_CANVAS = (640, 320)
+# Wheel anchors share y=240; the extra lower canvas preserves the complete donut ring.
+TRUCK_POSES = {
+    "idle": (491, 537, 790, 665, 642, 658),
+    "drive_0": (0, 357, 393, 493, 220, 488),
+    "drive_1": (393, 350, 765, 493, 596, 488),
+    "drive_2": (765, 350, 1084, 493, 924, 488),
+    "drive_3": (1084, 350, 1400, 493, 1239, 488),
+    "drive_4": (1400, 350, 1774, 493, 1598, 488),
+    "charge": (0, 712, 478, 879, 319, 862),
+    "drift_0": (1321, 537, 1594, 666, 1480, 657),
+    "drift_1": (1594, 532, 1774, 666, 1692, 655),
+    "donut": (470, 714, 904, 887, 710, 834),
+}
+# Explicit overlap exclusions retain supplied pixels without neighboring vehicle parts.
+TRUCK_KEEP = {
+    "donut": [(492, 714), (904, 714), (904, 887), (470, 887), (470, 821), (483, 807), (483, 775), (474, 758)],
+}
+TRUCK_ANIMATIONS = {
+    "idle": (["idle"], 5.0, True),
+    "drive": (["drive_0", "drive_1", "drive_2", "drive_3", "drive_4"], 12.0, True),
+    "charge": (["charge"], 8.0, True),
+    "drift": (["drift_0", "drift_1"], 8.0, True),
+    # shortcut: supplied views lack a full rotation; add views only when more source art exists.
+    "spin": (["donut", "drift_0", "drift_1", "drift_0", "drive_2", "donut"], 9.0, True),
+}
 TOYOTA_PROJECTILE_SOURCE = ROOT / "art/sheets/tacoma_projectile_sheet.png"
 TOYOTA_PROJECTILE_CROP = (46, 754, 344, 875)
 ANIMATIONS = {
@@ -77,15 +102,30 @@ def _isolate_pose(crop: Image.Image, seed: tuple[int, int]) -> None:
     crop.putalpha(ImageChops.multiply(alpha, fringe))
 
 
+def _write_resource(output: Path, actor: str, atlas_name: str, animations: dict, placements: dict) -> None:
+    suffixes = list(dict.fromkeys(f"{actor}_{name}" for names, _, _ in animations.values() for name in names))
+    assert all(suffix in placements for suffix in suffixes), "Animation references a missing frame"
+    resource = [f'[gd_resource type="SpriteFrames" load_steps={len(suffixes) + 2} format=3]', "",
+                f'[ext_resource type="Texture2D" path="res://assets/{atlas_name}.png" id="1"]', ""]
+    for suffix in suffixes:
+        resource += [f'[sub_resource type="AtlasTexture" id="AtlasTexture_{suffix}"]', 'atlas = ExtResource("1")',
+                     f'region = Rect2({", ".join(map(str, placements[suffix]))})', ""]
+    resource += ["[resource]", "animations = [{"]
+    for index, (name, (names, fps, loop)) in enumerate(animations.items()):
+        resource += ['"frames": [']
+        resource += [f'{{"duration": 1.0, "texture": SubResource("AtlasTexture_{actor}_{suffix}")}}{"," if i < len(names) - 1 else ""}'
+                     for i, suffix in enumerate(names)]
+        resource += [f'],\n"loop": {str(loop).lower()},\n"name": &"{name}",\n"speed": {fps}',
+                     "}, {" if index < len(animations) - 1 else "}]"]
+    (output / f"tacoma_{actor}_frames.tres").write_text("\n".join(resource) + "\n", encoding="utf-8")
+
+
 def generate(source_path: Path) -> None:
     frames = {}
+    truck_frames = {}
     with Image.open(source_path) as source:
         assert source.mode == "RGBA" and source.size == (1774, 887), "Expected the original RGBA 1774x887 sheet"
         assert source.getchannel("A").getextrema()[0] == 0, "Sheet must preserve transparent background"
-        assert 0 <= TRUCK_CROP[0] < TRUCK_CROP[2] <= source.width
-        assert 0 <= TRUCK_CROP[1] < TRUCK_CROP[3] <= source.height
-        truck = source.crop(TRUCK_CROP)
-        assert truck.getchannel("A").getbbox() is not None, "Tacoma crop must contain the truck"
         for bro, poses in POSES.items():
             for suffix, (left, top, right, bottom, foot_x, foot_y) in poses.items():
                 assert 0 <= left < right <= source.width and 0 <= top < bottom <= source.height
@@ -97,6 +137,23 @@ def generate(source_path: Path) -> None:
                 frame = Image.new("RGBA", CANVAS)
                 frame.alpha_composite(crop, position)
                 frames[f"{bro}_{suffix}"] = frame
+        for suffix, (left, top, right, bottom, wheel_x, wheel_y) in TRUCK_POSES.items():
+            assert 0 <= left < right <= source.width and 0 <= top < bottom <= source.height
+            assert left <= wheel_x < right and top <= wheel_y < bottom, (suffix, "wheel anchor outside crop")
+            crop = source.crop((left, top, right, bottom))
+            if suffix in TRUCK_KEEP:
+                mask = Image.new("L", crop.size)
+                ImageDraw.Draw(mask).polygon([(x - left, y - top) for x, y in TRUCK_KEEP[suffix]], fill=255)
+                crop.putalpha(ImageChops.multiply(crop.getchannel("A"), mask))
+            _isolate_pose(crop, (wheel_x - left, wheel_y - top - 40))
+            assert crop.getchannel("A").getbbox() is not None, (suffix, "empty vehicle crop")
+            position = (TRUCK_CANVAS[0] // 2 + left - wheel_x, FEET_Y + top - wheel_y)
+            assert position[0] >= 0 and position[1] >= 0, (suffix, "anchor clips vehicle crop")
+            assert position[0] + crop.width <= TRUCK_CANVAS[0] and position[1] + crop.height <= TRUCK_CANVAS[1], (suffix, "frame clips vehicle crop")
+            frame = Image.new("RGBA", TRUCK_CANVAS)
+            frame.paste(crop, position)
+            assert frame.crop((*position, position[0] + crop.width, position[1] + crop.height)).tobytes() == crop.tobytes(), (suffix, "source pixels changed")
+            truck_frames[f"truck_{suffix}"] = frame
 
     with Image.open(TOYOTA_PROJECTILE_SOURCE) as sheet:
         assert sheet.mode == "RGB" and sheet.size == (1820, 968), "Expected the supplied RGB Toyota projectile sheet"
@@ -112,27 +169,22 @@ def generate(source_path: Path) -> None:
         x, y = index % 8 * CANVAS[0], index // 8 * CANVAS[1]
         atlas.alpha_composite(frame, (x, y))
         placements[key] = (x, y, *CANVAS)
+    truck_atlas = Image.new("RGBA", (TRUCK_CANVAS[0] * 4, ((len(truck_frames) + 3) // 4) * TRUCK_CANVAS[1]))
+    truck_placements = {}
+    for index, (key, frame) in enumerate(truck_frames.items()):
+        x, y = index % 4 * TRUCK_CANVAS[0], index // 4 * TRUCK_CANVAS[1]
+        truck_atlas.paste(frame, (x, y))
+        truck_placements[key] = (x, y, *TRUCK_CANVAS)
 
     output = Path(__file__).resolve().parent
-    truck.save(output / "tacoma_truck.png", optimize=True)
     projectile.save(output / "tacoma_toyota_projectile.png", optimize=True)
     atlas.save(output / "tacoma_bros_atlas.png", optimize=True)
+    truck_atlas.save(output / "tacoma_truck_atlas.png", optimize=True)
     for bro, animations in ANIMATIONS.items():
-        resource = [f'[gd_resource type="SpriteFrames" load_steps={1 + sum(len(value[0]) for value in animations.values()) + 1} format=3]', "",
-                    '[ext_resource type="Texture2D" path="res://assets/tacoma_bros_atlas.png" id="1"]', ""]
-        for suffix in (f"{bro}_{name}" for names, _, _ in animations.values() for name in names):
-            resource += [f'[sub_resource type="AtlasTexture" id="AtlasTexture_{suffix}"]', 'atlas = ExtResource("1")',
-                         f'region = Rect2({", ".join(map(str, placements[suffix]))})', ""]
-        resource += ["[resource]", "animations = [{"]
-        for index, (name, (suffixes, fps, loop)) in enumerate(animations.items()):
-            resource += ['"frames": [']
-            resource += [f'{{"duration": 1.0, "texture": SubResource("AtlasTexture_{bro}_{suffix}")}}{"," if i < len(suffixes) - 1 else ""}'
-                         for i, suffix in enumerate(suffixes)]
-            resource += [f'],\n"loop": {str(loop).lower()},\n"name": &"{name}",\n"speed": {fps}',
-                         "}, {" if index < len(animations) - 1 else "}]"]
-        (output / f"tacoma_{bro}_frames.tres").write_text("\n".join(resource) + "\n", encoding="utf-8")
+        _write_resource(output, bro, "tacoma_bros_atlas", animations, placements)
+    _write_resource(output, "truck", "tacoma_truck_atlas", TRUCK_ANIMATIONS, truck_placements)
 
-    print(f"Wrote {len(frames)} anchored combat frames, two 3-animation resources, the Tacoma drive sprite and Toyota projectile; atlas {atlas.width}x{atlas.height}")
+    print(f"Wrote {len(frames)} anchored combat frames, {len(truck_frames)} vehicle frames with idle/drive/charge/drift/spin, and the Toyota projectile; atlases {atlas.width}x{atlas.height} and {truck_atlas.width}x{truck_atlas.height}")
 
 
 if __name__ == "__main__":

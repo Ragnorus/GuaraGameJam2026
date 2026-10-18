@@ -13,7 +13,10 @@ func _initialize() -> void:
 	_check_button(&"summon", JOY_BUTTON_Y)
 	_check_button(&"recall", JOY_BUTTON_RIGHT_SHOULDER)
 	_check_button(&"ultimate", JOY_BUTTON_RIGHT_STICK)
-	_check_button(&"shield", JOY_BUTTON_LEFT_STICK)
+	_check_motion(&"shield", JOY_AXIS_TRIGGER_LEFT, 1.0)
+	var shield_stick := InputEventJoypadButton.new()
+	shield_stick.button_index = JOY_BUTTON_LEFT_STICK
+	assert(not InputMap.action_has_event(&"shield", shield_stick), "L3 must no longer activate Shield Burst")
 	var shield_back := InputEventJoypadButton.new()
 	shield_back.button_index = JOY_BUTTON_B
 	assert(not InputMap.action_has_event(&"shield", shield_back), "B must remain available for menu cancel")
@@ -36,13 +39,15 @@ func _initialize() -> void:
 func _check_synthetic_input() -> void:
 	await process_frame
 	var shield_event := InputEventJoypadButton.new()
-	shield_event.button_index = JOY_BUTTON_LEFT_STICK
-	shield_event.pressed = true
+	var shield_event := InputEventJoypadMotion.new()
+	shield_event.axis = JOY_AXIS_TRIGGER_LEFT
+	shield_event.axis_value = 1.0
 	Input.parse_input_event(shield_event)
 	Input.flush_buffered_events()
-	assert(Input.is_action_pressed(&"shield"), "L3 must activate Shield Burst")
-	var shield_release := InputEventJoypadButton.new()
-	shield_release.button_index = JOY_BUTTON_LEFT_STICK
+	assert(Input.is_action_pressed(&"shield"), "Left trigger must activate Shield Burst")
+	var shield_release := InputEventJoypadMotion.new()
+	shield_release.axis = JOY_AXIS_TRIGGER_LEFT
+	shield_release.axis_value = 0.0
 	Input.parse_input_event(shield_release)
 	var jump_event := InputEventJoypadButton.new()
 	jump_event.button_index = JOY_BUTTON_A

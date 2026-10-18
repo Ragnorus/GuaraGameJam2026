@@ -95,6 +95,9 @@ func _walk_to(player: Player, target_x: float) -> void:
 	assert(absf(player.position.x - target_x) <= Player.SPEED / 60.0 + 1.0,
 			"Walk stopped at %.1f; expected %.1f" % [player.position.x, target_x])
 
+func _feet_y(player: Player) -> float:
+	return player.global_position.y + 36.0
+
 func _check_jump(stage: Node, index: int) -> void:
 	var player := stage.get("player") as Player
 	var initial_feet := _feet_y(player)
@@ -113,27 +116,28 @@ func _check_jump(stage: Node, index: int) -> void:
 
 func _transition(route: BichemaRoute, player: Player, area: int, next_area: int, exit_x: float) -> void:
 	var truck_start_x := route.truck.position.x
+	var health_before := player.health
 	player.position = Vector2(exit_x, 564.0)
 	route.update(0.0)
 	assert(route.transitioning and player.controls_locked, "Area exits must use the locked fade transition")
 	if next_area == 2:
 		await _frames(80)
-		assert(route.truck.visible and route.truck.position.x > truck_start_x,
-				"The Tacoma must drive into the Tacoma Brothers' area")
+		assert(route.truck.visible and absf(route.truck.position.x - truck_start_x) > 1.0
+				and route.truck.position.x > player.position.x + TacomaTruck.HALF_WIDTH,
+				"The Tacoma must drive in without crossing the player's spawn")
 		await _frames(130)
 	else:
 		await _frames(75)
 	assert(route.area_index == next_area and not route.transitioning and not player.controls_locked)
 	if next_area == 2:
-		assert(route.tacoma_arrived and not route.truck.visible
-				and route.room_enemies[2][0].visible and route.room_enemies[2][1].visible,
-				"The brothers must disembark only after the Tacoma arrives")
+		assert(route.tacoma_arrived and route.truck.visible
+				and route.room_enemies[2].size() == 1 and route.room_enemies[2][0] == route.truck,
+				"The Tacoma must stay in the pub as the single encounter")
+		var truck_screen_x: float = route.truck.get_global_transform_with_canvas().origin.x
 		var view: Rect2 = player.get_viewport().get_visible_rect()
-		for enemy in route.room_enemies[2]:
-			if enemy is TacomaBro:
-				var screen_x: float = (enemy as TacomaBro).get_global_transform_with_canvas().origin.x
-				assert(screen_x >= view.position.x + 24.0 and screen_x <= view.end.x - 24.0,
-						"Both Tacoma Bros must fit in camera")
+		assert(truck_screen_x >= view.position.x + 24.0 and truck_screen_x <= view.end.x - 24.0,
+				"The Tacoma must fit in camera")
+		assert(player.health == health_before, "The drive-in and first warning must not cost player HP")
 
 func _run() -> void:
 	GameSettings.loaded = true
@@ -168,22 +172,11 @@ func _run() -> void:
 	assert(route.AREAS[5].end.x == YeralRoute.AREAS[5].end.x
 			and stage.get("arena_right") == YeralRoute.AREAS[5].end.x,
 			"Bichema's route and boss arena must match Yeral's 8320 px length")
-	assert(route.room_enemies[2].size() == 2)
-	assert(route.truck.texture.resource_path == "res://assets/tacoma_truck.png",
-			"The entrance must use the Tacoma sprite extracted from the supplied sheet")
-	var capi: TacomaBro
-	var ludo: TacomaBro
-	for enemy in route.room_enemies[2]:
-		if enemy is TacomaBro and enemy.bro_name == &"capi":
-			capi = enemy
-		elif enemy is TacomaBro and enemy.bro_name == &"ludo":
-			ludo = enemy
-	assert(capi != null and capi.sergeant and capi.health == GameSettings.scale_health(12))
-	assert(ludo != null and not ludo.sergeant)
-	assert(not route.tacoma_arrived and not route.truck.visible and not capi.visible and not ludo.visible,
+	assert(route.room_enemies[2].size() == 1)
+	var truck := route.truck
+	assert(truck.health == GameSettings.scale_health(19))
+	assert(not route.tacoma_arrived and not truck.visible,
 			"The Tacoma and its riders must wait hidden until their entrance begins")
-	assert(capi.sprite.sprite_frames.has_animation(&"idle") and capi.sprite.sprite_frames.has_animation(&"run")
-			and capi.sprite.sprite_frames.has_animation(&"attack"))
 
 	var boss_trigger_x := float(stage.get("boss_trigger_x"))
 	stage.set("boss_trigger_x", INF)
@@ -270,5 +263,5 @@ func _run() -> void:
 			boss = enemy
 	assert(boss != null and boss.global_position.x > float(stage.get("boss_trigger_x"))
 			and boss.global_position.x < factory.end.x)
-	print("PASS: complete paintings align to one safe ground path; six stage-one gates; Tacoma drive-in/disembark; real pub/factory ledges; final factory boss entry")
+	print("PASS: complete paintings align to one safe ground path; six stage-one gates; Tacoma drive-in/ramming; real pub/factory ledges; final factory boss entry")
 	quit()

@@ -78,6 +78,10 @@ func _wait_for_ema_transform(boss: BossEvilGenius) -> void:
 	assert(not boss.transforming and boss.is_in_group("enemies"), "Ema's nonlooping transformation must return to combat")
 
 func _run() -> void:
+	GameSettings.loaded = true
+	GameSettings.difficulty = 1
+	GameSettings.music_on = false
+	GameSettings.sfx_on = false
 	assert(change_scene_to_file("res://scenes/main.tscn") == OK)
 	await _frames(2)
 	var old_stage := current_scene
@@ -126,8 +130,10 @@ func _run() -> void:
 	assert(ema != null and not ema.costume_form and ema.health == GameSettings.scale_health(60))
 	_check_phases(ema)
 	_transform_ema(ema, ema_stage)
+	var old_transform_voice: WeakRef = weakref(ema.transform_voice)
 	await _restart()
 	assert(current_scene != ema_stage and current_scene.scene_file_path == "res://scenes/bichema_level.tscn", "Restart during Ema transformation must reset the encounter")
+	assert(old_transform_voice.get_ref() == null, "Restart must free the pink-suit recording, not leave audio behind")
 	ema_stage = current_scene
 	ema = await _enter_boss(ema_stage) as BossEvilGenius
 	assert(ema != null and not ema.costume_form and not ema.transforming and ema.phase == 1 and ema.health == ema.max_health)

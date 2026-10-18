@@ -10,6 +10,7 @@ const GRAVITY := 1500.0
 const SCALE := 1.5
 const FRAMES := preload("res://assets/neon_lawyer_frames.tres")
 const COSTUME_FRAMES := preload("res://assets/ema_costume_frames.tres")
+const PINK_SUIT_TRANSFORM_AUDIO := preload("res://assets/audio/evil_genius_pink_suit.wav")
 const BODY := Vector2(120, 220)
 const MAX_MINIONS := 5
 const LINES_BLAST := ["Citation needed.", "I have the data on that.", "Actually... you're wrong.", "Let me fact-check you."]
@@ -32,6 +33,7 @@ var costume_form := false
 var transforming := false
 var flash := 0.0
 var sprite: AnimatedSprite2D
+var transform_voice: AudioStreamPlayer
 
 func _ready() -> void:
 	max_health = GameSettings.scale_health(max_health)
@@ -224,6 +226,14 @@ func _transform() -> void:
 	phase = 1
 	sprite.sprite_frames = COSTUME_FRAMES
 	sprite.play(&"transform")
+	transform_voice = AudioStreamPlayer.new()
+	transform_voice.stream = PINK_SUIT_TRANSFORM_AUDIO
+	transform_voice.bus = "SFX"
+	transform_voice.playback_type = AudioServer.PLAYBACK_TYPE_STREAM
+	add_child(transform_voice)
+	if target is Player:
+		(target as Player).died.connect(transform_voice.stop)
+	transform_voice.play()
 	transformed.emit()
 	health_changed.emit(health, max_health)
 	speech.emit("Behold my final argument!", 2.0)
@@ -234,6 +244,8 @@ func _die() -> void:
 		return
 	dying = true
 	active = false
+	if is_instance_valid(transform_voice):
+		transform_voice.stop()
 	charge_time = 0.0
 	charge_windup = 0.0
 	remove_from_group("enemies")
@@ -265,3 +277,8 @@ func _on_animation_finished() -> void:
 		set_physics_process(false)
 		defeated.emit()
 		queue_free()
+
+func _exit_tree() -> void:
+	if is_instance_valid(transform_voice):
+		transform_voice.stop()
+		transform_voice.stream = null

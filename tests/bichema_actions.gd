@@ -23,6 +23,10 @@ func _frames(count: int) -> void:
 		await process_frame
 
 func _run() -> void:
+	GameSettings.loaded = true
+	GameSettings.difficulty = 1
+	GameSettings.music_on = false
+	GameSettings.sfx_on = false
 	var world := Node2D.new()
 	root.add_child(world)
 	var floor_body := StaticBody2D.new()
@@ -140,6 +144,15 @@ func _run() -> void:
 	assert(shadow._nearest_enemy() == null, "Transformation and dismissed summons must immediately stop being targetable")
 	for attack in prior_attacks:
 		assert(attack.is_queued_for_deletion() and attack.process_mode == Node.PROCESS_MODE_DISABLED)
+	assert(boss.transform_voice.playing, "The pink-suit recording must start with the transformation")
+	var transform_frame := boss.sprite.frame
+	paused = true
+	await _frames(12)
+	assert(boss.transform_voice.stream_paused and boss.sprite.frame == transform_frame,
+			"Pause must freeze both the transformation and its recording")
+	paused = false
+	await _frames(1)
+	assert(not boss.transform_voice.stream_paused, "The recording must resume with gameplay")
 	target.position = boss.position
 	var protected_health := target.health
 	var boss_health := boss.health
@@ -173,6 +186,8 @@ func _run() -> void:
 	boss._update_art()
 	assert(boss.sprite.animation == &"point")
 	assert(get_nodes_in_group("enemies").size() == 3, "Costume summon must retain its two research assistants")
+	# Random assistant spawns must not block the charge-speed check.
+	boss._clear_attacks()
 	boss.pose_time = 0.0
 	boss.charge_dir = -1
 	boss.charge_windup = 0.35
@@ -182,6 +197,7 @@ func _run() -> void:
 	assert(boss.charge_time > 0.0 and boss.sprite.animation == &"run" and boss.velocity.x < -520.0)
 	boss.take_damage(boss.health)
 	assert(boss.dying and boss.sprite.animation == &"dead" and defeats[0] == 0)
+	assert(not boss.transform_voice.playing, "Final defeat must stop the transformation recording")
 	assert(boss.charge_time == 0.0 and boss.charge_windup == 0.0 and not boss.is_in_group("enemies"))
 	boss.take_damage(99)
 	boss._die()
@@ -216,7 +232,24 @@ func _run() -> void:
 			break
 		await _frames(1)
 	assert(not is_instance_valid(mob), "The minion must despawn after the supplied death animation")
-	world.queue_free()
-	await _frames(1)
-	print("PASS: Ema two forms, protected transition/targeting/attack cleanup, costume attacks, single final collapse; minion hurt/death")
+	var interrupted_player := Player.new()
+	world.add_child(interrupted_player)
+	var interrupted_boss := BossEvilGenius.new()
+	interrupted_boss.target = interrupted_player
+	world.add_child(interrupted_boss)
+	interrupted_boss.activate()
+	interrupted_boss.take_damage(interrupted_boss.health)
+	assert(interrupted_boss.transform_voice.playing)
+	interrupted_player.die()
+	assert(not interrupted_boss.transform_voice.playing,
+			"Player death must immediately stop the pink-suit recording")
+	world.free()
+	for child in root.get_children():
+		if child is AudioStreamPlayer:
+			child.stop()
+			child.stream = null
+			child.queue_free()
+	await _frames(5)
+	await create_timer(0.05).timeout
+	print("PASS: Ema two forms, protected transition, pausable recording and death cleanup, costume attacks, single final collapse; minion hurt/death")
 	quit()
