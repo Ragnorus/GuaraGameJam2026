@@ -119,6 +119,8 @@ Run `Godot --headless --path . --fixed-fps 60 --script res://tests/bichema_backg
 
 ## Menus, difficulty and score
 
+- Ema's final arena now matches Yeral's three-platform layout: 240px-wide lower side platforms at y=470 and a raised center at y=350, above the unchanged safe floor. One-way capital platforms and landing markers render behind the characters. `tests/ema_boss_room.gd` exercises real platform traversal and floor double jumps over both Ema forms in both directions, without contact damage.
+
 - Yeral's boss room has three fixed staggered one-way platforms, using the Sergeant platform style above the existing safe floor. Double jumps reach the raised center. Platforms and their landing-edge markers render behind character sprites, including bosses. During Yeral's opening line, the stage music drops by 18 dB and restores on completion, cancellation, death or scene exit; SFX mute/volume remain respected. `tests/yeral_boss_room.gd` checks real jumps and rendered voice output/mute.
 
 - Level 1's Football Sergeant uses barbarian-style grunts and yells from [Male Grunt/Yelling sounds](https://opengameart.org/content/male-gruntyelling-sounds) by HaelDB (CC0). His punches/charges cue at their active frames, scream and roid rage use stronger cries, and accepted idle damage/death cue pain/final cries. A single spatial SFX voice avoids grunt overlap, pauses with gameplay, rejects hidden/inactive/distant/cinematic targets, stops on player death, and frees on scene exit. Original recordings remain unchanged; runtime pitch is 0.9. Provenance: `assets/audio/sergeant/ATTRIBUTION.txt`; rendered real-time regression: `tests/sergeant_voice.gd`.

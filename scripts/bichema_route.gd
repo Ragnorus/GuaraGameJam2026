@@ -5,6 +5,8 @@ const AREAS: Array[Rect2] = [
 	Rect2(0, 0, 1280, 720), Rect2(1280, 0, 1280, 720),
 	Rect2(2560, 0, 1600, 720), Rect2(4160, 0, 1280, 720),
 	Rect2(5440, 0, 1600, 720), Rect2(7040, 0, 1280, 720)]
+const BOSS_PLATFORMS: Array[Rect2] = [
+	Rect2(7250, 470, 240, 20), Rect2(7560, 350, 240, 20), Rect2(7870, 470, 240, 20)]
 const TITLES := ["AREA 1 - PLAZA", "AREA 2 - PLAZA EXIT", "AREA 3 - PUB / TACOMA",
 	"AREA 4 - CASH FACTORY", "AREA 5 - EAST WING APPROACH", "EMA'S EAST WING ARENA"]
 
@@ -71,6 +73,8 @@ func _build_geometry() -> void:
 		var room: Dictionary = stage.bichema_rooms[i]
 		for rect: Rect2 in room["platforms"]:
 			stage._add_block(rect, "platform", i != 0)
+	for rect in BOSS_PLATFORMS:
+		stage._add_block(rect, "platform")
 	for rect in [Rect2(-40, -200, 40, 920), Rect2(AREAS[5].end.x, -200, 40, 920)]:
 		stage._add_block(rect, "wall", true)
 
