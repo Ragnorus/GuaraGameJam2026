@@ -12,11 +12,22 @@ func _run() -> void:
 	GameSettings.loaded = true
 	GameSettings.music_on = false
 	GameSettings.sfx_on = false
-	GameAudio.start_music(self)
+	GameAudio.start_music(self, true)
+	assert(change_scene_to_file("res://scenes/level_select.tscn") == OK)
 	await _frames(2)
 	var previous_music := GameAudio._music
-	assert(change_scene_to_file("res://scenes/end_credits.tscn") == OK)
+	var credits_button: Button
+	for button in current_scene.find_children("*", "Button", true, false):
+		if button.text == "End Credits":
+			credits_button = button as Button
+	assert(credits_button != null, "Level Select exposes End Credits")
+	GameSettings.score = 42
+	GameSettings.level_start_score = 20
+	credits_button.grab_focus()
+	assert(credits_button.has_focus(), "Credits supports keyboard/controller menu focus")
+	credits_button.pressed.emit()
 	await _frames(3)
+	assert(GameSettings.score == 42 and GameSettings.level_start_score == 20, "Viewing credits must not begin a new run or reset score")
 	var credits := current_scene as EndCredits
 	assert(credits != null and credits.song.playing)
 	assert(not is_instance_valid(previous_music), "Credits replace the gameplay music, never layer over it")

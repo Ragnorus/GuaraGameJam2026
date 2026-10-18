@@ -11,6 +11,7 @@ func _ready() -> void:
 	MenuKit.label(stack, "Difficulty: %s" % GameSettings.current()["name"], 18)
 	var yeral_button := MenuKit.button(stack, "Yeral — The Spoilerman", _open_level.bind(YERAL_SCENE))
 	MenuKit.button(stack, "Bichema's World — The Evil Genius", _open_level.bind(BICHEMA_SCENE))
+	MenuKit.button(stack, "End Credits", MenuKit.go.bind(self, "res://scenes/end_credits.tscn"))
 	MenuKit.button(stack, "Back", MenuKit.go.bind(self, "res://scenes/main_menu.tscn"))
 	yeral_button.grab_focus()
 
