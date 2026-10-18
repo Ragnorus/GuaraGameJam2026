@@ -1,15 +1,18 @@
 class_name GameAudio
 extends RefCounted
 
-# Recorded menu music and procedural gameplay music/effects use the settings buses.
+# Recorded menu/stage music and procedural story music/effects use the settings buses.
 
 const RATE := 22050
 const MENU_MUSIC := preload("res://assets/audio/lord_of_the_night.mp3")
+const LEVEL1_MUSIC := preload("res://assets/audio/music/level1_menace.ogg")
+const LEVEL2_MUSIC := preload("res://assets/audio/music/level2_pre_race_groove.wav")
 
 static var _cache := {}
 static var _music: AudioStreamPlayer
 static var _buses_ready := false
 static var _menu_music := false
+static var _music_level := 0
 
 static func apply() -> void:
 	for bus in ["Music", "SFX"]:
@@ -27,17 +30,28 @@ static func _set_bus(bus: String, on: bool, volume: float) -> void:
 	AudioServer.set_bus_mute(i, not on or volume <= 0.001)
 	AudioServer.set_bus_volume_db(i, linear_to_db(maxf(volume, 0.001)))
 
-static func start_music(tree: SceneTree, menu := false) -> void:
-	if is_instance_valid(_music) and _menu_music == menu:
+static func start_music(tree: SceneTree, menu := false, level := 0) -> void:
+	if is_instance_valid(_music) and _menu_music == menu and _music_level == level:
 		return
 	stop_music()
 	if not _buses_ready:
 		apply()
 	_menu_music = menu
+	_music_level = level
 	_music = AudioStreamPlayer.new()
 	if menu:
 		var recording := MENU_MUSIC.duplicate() as AudioStreamMP3
 		recording.loop = true
+		_music.stream = recording
+	elif level == 1:
+		var recording := LEVEL1_MUSIC.duplicate() as AudioStreamOggVorbis
+		recording.loop = true
+		_music.stream = recording
+	elif level == 2:
+		var recording := LEVEL2_MUSIC.duplicate() as AudioStreamWAV
+		recording.loop_mode = AudioStreamWAV.LOOP_FORWARD
+		recording.loop_begin = 0
+		recording.loop_end = roundi(recording.get_length() * recording.mix_rate)
 		_music.stream = recording
 	else:
 		_music.stream = _music_stream()

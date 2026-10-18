@@ -58,7 +58,7 @@ func _ready() -> void:
 	InputSetup.setup()
 	GameSettings.begin_level()
 	if GameSettings.loaded:
-		GameAudio.start_music(get_tree())
+		GameAudio.start_music(get_tree(), false, 2 if bichema_level else 1)
 	add_child(PauseMenu.new())
 	message_timer = Timer.new()
 	message_timer.one_shot = true

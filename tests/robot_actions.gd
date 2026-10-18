@@ -262,9 +262,12 @@ func _run() -> void:
 	truck.take_damage(truck.health)
 	await _frames(2)
 	assert(not is_instance_valid(truck) and is_instance_valid(GameAudio._music)
-			and GameAudio._music.stream is AudioStreamWAV,
+			and GameAudio._music_level == 2
+			and (GameAudio._music.stream as AudioStreamWAV).data == GameAudio.LEVEL2_MUSIC.data,
 			"Defeating the Tacoma must stop its song and restore normal music")
 	ema_stage.queue_free()
 	await _frames(1)
+	GameAudio.stop_music()
+	await create_timer(0.3).timeout
 	print("PASS: robot movement/combat/death; Tacoma entrance, pause, warning, charge, recovery, dodge, damage and fight-only music")
 	quit()

@@ -93,6 +93,9 @@ func _run() -> void:
 	current_scene._open_level(StoryIntro.NEXT_SCENE)
 	await _frames(3)
 	assert(current_scene.scene_file_path == StoryIntro.NEXT_SCENE, "Level Select must bypass the crawl")
+	current_scene.queue_free()
+	GameAudio.stop_music()
+	await create_timer(0.3).timeout
 	print("PASS: full story layout, scrolling, resize, keyboard/controller/button skip, automatic completion, replay and level-select bypass")
 	quit()
 

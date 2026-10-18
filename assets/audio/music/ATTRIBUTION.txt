@@ -1,0 +1,23 @@
+LEVEL 1
+Title: Menace
+Artist: Tomasz Kucza / Magnesus (magory.net)
+Source: https://opengameart.org/content/menace-fast-gothic-metal-track
+Download: https://opengameart.org/sites/default/files/TomaszKucza-Menace.ogg
+License: Creative Commons Attribution 4.0 International (CC BY 4.0)
+License URL: https://creativecommons.org/licenses/by/4.0/
+Original Ogg file unchanged; renamed level1_menace.ogg. Looped at runtime.
+
+LEVEL 2
+Title: Level 4 Pre-Race Groove
+Album: 8-bit Beat'em Up Soundtrack
+Artist: @wyver9
+Artist URL: https://wyver9.bandcamp.com/
+Source: https://opengameart.org/content/8-bit-beatem-up-soundtrack
+Download: https://opengameart.org/sites/default/files/wyver9-8-bit_beatem_up_soundtrack_0.zip
+License selected: Creative Commons Attribution 3.0 Unported (CC BY 3.0)
+License URL: https://creativecommons.org/licenses/by/3.0/
+Original L04-1 - Level 4 Pre-Race Groove.wav unchanged;
+renamed level2_pre_race_groove.wav. Looped at runtime.
+
+Both source pages and license declarations checked on 2026-10-18.
+These tracks are licensed for reuse, not copyright-free.

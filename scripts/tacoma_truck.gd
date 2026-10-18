@@ -150,7 +150,7 @@ func _die() -> void:
 
 func _stop_music() -> void:
 	music.stop()
-	GameAudio.start_music(get_tree())
+	GameAudio.start_music(get_tree(), false, 2)
 
 func _exit_tree() -> void:
 	music.stop()
