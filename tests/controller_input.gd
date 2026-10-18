@@ -12,7 +12,7 @@ func _initialize() -> void:
 	_check_button(&"summon", JOY_BUTTON_Y)
 	_check_button(&"recall", JOY_BUTTON_RIGHT_SHOULDER)
 	_check_button(&"ultimate", JOY_BUTTON_RIGHT_STICK)
-	_check_button(&"shield", JOY_BUTTON_LEFT_STICK)
+	_check_button(&"shield", JOY_BUTTON_B)
 	_check_button(&"ui_accept", JOY_BUTTON_A)
 	_check_button(&"ui_cancel", JOY_BUTTON_B)
 	_check_button(&"ui_cancel", JOY_BUTTON_START)
@@ -32,11 +32,11 @@ func _initialize() -> void:
 func _check_synthetic_input() -> void:
 	await process_frame
 	var shield_event := InputEventJoypadButton.new()
-	shield_event.button_index = JOY_BUTTON_LEFT_STICK
+	shield_event.button_index = JOY_BUTTON_B
 	shield_event.pressed = true
 	Input.parse_input_event(shield_event)
 	Input.flush_buffered_events()
-	assert(Input.is_action_pressed(&"shield"), "L3 must activate Shield Burst")
+	assert(Input.is_action_pressed(&"shield"), "B must activate Shield Burst")
 	shield_event.pressed = false
 	Input.parse_input_event(shield_event)
 	var jump_event := InputEventJoypadButton.new()

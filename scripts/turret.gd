@@ -8,6 +8,8 @@ const WARN := 0.6
 const FIRE_INTERVAL := 2.2
 const BOLT_SPEED := 300.0
 const SIZE := Vector2(54, 44)
+const IDLE_TEXTURE := preload("res://assets/turret.png")
+const BOLT_TEXTURE := preload("res://assets/turret_bolt.png")
 
 var health := 3
 var dead := false
@@ -20,6 +22,8 @@ var zone_max := INF
 var cooldown := 1.2
 var warn_time := 0.0
 var flash := 0.0
+var turret_sprite: Sprite2D
+
 
 func _ready() -> void:
 	add_to_group("enemies")
@@ -32,6 +36,14 @@ func _ready() -> void:
 	shape.size = SIZE
 	cs.shape = shape
 	add_child(cs)
+	turret_sprite = Sprite2D.new()
+	turret_sprite.texture = IDLE_TEXTURE
+	turret_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	turret_sprite.scale = Vector2(0.4, 0.4)
+	turret_sprite.position = Vector2(0.0, -10.8)
+	turret_sprite.flip_h = facing < 0
+	turret_sprite.z_index = -1
+	add_child(turret_sprite)
 
 func _physics_process(delta: float) -> void:
 	if dead:
@@ -51,15 +63,16 @@ func _physics_process(delta: float) -> void:
 					warn_time = WARN
 		else:
 			warn_time = 0.0
+	turret_sprite.flip_h = facing < 0
 	queue_redraw()
 
 func _fire() -> void:
 	cooldown = FIRE_INTERVAL
 	var p := Projectile.new()
 	p.target_group = "player"
-	p.color = Color(1.0, 0.55, 0.2)
-	p.texture = SpriteLib.texture("robot_fx", "bolt")
-	p.position = global_position + Vector2(facing * 36, -10)
+	p.texture = BOLT_TEXTURE
+	p.texture_scale = Vector2(0.3, 0.3)
+	p.position = global_position + Vector2(facing * 28.0, -20.0)
 	p.velocity = Vector2(facing * BOLT_SPEED, 0.0)
 	get_parent().add_child(p)
 
@@ -82,17 +95,10 @@ func take_damage(amount: int) -> void:
 	tween.tween_callback(queue_free)
 
 func _draw() -> void:
-	var body := Color(0.78, 0.9, 1.0) if flash > 0.0 else Color8(70, 82, 78)
-	draw_rect(Rect2(-27, -4, 54, 26), body)
-	draw_rect(Rect2(-27, -4, 54, 26), Color8(8, 13, 10), false, 3.0)
-	draw_rect(Rect2(-16, -22, 32, 20), body.lightened(0.1))
-	draw_rect(Rect2(-16, -22, 32, 20), Color8(8, 13, 10), false, 3.0)
-	var tip := Vector2(facing * 34.0, -12.0)
-	draw_line(Vector2(0, -12), tip, Color8(8, 13, 10), 10.0)
-	draw_line(Vector2(0, -12), tip, Color8(112, 128, 120), 6.0)
-	var glow := Color(1.0, 0.3, 0.15) if warn_time > 0.0 else Color8(112, 237, 24)
-	draw_circle(Vector2(0, -12), 5.0, glow)
+	if flash > 0.0:
+		draw_rect(Rect2(-27, -22, 54, 44), Color(0.78, 0.9, 1.0, 0.9), false, 2.0)
+	var tip := Vector2(facing * 28.0, -20.0)
 	if warn_time > 0.0:
 		draw_circle(tip, 8.0 + sin(warn_time * 40.0) * 2.0, Color(1.0, 0.45, 0.15, 0.6))
 	if not dead:
-		draw_rect(Rect2(-20, -34, 40.0 * health / maxf(1.0, float(GameSettings.scale_health(3))), 4), Color8(156, 255, 34))
+		draw_rect(Rect2(-20, -50, 40.0 * health / maxf(1.0, float(GameSettings.scale_health(3))), 4), Color8(156, 255, 34))

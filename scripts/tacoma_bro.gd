@@ -14,13 +14,13 @@ func _ready() -> void:
 	super._ready()
 	robot = true
 	var body := cs.shape as RectangleShape2D
-	body.size = Vector2(60, 84) if sergeant else Vector2(48, 68)
+	body.size = Vector2(72, 100) if sergeant else Vector2(60, 84)
 	health = GameSettings.scale_health(12 if sergeant else 7)
 	speed = 72.0 if sergeant else 86.0
 	sprite = AnimatedSprite2D.new()
 	sprite.sprite_frames = CAPI_FRAMES if bro_name == &"capi" else LUDO_FRAMES
 	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	var scale_factor := 0.52 if bro_name == &"capi" else 0.48
+	var scale_factor := 0.65 if bro_name == &"capi" else 0.60
 	sprite.scale = Vector2.ONE * scale_factor
 	sprite.position.y = body.size.y / 2.0 - 112.0 * scale_factor
 	add_child(sprite)
