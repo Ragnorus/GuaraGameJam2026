@@ -301,5 +301,8 @@ func _run() -> void:
 	stage.add_child(fresh)
 	fresh.take_damage(10000)
 	assert(fresh.dead and fresh.state == Sergeant.State.DEAD)
+	stage.queue_free()
+	GameAudio.stop_music()
+	await create_timer(0.4).timeout
 	print("SERGEANT ACTIONS OK")
 	quit()

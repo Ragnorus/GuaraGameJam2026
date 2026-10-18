@@ -24,6 +24,7 @@ func _run() -> void:
 			var shape := collider.shape as RectangleShape2D
 			var marker := body.get_node("LandingEdge") as Node2D
 			assert(marker.is_in_group("landing_edges") and marker.z_index == 1)
+			assert(body.z_index + marker.z_index < 0, "Platform markers render behind characters, not across boss sprites")
 			assert(marker.get_child_count() == 2)
 			var backing := marker.get_child(0) as Line2D
 			var lip := marker.get_child(1) as Line2D

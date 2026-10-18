@@ -78,6 +78,7 @@ var leap_apex := 170.0
 var flash := 0.0
 var _airborne_dead := false
 var sprite: AnimatedSprite2D
+var voice: SergeantVoice
 
 func _ready() -> void:
 	add_to_group("enemies")
@@ -100,6 +101,9 @@ func _ready() -> void:
 	sprite.position.y = BODY.y / 2.0
 	add_child(sprite)
 	sprite.play(&"idle")
+	voice = SergeantVoice.new()
+	voice.name = "SergeantVoice"
+	add_child(voice)
 
 func standing_y(index: int) -> float:
 	return platforms[index].position.y - BODY.y / 2.0
@@ -324,6 +328,7 @@ func _update_charge(delta: float) -> void:
 	if not melee_started:
 		melee_started = true
 		MeleeAudio.strike(self, target)
+		voice.cue(&"attack")
 	var rect := platforms[platform_index]
 	var speed := CHARGE_SPEED * _rate()
 	position.x += facing * speed * delta
@@ -349,6 +354,7 @@ func _update_punch() -> void:
 	if not melee_started and sprite.frame >= count - 2:
 		melee_started = true
 		MeleeAudio.strike(self, target)
+		voice.cue(&"attack")
 	if not hit_landed and sprite.frame >= count - 2 and _target_alive() and target is Player:
 		var d: Vector2 = target.global_position - global_position
 		hit_landed = true
@@ -363,6 +369,7 @@ func start_scream() -> void:
 	if _target_alive():
 		facing = 1 if target.global_position.x > global_position.x else -1
 	_set_state(State.SCREAM, &"scream")
+	voice.cue(&"scream")
 
 func _update_scream() -> void:
 	if not hit_landed and not sprite.is_playing():
@@ -406,6 +413,7 @@ func take_damage(amount: int) -> bool:
 			_start_transform()
 	elif state == State.IDLE:
 		_set_state(State.HURT, &"hurt")
+		voice.cue(&"hurt")
 	return true
 
 func _start_transform() -> void:
@@ -413,6 +421,7 @@ func _start_transform() -> void:
 	_set_state(State.TRANSFORM, &"transform")
 	sprite.speed_scale = 1.0
 	speech.emit(RAGE_LINE, 2.5)
+	voice.cue(&"rage")
 
 func clear_attacks() -> void:
 	for wave in get_tree().get_nodes_in_group("sergeant_attacks"):
@@ -427,6 +436,7 @@ func _die() -> void:
 	remove_from_group("enemies")
 	collision_layer = 0
 	_set_state(State.DEAD, &"death")
+	voice.cue(&"death")
 	sprite.speed_scale = 1.0
 	GameSettings.add_score(points)
 	GameAudio.play(get_tree(), "kill")

@@ -63,6 +63,11 @@ func _build_text() -> String:
 	lines.append("Level 2: Level 4 Pre-Race Groove, from 8-bit Beat'em Up Soundtrack, by @wyver9 (https://wyver9.bandcamp.com/). CC BY 3.0: https://creativecommons.org/licenses/by/3.0/")
 	lines.append("Source: https://opengameart.org/content/8-bit-beatem-up-soundtrack")
 	lines.append("Recordings unchanged; looped in game.")
+	lines.append("")
+	lines.append("SERGEANT VOICE")
+	lines.append("Male Grunt/Yelling sounds by HaelDB. CC0 1.0: https://creativecommons.org/publicdomain/zero/1.0/")
+	lines.append("Source: https://opengameart.org/content/male-gruntyelling-sounds")
+	lines.append("Original recordings unchanged; runtime pitch adjusted.")
 	return "\n".join(lines)
 
 func _unhandled_input(event: InputEvent) -> void:

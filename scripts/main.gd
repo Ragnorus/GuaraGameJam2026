@@ -102,6 +102,7 @@ func _add_block(rect: Rect2, kind := "wall", painted := false) -> void:
 			# Own physics layer: only the player stands on platforms (bosses and mobs pass behind them),
 			# and they are one-way so the player can jump up through them.
 			body.collision_layer = PLATFORM_LAYER
+			body.z_index = -2
 			cs.one_way_collision = true
 			if not painted:
 				_add_platform_sprite(body, rect)

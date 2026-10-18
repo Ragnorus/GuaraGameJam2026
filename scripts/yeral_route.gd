@@ -11,6 +11,9 @@ const SERGEANT_PLATFORMS: Array[Rect2] = [
 	Rect2(2760, 1200, 240, 20), Rect2(3120, 1080, 240, 20), Rect2(3480, 1200, 240, 20)]
 const SERGEANT_ACID := Rect2(2750, 1380, 1130, 60)
 const SERGEANT_BANKS: Array[Rect2] = [Rect2(2560, 1320, 190, 120), Rect2(3880, 1200, 280, 240)]
+const BOSS_PLATFORMS: Array[Rect2] = [
+	Rect2(7250, 470, 240, 20), Rect2(7560, 350, 240, 20), Rect2(7870, 470, 240, 20)]
+const INTRO_MUSIC_DUCK_DB := 18.0
 const INTRO_TEXT := "I AM YERAL THE SPOILERMAN! Muwahahahahahaha!!!"
 const NEW_ENEMY_TEXT := "BEWARE! NEW ENEMY!"
 const INTRO_BUBBLE_POS := Vector2(530, 160)
@@ -38,8 +41,11 @@ var bubble_timer: Tween
 var hint_cooldown := 0.0
 var acid_time := 0.0
 var cinematic: Tween
+var intro_music: AudioStreamPlayer
+var intro_music_volume := 0.0
 
 func _exit_tree() -> void:
+	_restore_intro_music()
 	if is_instance_valid(voice):
 		voice.stop()
 		voice.stream = null
@@ -156,10 +162,19 @@ func _build_backdrops() -> void:
 			skyline_edge.scale = Vector2(AREAS[i].size.x, 90.0) / feather.get_size()
 			skyline_edge.position.y = 624.0 - 322.0 * 1.25 - 1.0
 			root.add_child(skyline_edge)
+		elif i == 5:
+			var painting := Sprite2D.new()
+			painting.texture = load("res://assets/backgrounds/yeral/taco_bell_headquarters.png")
+			painting.centered = false
+			painting.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+			var ratio := minf(AREAS[i].size.x / painting.texture.get_width(), AREAS[i].size.y / painting.texture.get_height())
+			painting.scale = Vector2.ONE * ratio
+			painting.position = (AREAS[i].size - painting.texture.get_size() * ratio) * 0.5
+			root.add_child(painting)
 		else:
 			for x in range(0, int(AREAS[i].size.x), 1280):
 				var painting := Sprite2D.new()
-				painting.texture = load("res://assets/backgrounds/yeral/%s.png" % ("warehouse" if i == 5 else "sewer"))
+				painting.texture = load("res://assets/backgrounds/yeral/sewer.png")
 				painting.centered = false
 				painting.position.x = x
 				root.add_child(painting)
@@ -204,6 +219,8 @@ func _build_geometry() -> void:
 	_moving(Rect2(4960, 1150, 170, 20), Vector2(0, -220), 5.0)
 	_block(Rect2(5440, 600, 1600, 120))
 	_block(Rect2(7040, 600, 1280, 120))
+	for rect in BOSS_PLATFORMS:
+		_block(rect, true)
 	_block(Rect2(5900, 450, 180, 20), true)
 	_block(Rect2(6380, 480, 180, 20), true)
 	# Secret ledges: off the main path, each holding a coin trio.
@@ -230,6 +247,7 @@ func _moving(rect: Rect2, travel: Vector2, period: float) -> void:
 	body.travel = travel
 	body.period = period
 	body.collision_layer = stage.PLATFORM_LAYER
+	body.z_index = -2
 	var collider := CollisionShape2D.new()
 	var shape := RectangleShape2D.new()
 	shape.size = rect.size
@@ -456,6 +474,7 @@ func start_boss_intro() -> void:
 	speech.scale = Vector2(0.85, 0.85)
 	create_tween().tween_property(speech, "scale", Vector2.ONE, 0.25).set_trans(Tween.TRANS_BACK)
 	GameAudio.apply()
+	_duck_intro_music()
 	voice.play()
 	# Muting SFX must not change cinematic timing or let gameplay start during the line.
 	cinematic = create_tween()
@@ -463,6 +482,7 @@ func start_boss_intro() -> void:
 	cinematic.tween_callback(func() -> void:
 		speech.hide()
 		voice.stop()
+		_restore_intro_music()
 		if stage.player.dead:
 			return
 		boss.add_to_group("enemies")
@@ -478,9 +498,22 @@ func cancel_intro() -> void:
 	if bubble_timer != null and bubble_timer.is_valid():
 		bubble_timer.kill()
 	voice.stop()
+	_restore_intro_music()
 	speech.hide()
 	curtain.color.a = 0.0
 	stage.player.modulate.a = 1.0
+
+func _duck_intro_music() -> void:
+	_restore_intro_music()
+	if is_instance_valid(GameAudio._music):
+		intro_music = GameAudio._music
+		intro_music_volume = intro_music.volume_db
+		intro_music.volume_db = intro_music_volume - INTRO_MUSIC_DUCK_DB
+
+func _restore_intro_music() -> void:
+	if is_instance_valid(intro_music):
+		intro_music.volume_db = intro_music_volume
+	intro_music = null
 
 func _warn_new_enemy() -> void:
 	var delay := create_tween()

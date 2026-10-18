@@ -53,6 +53,14 @@ func _run() -> void:
 			if child is Sprite2D and child.texture.resource_path.contains("city_bg"):
 				city_textures += 1
 		assert(city_textures > 0 if i in [0, 4] else city_textures == 0, "City art belongs only in Areas 1 and 5")
+		if i == 5:
+			var painting := route.backgrounds[i].get_child(0) as Sprite2D
+			assert(painting.texture.resource_path == "res://assets/backgrounds/yeral/taco_bell_headquarters.png")
+			assert(painting.texture_filter == CanvasItem.TEXTURE_FILTER_LINEAR)
+			assert(is_equal_approx(painting.scale.x, painting.scale.y), "Boss painting preserves its proportions")
+			var painted_size := painting.texture.get_size() * painting.scale
+			assert(painted_size.x <= route.AREAS[i].size.x + 0.01 and painted_size.y <= route.AREAS[i].size.y + 0.01, "Whole painting fits without cropping")
+			assert(painting.position.is_equal_approx((route.AREAS[i].size - painted_size) * 0.5), "Boss painting matches the centered approved preview")
 		var screen := stage.get("camera") as Camera2D
 		assert(screen.limit_top == int(route.AREAS[i].position.y))
 		assert(screen.limit_bottom == int(route.AREAS[i].end.y))

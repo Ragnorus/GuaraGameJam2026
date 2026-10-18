@@ -1,0 +1,12 @@
+Male Grunt/Yelling sounds
+Author: HaelDB
+Source: https://opengameart.org/content/male-gruntyelling-sounds
+Download: https://opengameart.org/sites/default/files/yelling%20sounds.zip
+License selected: CC0 1.0 Universal
+License URL: https://creativecommons.org/publicdomain/zero/1.0/
+Source page offers CC0 and OGA-BY 3.0; CC0 selected on 2026-10-18.
+
+Selected original WAVs unchanged: 3grunt3, 3grunt4, 3grunt5,
+3yell1, 3yell13, 3yell10. One vocalist provides a consistent character.
+Runtime playback uses pitch_scale 0.9. No spoken dialogue is synthesized.
+Attack/pain grunts, scream attack, rage transformation and death cues.
