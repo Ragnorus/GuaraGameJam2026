@@ -33,6 +33,7 @@ var boss_gate_x := LEVEL_END - 340.0
 var boss_trigger_x := LEVEL_END - 300.0
 var boss_spawn_x := LEVEL_END + 600.0
 var finished := false
+var yeral_reward: YeralReward
 var ending_transition := false
 var gates: Array = []
 var hp_bar: ProgressBar
@@ -456,9 +457,7 @@ func _on_boss_defeated() -> void:
 	var new_high := GameSettings.commit_score()
 	GameSettings.complete_level()
 	if not bichema_level:
-		GameSettings.dash_unlocked = true
 		YeralRoute.checkpoint = 0
-		GameSettings.save()
 	GameAudio.play(get_tree(), "boss")
 	var score_text := "\nBoss +%d  |  Score: %d%s" % [GameSettings.BOSS_POINTS, GameSettings.score,
 			"  NEW HIGH SCORE!" if new_high else ""]
@@ -466,7 +465,20 @@ func _on_boss_defeated() -> void:
 		message.text = "The Evil Genius is defeated! All levels clear." + score_text
 	else:
 		message.text = "Yeral and Glizzy Gobler defeated!" + score_text + "\nNext: Bichema's World"
-	message_timer.start(3.0)
+	if bichema_level:
+		message_timer.start(3.0)
+	else:
+		message_timer.stop()
+		yeral_reward = YeralReward.new()
+		yeral_reward.completed.connect(_on_yeral_reward_completed)
+		add_child(yeral_reward)
+
+func _on_yeral_reward_completed() -> void:
+	if player.dead:
+		return
+	GameSettings.dash_unlocked = true
+	GameSettings.save()
+	_on_message_timeout()
 
 func _on_message_timeout() -> void:
 	if not finished:
@@ -496,10 +508,16 @@ func _open_next_scene(next_scene: String) -> void:
 	if error != OK:
 		process_mode = Node.PROCESS_MODE_INHERIT
 		ending_transition = false
+		if is_instance_valid(yeral_reward):
+			yeral_reward.cancel()
 		message.text = "Could not load the next level.\nPress R to restart."
 		push_error("Could not open level %s: %s" % [next_scene, error_string(error)])
 
 func _on_player_died() -> void:
+	if is_instance_valid(yeral_reward) and not yeral_reward.cancelled:
+		yeral_reward.cancel()
+		finished = false
+		process_mode = Node.PROCESS_MODE_INHERIT
 	if finished:
 		return
 	message_timer.stop()

@@ -48,6 +48,7 @@ func _transform(boss: BossYeral, stage: Node) -> void:
 	assert(boss.glizzy and boss.transforming and boss.active)
 	assert(boss.health == boss.max_health and boss.phase == 1, "First depletion must refill a new health pool")
 	assert(not stage.get("finished") and current_scene == stage, "Transformation is not a stage clear")
+	assert(stage.get("yeral_reward") == null, "The first health pool cannot grant Yeral's power")
 	var health := boss.health
 	boss.take_damage(health)
 	assert(boss.health == health and not boss.dying, "Transformation must ignore damage")
@@ -109,7 +110,14 @@ func _run() -> void:
 	assert(yeral.dying and not yeral_stage.get("finished"), "The second depletion must wait for the collapse")
 	await _frames(1)
 	assert(current_scene == yeral_stage and not yeral_stage.get("finished"))
-	await _frames(360)
+	for i in range(120):
+		if yeral_stage.get("finished"):
+			break
+		await _frames(1)
+	var acquisition := yeral_stage.get("yeral_reward") as YeralReward
+	assert(acquisition != null, "The final collapse starts the power-acquisition cinematic")
+	assert((yeral_stage.get("player") as Player).controls_locked)
+	await _frames(ceili(acquisition.duration() * 60.0) + 6)
 	assert(current_scene != yeral_stage, "The final collapse must open Bichema's World rather than leave a dead-end stage")
 	assert(current_scene.scene_file_path == "res://scenes/bichema_level.tscn")
 

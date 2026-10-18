@@ -26,7 +26,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if not event.is_action_pressed("ui_cancel"):
 		return
 	var level := get_parent()
-	if level != null and level.get("finished"):
+	if level != null and level.get("finished") and level.get("yeral_reward") == null:
 		return
 	_set_paused(not get_tree().paused)
 	get_viewport().set_input_as_handled()

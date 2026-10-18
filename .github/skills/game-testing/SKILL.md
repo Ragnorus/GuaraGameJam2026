@@ -28,6 +28,7 @@ Related: `godot-development` (implementation rules), `guara-dev-workflow` (deplo
 - `tests/end_credits.gd` runs the full credits timeline, exact text/order, roll movement and onscreen height, resize/centering, randomized sprite side gutters, Music mute/volume, loop replacement, fade and menu return/re-entry. `level_progression` covers Ema collapse -> victory -> fade -> credits and dead-player guards. Scene changes may temporarily set `current_scene` to null: wait for the destination to be installed before asserting its path. Render credits too; a Label can have correct text but an offscreen, oversized wrapped layout.
 
 ## Running
+- `tests/yeral_reward.gd` covers Yeral's power-acquisition overlay under a disabled gameplay parent: original sprite animations, control/damage locks, exact bubble and SFX resource, full recording timing while muted, pause, deferred Dash unlock/Bichema handoff, death cancellation and reload during speech. `level_progression` exercises the real two-form collapse into this sequence. Use a rendered preview for the energy effects and comic-bubble layout.
 - Import first after adding assets/scripts: `godot --headless --path . --editor --import --rendering-method gl_compatibility --quit`.
 - Run each suite as `godot --headless --path . --fixed-fps 60 --script res://tests/<name>.gd` inside a bounded timeout (about 120s); a failed `assert` leaves Godot waiting in the debugger. Kill the process by PID.
 - Scan stdout and stderr for `SCRIPT ERROR`, `SHADER ERROR` and `ERROR` even when the PASS line printed.
