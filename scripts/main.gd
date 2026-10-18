@@ -5,7 +5,6 @@ const LEVEL_LEFT := -100.0
 const FLOOR_Y := 600.0
 const PLATFORM_LAYER := 4
 const VIEW_WIDTH := 1280.0
-const CAMERA_LIMIT_SPEED := 900.0
 const BICHEMA_GROUND := [628.0, 688.0, 533.0]
 const BICHEMA_PLATFORMS := [
 	[Rect2(260, 500, 150, 16), Rect2(1300, 430, 150, 16), Rect2(1680, 500, 160, 16)],
@@ -29,6 +28,7 @@ var costume_form := false
 var bichema_background: Sprite2D
 var bichema_rooms: Array[Dictionary] = []
 var bichema_background_index := -1
+var bichema_background_area_index := -1
 var boss_gate_x := LEVEL_END - 340.0
 var boss_trigger_x := LEVEL_END - 300.0
 var boss_spawn_x := LEVEL_END + 600.0
@@ -39,12 +39,11 @@ var hp_bar: ProgressBar
 var meter_bar: ProgressBar
 var boss_bar: ProgressBar
 var score_label: Label
-var gate_hint_cd := 0.0
 # Right edge of the boss arena; Yeral's lair is wider so the fight has room to move.
 var arena_right := LEVEL_END + 500.0
 var camera: Camera2D
 var yeral_route: YeralRoute
-# Camera limits ease towards these so the view never shows past the next uncleared gate.
+var bichema_route: BichemaRoute
 var cam_left := LEVEL_LEFT
 var cam_right := LEVEL_END
 
@@ -185,23 +184,24 @@ func _build_city_background(pb: ParallaxBackground) -> void:
 # Complete paintings are world-sized rooms; the camera never sees beyond the active image.
 func _build_bichema_background() -> void:
 	var start := 0.0
-	var titles := ["GOLDEN TREASURY PLAZA", "LUCKY IRISH ROCK BAR", "NEON CROWN CASH FACTORY"]
-	for panel in ["plaza", "pub", "factory"]:
+	var panels := ["plaza", "pub", "factory", "factory"]
+	var titles := ["GOLDEN TREASURY PLAZA", "LUCKY IRISH ROCK BAR",
+		"NEON CROWN CASH FACTORY", "NEON CROWN CASH FACTORY - EAST WING"]
+	var source_indices := [0, 1, 2, 2]
+	for panel in panels:
 		var index := bichema_rooms.size()
+		var source_index: int = source_indices[index]
 		var tex: Texture2D = load("res://assets/backgrounds/bichema/%s.png" % panel)
-		# Two pixels of vertical bleed keep fractional floor alignment inside the painting.
+		# Two pixels of vertical bleed keep fractional floor alignment inside the fixed 720 px view.
 		var k := 722.0 / tex.get_height()
-		var rect := Rect2(start, FLOOR_Y - BICHEMA_GROUND[index] * k, floorf(tex.get_width() * k), 722)
+		var rect := Rect2(start, FLOOR_Y - BICHEMA_GROUND[source_index] * k, floorf(tex.get_width() * k), 722)
 		var platforms: Array[Rect2] = []
-		for pixels: Rect2 in BICHEMA_PLATFORMS[index]:
+		for pixels: Rect2 in BICHEMA_PLATFORMS[source_index]:
 			platforms.append(Rect2(rect.position + pixels.position * k, pixels.size * k))
 		bichema_rooms.append({"name": titles[index], "texture": tex, "rect": rect,
-			"scale": k, "ground": BICHEMA_GROUND[index], "platforms": platforms})
+			"scale": k, "ground": BICHEMA_GROUND[source_index], "platforms": platforms})
 		start = rect.end.x
 	arena_right = start
-	boss_gate_x = arena_right - VIEW_WIDTH
-	boss_trigger_x = boss_gate_x + 120.0
-	boss_spawn_x = arena_right - 260.0
 	bichema_background = Sprite2D.new()
 	bichema_background.centered = false
 	bichema_background.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
@@ -215,23 +215,26 @@ func _update_bichema_background() -> void:
 	for i in range(1, bichema_rooms.size()):
 		if player.position.x >= (bichema_rooms[i]["rect"] as Rect2).position.x:
 			index = i
-	if index == bichema_background_index:
+	var area := bichema_route.area_index if bichema_route != null else -1
+	var room_changed := index != bichema_background_index
+	if not room_changed and area == bichema_background_area_index:
 		return
 	bichema_background_index = index
+	bichema_background_area_index = area
 	var room: Dictionary = bichema_rooms[index]
 	var rect: Rect2 = room["rect"]
 	bichema_background.texture = room["texture"]
 	bichema_background.position = rect.position
 	bichema_background.scale = Vector2.ONE * float(room["scale"])
 	cam_left = maxf(rect.position.x, boss_gate_x) if boss_started else rect.position.x
-	cam_right = _camera_right_target()
+	cam_right = rect.end.x
 	camera.limit_left = int(cam_left)
 	camera.limit_right = int(cam_right)
-	camera.limit_top = ceili(rect.position.y)
+	camera.limit_top = ceili(bichema_background.position.y)
 	camera.limit_bottom = camera.limit_top + 720
 	camera.reset_smoothing()
 	camera.force_update_scroll()
-	if is_instance_valid(message) and not finished and not player.dead:
+	if room_changed and is_instance_valid(message) and not finished and not player.dead:
 		message.text = room["name"]
 		message_timer.start(1.8)
 
@@ -292,95 +295,9 @@ func _build_world() -> void:
 		add_child(yeral_route)
 		yeral_route.build(self)
 		return
-	_build_background()
-	_build_props()
-	var world_left := 0.0 if bichema_level else LEVEL_LEFT
-	_add_block(Rect2(world_left, FLOOR_Y, arena_right - world_left, 100), "floor", bichema_level)
-	_add_block(Rect2(world_left - 40, -800, 40, 1500), "wall", bichema_level)
-	_add_block(Rect2(arena_right, -800, 40, 1500), "wall", bichema_level)
-	if bichema_level:
-		for i in range(bichema_rooms.size()):
-			for rect: Rect2 in bichema_rooms[i]["platforms"]:
-				_add_block(rect, "platform", i != 0)
-		# Complete the plaza's short water crossing with visible stone, not invisible floor.
-		var plaza_scale: float = bichema_rooms[0]["scale"]
-		var bridge_x := 1950.0 * plaza_scale
-		_add_block(Rect2(bridge_x, FLOOR_Y, (bichema_rooms[0]["rect"] as Rect2).end.x - bridge_x, 20), "platform")
-	var bug_positions := [500.0, 800.0, 1000.0, 1250.0, 1550.0, 1800.0]
-	var flyer_positions := [700.0, 1350.0, 1900.0]
-	var gate_xs := [900.0, 1400.0, 2000.0]
-	var coin_positions := [
-		Vector2(350.0, FLOOR_Y - 40.0), Vector2(700.0, FLOOR_Y - 40.0),
-		Vector2(1250.0, FLOOR_Y - 40.0), Vector2(1510.0, FLOOR_Y - 40.0),
-		Vector2(1800.0, FLOOR_Y - 40.0), Vector2(2210.0, FLOOR_Y - 40.0),
-	]
-	var medalla_positions := [
-		Vector2(1050.0, FLOOR_Y - 40.0), Vector2(1940.0, FLOOR_Y - 40.0),
-	]
-	if bichema_level:
-		var pub_x: float = (bichema_rooms[1]["rect"] as Rect2).position.x
-		var factory_x: float = (bichema_rooms[2]["rect"] as Rect2).position.x
-		bug_positions = [420.0, 900.0, 1500.0, 1900.0, pub_x + 350.0, pub_x + 950.0,
-			pub_x + 1500.0, factory_x + 250.0, factory_x + 520.0, factory_x + 770.0]
-		flyer_positions = [700.0, 1650.0, pub_x + 650.0, pub_x + 1300.0, factory_x + 600.0]
-		gate_xs = [1100.0, pub_x - 32.0, pub_x + 900.0, factory_x - 32.0, boss_gate_x]
-		coin_positions = [
-			Vector2(350.0, FLOOR_Y - 40.0), Vector2(850.0, FLOOR_Y - 40.0),
-			Vector2(1450.0, FLOOR_Y - 40.0), Vector2(pub_x + 350.0, FLOOR_Y - 40.0),
-			Vector2(pub_x + 1000.0, FLOOR_Y - 40.0), Vector2(factory_x + 350.0, FLOOR_Y - 40.0),
-			Vector2(factory_x + 850.0, FLOOR_Y - 40.0), Vector2(factory_x + 1450.0, FLOOR_Y - 40.0),
-		]
-		medalla_positions = [
-			Vector2(1350.0, FLOOR_Y - 40.0), Vector2(pub_x + 1200.0, FLOOR_Y - 40.0),
-			Vector2(factory_x + 650.0, FLOOR_Y - 40.0),
-		]
-	player = Player.new()
-	player.collision_mask |= PLATFORM_LAYER
-	player.position = Vector2(100, FLOOR_Y - 60)
-	add_child(player)
-	for pickup_position in medalla_positions:
-		_spawn_pickup(Pickup.Kind.MEDALLA, pickup_position)
-	for pickup_position in coin_positions:
-		_spawn_pickup(Pickup.Kind.COIN, pickup_position)
-	player.died.connect(_on_player_died)
-	player.stats_changed.connect(_update_hud)
-	camera = Camera2D.new()
-	camera.limit_left = int(world_left)
-	camera.limit_bottom = int(FLOOR_Y + 100)
-	player.add_child(camera)
-	for gx in gate_xs:
-		gates.append({"x": gx, "wall": _add_gate(gx), "bugs": []})
-	cam_left = world_left
-	if bichema_level:
-		_update_bichema_background()
-	cam_right = _camera_right_target()
-	camera.limit_right = int(cam_right)
-	var mobs: Array = []
-	for x in bug_positions:
-		var b: Bug = TruffleAndroid.new() if bichema_level else Robot.new()
-		b.position = Vector2(x, FLOOR_Y - (40 if bichema_level else 38))
-		mobs.append(b)
-	for x in flyer_positions:
-		var w := WingedMob.new()
-		w.bichema = bichema_level
-		w.position = Vector2(x, FLOOR_Y - WingedMob.HOVER_HEIGHT)
-		mobs.append(w)
-	for b in mobs:
-		b.target = player
-		b.points = clampi(1 + int(5.0 * b.position.x / (arena_right if bichema_level else LEVEL_END)), GameSettings.MOB_POINTS_MIN, GameSettings.MOB_POINTS_MAX)
-		b.zone_min = world_left
-		b.zone_max = boss_gate_x
-		for gx in gate_xs:
-			if b.position.x < gx:
-				b.zone_max = gx
-				break
-			b.zone_min = gx
-		add_child(b)
-		for g in gates:
-			if b.position.x < g["x"]:
-				g["bugs"].append(b)
-				break
-	_update_hud()
+	bichema_route = BichemaRoute.new()
+	add_child(bichema_route)
+	bichema_route.build(self)
 
 func _spawn_pickup(kind: int, at: Vector2, dropped := false) -> Pickup:
 	var pickup := Pickup.new()
@@ -390,51 +307,6 @@ func _spawn_pickup(kind: int, at: Vector2, dropped := false) -> Pickup:
 		pickup.lifetime = Pickup.DROP_LIFETIME
 	add_child(pickup)
 	return pickup
-
-# Invisible energy barrier that blocks the player until its zone's mobs are dead.
-func _add_gate(x: float) -> StaticBody2D:
-	var body := StaticBody2D.new()
-	body.add_to_group("gates")
-	body.position = Vector2(x, FLOOR_Y - 700)
-	var shape := RectangleShape2D.new()
-	shape.size = Vector2(16, 1400)
-	var cs := CollisionShape2D.new()
-	cs.shape = shape
-	body.add_child(cs)
-	add_child(body)
-	return body
-
-func _update_gates() -> void:
-	for g in gates.duplicate():
-		var alive := false
-		for b in g["bugs"]:
-			if is_instance_valid(b) and not b.dead:
-				alive = true
-				break
-		if not alive:
-			g["wall"].queue_free()
-			gates.erase(g)
-			_say("Path cleared!", 1.5)
-	gate_hint_cd = maxf(0.0, gate_hint_cd - get_process_delta_time())
-	if not gates.is_empty() and gate_hint_cd <= 0.0 and is_instance_valid(player) \
-			and player.position.x > gates[0]["x"] - 50.0:
-		gate_hint_cd = 4.0
-		_say("Defeat the mobs nearby to keep moving!", 2.0)
-
-func _camera_right_target() -> float:
-	var right: float = gates[0]["x"] if not gates.is_empty() else arena_right
-	if bichema_level:
-		var room: Rect2 = bichema_rooms[bichema_background_index]["rect"]
-		return clampf(right, cam_left + VIEW_WIDTH, room.end.x)
-	return clampf(right, cam_left + VIEW_WIDTH, arena_right)
-
-func _update_camera_limits(delta: float) -> void:
-	if not is_instance_valid(camera):
-		return
-	var step := CAMERA_LIMIT_SPEED * delta
-	cam_right = move_toward(cam_right, _camera_right_target(), step)
-	camera.limit_right = int(cam_right)
-	camera.limit_left = int(cam_left) if bichema_level else int(move_toward(camera.limit_left, cam_left, step))
 
 func _make_bar(pos: Vector2, size: Vector2, fill: Color) -> ProgressBar:
 	var bar := ProgressBar.new()
@@ -520,12 +392,11 @@ func _process(delta: float) -> void:
 	if yeral_route != null:
 		yeral_route.update(delta)
 		return
-	_update_gates()
-	if bichema_level:
-		_update_bichema_background()
-	_update_camera_limits(delta)
-	if not finished and not boss_started and is_instance_valid(player) and not player.dead and player.position.x > boss_trigger_x:
-		_start_boss()
+	if bichema_route != null:
+		bichema_route.update(delta)
+		if not finished and not boss_started and is_instance_valid(player) and not player.dead \
+				and player.position.x > boss_trigger_x:
+			_start_boss()
 
 func _start_boss() -> void:
 	boss_started = true

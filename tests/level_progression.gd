@@ -19,6 +19,9 @@ func _enter_boss(stage: Node) -> Node:
 		route.start_boss_intro()
 		await _frames(350)
 	else:
+		var bichema_route := stage.get("bichema_route") as BichemaRoute
+		if bichema_route != null:
+			bichema_route._set_area(5)
 		player.position = Vector2(float(stage.get("boss_trigger_x")) + 100.0, 576)
 	await _frames(3)
 	for enemy in get_nodes_in_group("enemies"):

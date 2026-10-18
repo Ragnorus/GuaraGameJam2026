@@ -34,6 +34,9 @@ func _run() -> void:
 		route.start_boss_intro()
 		await create_timer(route.INTRO_AUDIO.get_length() + 0.5).timeout
 	else:
+		var bichema_route := scene.get("bichema_route") as BichemaRoute
+		if bichema_route != null:
+			bichema_route._set_area(5)
 		player.global_position.x = float(scene.get("boss_trigger_x")) + 100.0
 	await create_timer(1.0).timeout
 	var boss: Node

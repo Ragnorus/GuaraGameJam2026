@@ -43,6 +43,7 @@ Current Yeral route follows the user's five-area sketch: Area 1 city -> Area 2 s
 Focus on one polished level and one boss fight. (Implementation currently uses Yeral as the demo boss; the Evil Genius's script is the second level's boss.)
 
 Level 1 improvements: per-area session checkpoints, held/tapped jump height and a 0.12s landing buffer (existing double jump retains generous off-ledge jumps), optional telegraphed turrets, a crouch-and-hop robot, an ascent flyer, recovery Medallas, two secret city coin ledges, and hit recoil/flash. Maximum player HP stays 10. Football Sergeant defeat unlocks **Shield Burst** permanently: E / L3, 190px radius, 3 damage, clears nearby bolts/scream waves, 0.6s damage protection, 6s cooldown; lethal acid remains lethal. This is the implemented mini-boss reward, not a replacement for Yeral's existing dash unlock or the full-game planned Future Spoiler reward. `tests/level1_upgrades.gd` covers the additions.
+The last stage now mirrors Yeral's six-area traversal and fades; Capi leads the Tacoma Brothers in the Sergeant room, with Ludo as his companion. See `scripts/bichema_route.gd`; it uses the full factory painting again as East Wing rather than stretching/cropping supplied art.
 1. Tutorial - The Gamer's Awakening: move, jump, attack, first minion.
 2. Level 1 - Bichema's World: money-minion mobs, platforms, hidden upgrades, minion targeting.
 3. Mini-boss - The Brood Guardian: small insect introducing the final boss's patterns.

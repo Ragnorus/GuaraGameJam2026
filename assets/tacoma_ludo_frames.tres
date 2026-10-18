@@ -1,0 +1,59 @@
+[gd_resource type="SpriteFrames" load_steps=9 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/tacoma_bros_atlas.png" id="1"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_ludo_idle_0"]
+atlas = ExtResource("1")
+region = Rect2(0, 0, 256, 256)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_ludo_idle_1"]
+atlas = ExtResource("1")
+region = Rect2(256, 0, 256, 256)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_ludo_run_0"]
+atlas = ExtResource("1")
+region = Rect2(512, 0, 256, 256)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_ludo_run_1"]
+atlas = ExtResource("1")
+region = Rect2(768, 0, 256, 256)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_ludo_run_2"]
+atlas = ExtResource("1")
+region = Rect2(1024, 0, 256, 256)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_ludo_attack_0"]
+atlas = ExtResource("1")
+region = Rect2(1280, 0, 256, 256)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_ludo_attack_1"]
+atlas = ExtResource("1")
+region = Rect2(1536, 0, 256, 256)
+
+[resource]
+animations = [{
+"frames": [
+{"duration": 1.0, "texture": SubResource("AtlasTexture_ludo_idle_0")},
+{"duration": 1.0, "texture": SubResource("AtlasTexture_ludo_idle_1")}
+],
+"loop": true,
+"name": &"idle",
+"speed": 7.0
+}, {
+"frames": [
+{"duration": 1.0, "texture": SubResource("AtlasTexture_ludo_run_0")},
+{"duration": 1.0, "texture": SubResource("AtlasTexture_ludo_run_1")},
+{"duration": 1.0, "texture": SubResource("AtlasTexture_ludo_run_2")}
+],
+"loop": true,
+"name": &"run",
+"speed": 12.0
+}, {
+"frames": [
+{"duration": 1.0, "texture": SubResource("AtlasTexture_ludo_attack_0")},
+{"duration": 1.0, "texture": SubResource("AtlasTexture_ludo_attack_1")}
+],
+"loop": false,
+"name": &"attack",
+"speed": 10.0
+}]

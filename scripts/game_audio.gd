@@ -72,6 +72,8 @@ static func _sfx_stream(kind: String) -> AudioStreamWAV:
 				_cache[kind] = _tone(220.0, 90.0, 0.18, 0.6)
 			"boss":
 				_cache[kind] = _tone(900.0, 100.0, 0.7, 0.6)
+			"squeak":
+				_cache[kind] = _tone(1900.0, 700.0, 0.12, 0.45)
 			_:
 				_cache[kind] = _tone(900.0, 900.0, 0.04, 0.4)
 	return _cache[kind]

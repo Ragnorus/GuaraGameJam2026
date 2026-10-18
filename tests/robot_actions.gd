@@ -119,9 +119,48 @@ func _run() -> void:
 
 	var ema_stage := preload("res://scenes/bichema_level.tscn").instantiate()
 	root.add_child(ema_stage)
+	var tacoma_count := 0
+	var capi_count := 0
+	var ludo_count := 0
+	var capi: TacomaBro
 	for enemy in get_nodes_in_group("enemies"):
-		assert(enemy is WingedMob or (enemy is TruffleAndroid and not enemy is Robot), "Bichema's World ground mobs must be truffle androids")
+		assert(enemy is WingedMob or (enemy is TruffleAndroid and not enemy is Robot) or enemy is TacomaBro,
+				"Bichema ground enemies are truffles plus the Tacoma pair")
+		if enemy is TacomaBro:
+			if enemy.bro_name == &"capi":
+				capi = enemy
+			tacoma_count += 1
+			assert(enemy.sprite.sprite_frames.has_animation(&"idle")
+					and enemy.sprite.sprite_frames.has_animation(&"run")
+					and enemy.sprite.sprite_frames.has_animation(&"attack")
+					and enemy.sprite.sprite_frames.get_animation_names().size() == 3,
+					"Tacoma Bros use only idle, run and attack animations")
+			capi_count += int(enemy.bro_name == &"capi" and enemy.sergeant)
+			ludo_count += int(enemy.bro_name == &"ludo" and not enemy.sergeant)
+	assert(tacoma_count == 2 and capi_count == 1 and ludo_count == 1)
+	assert(capi.sprite.sprite_frames.get_frame_count(&"idle") == 1,
+			"Capi idle must not alternate into an adjacent source pose")
+	var bichema_route := ema_stage.get("bichema_route") as BichemaRoute
+	bichema_route.tacoma_arrived = true
+	bichema_route._set_area(2)
+	var bichema_player := ema_stage.get("player") as Player
+	bichema_player.position = capi.position + Vector2(300.0, 0.0)
+	capi.dir = -1
+	capi.shoot_cd = 0.0
+	var shot: Projectile
+	for i in range(20):
+		await _frames(1)
+		for child in ema_stage.get_children():
+			if child is Projectile and child.target_group == "player":
+				shot = child as Projectile
+		if shot != null:
+			break
+	assert(capi.dir == 1 and capi.attack_fired and shot != null
+			and shot.velocity.x > 0.0 and shot.texture != null
+			and shot.texture.resource_path == "res://assets/tacoma_toyota_projectile.png"
+			and shot.texture_scale == Vector2.ONE * 0.2,
+			"Capi must face and fire the Toyota-logo projectile at a player 300 pixels away")
 	ema_stage.queue_free()
 	await _frames(1)
-	print("PASS: first-stage robots, locomotion/facing, blocked idle, contact/projectile/shadow damage, hurt recovery, corpse safety, death completion, truffle androids")
+	print("PASS: first-stage robots, locomotion/facing, blocked idle, contact/projectile/shadow damage, corpse safety, TruffleAndroids and Tacoma Sergeant pair")
 	quit()

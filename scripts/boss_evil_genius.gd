@@ -182,6 +182,7 @@ func _summon() -> void:
 func take_damage(amount: int) -> void:
 	if not active or transforming or dying:
 		return
+	GameAudio.play(get_tree(), "squeak")
 	var old_phase := phase
 	health = maxi(0, health - amount)
 	flash = 0.1

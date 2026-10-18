@@ -1,8 +1,6 @@
 extends SceneTree
 
 # Run: Godot --headless --path . --fixed-fps 60 --script res://tests/bichema_background.gd
-var _floor_y := 0.0
-
 func _initialize() -> void:
 	_run.call_deferred()
 
@@ -11,27 +9,24 @@ func _frames(count: int) -> void:
 		await physics_frame
 		await process_frame
 
-func _feet_y(player: Player) -> float:
-	for child in player.get_children():
-		if child is CollisionShape2D and not child.disabled:
-			return child.to_global(child.shape.get_rect().end).y
-	assert(false, "The player must have a physical foot position")
-	return 0.0
+func _clear(route: BichemaRoute, area: int) -> void:
+	for enemy in route.room_enemies[area]:
+		if is_instance_valid(enemy) and not enemy.dead:
+			enemy.take_damage(10000)
 
-func _check_view(stage: Node, expected_index: int = -1) -> Rect2:
+func _check_view(stage: Node, expected_index: int) -> Rect2:
 	var index: int = stage.get("bichema_background_index")
-	if expected_index >= 0:
-		assert(index == expected_index, "Crossing a room boundary must show that room's painting")
+	assert(index == expected_index, "The active complete painting must follow the player")
 	var room: Dictionary = stage.get("bichema_rooms")[index]
 	var panorama := stage.get("bichema_background") as Sprite2D
 	var texture_size := panorama.texture.get_size()
-	assert(panorama.get_rect().size.is_equal_approx(texture_size), "The complete painting must remain visible, not a cropped region")
+	assert(panorama.get_rect().size.is_equal_approx(texture_size), "Use the complete supplied painting")
 	var painted: Rect2 = panorama.get_global_transform_with_canvas() * panorama.get_rect()
 	var viewport := panorama.get_viewport().get_visible_rect()
-	assert(painted.grow(1.1).encloses(viewport), "Actual camera viewport must be entirely covered by the painting, without blank or filler bands")
-	assert(is_equal_approx(painted.size.x / painted.size.y, texture_size.x / texture_size.y), "The painting must retain its original aspect ratio")
-	var painted_ground := panorama.to_global(panorama.get_rect().position + Vector2(0.0, float(room["ground"]))).y
-	assert(absf(painted_ground - _floor_y) < 1.1, "The painted ground must stay aligned with the actual walking floor")
+	assert(painted.grow(1.1).encloses(viewport), "The active painting must cover the actual viewport")
+	assert(is_equal_approx(painted.size.x / painted.size.y, texture_size.x / texture_size.y), "Preserve source aspect ratio")
+	var painted_ground := panorama.to_global(Vector2(0, float(room["ground"]))).y
+	assert(absf(painted_ground - 600.0) < 1.1, "Every complete painting must meet the same route ground")
 	return panorama.get_viewport().get_canvas_transform().affine_inverse() * viewport
 
 func _check_image_edge(stage: Node, left: bool) -> void:
@@ -39,25 +34,66 @@ func _check_image_edge(stage: Node, left: bool) -> void:
 	var painted: Rect2 = panorama.get_global_transform_with_canvas() * panorama.get_rect()
 	var viewport := panorama.get_viewport().get_visible_rect()
 	var edge := painted.position.x - viewport.position.x if left else painted.end.x - viewport.end.x
-	assert(absf(edge) < 2.1, "The actual painting's outer edge must reach the screen so no source details remain cropped away")
+	assert(absf(edge) < 2.1, "Camera limits must expose each painting's original outer edge")
 
-func _walk_to(stage: Node, x: float) -> void:
+func _set_view(stage: Node, area: int, x: float, y: float, expected_room: int) -> void:
+	var route := stage.get("bichema_route") as BichemaRoute
 	var player := stage.get("player") as Player
-	var direction := signf(x - player.global_position.x)
-	var action: StringName = &"move_right" if direction > 0.0 else &"move_left"
-	var frame_limit := ceili(absf(x - player.global_position.x) / Player.SPEED * 60.0) + 120
-	Input.action_press(action)
-	for i in range(frame_limit):
+	route._set_area(area)
+	player.position = Vector2(x, y)
+	player.velocity = Vector2.ZERO
+	await _frames(3)
+	var left_view := _check_view(stage, expected_room)
+	_check_image_edge(stage, true)
+	var room: Dictionary = stage.get("bichema_rooms")[expected_room]
+	assert(absf(left_view.position.x - (room["rect"] as Rect2).position.x) < 2.1)
+	var end_x: float = (room["rect"] as Rect2).end.x - 40.0
+	var end_area := 0
+	for i in range(route.AREAS.size()):
+		if end_x >= route.AREAS[i].position.x and end_x < route.AREAS[i].end.x:
+			end_area = i
+			break
+	route._set_area(end_area)
+	player.position = Vector2(end_x, 564.0)
+	await _frames(3)
+	var right_view := _check_view(stage, expected_room)
+	_check_image_edge(stage, false)
+	assert(absf(right_view.end.x - (room["rect"] as Rect2).end.x) < 2.1)
+
+func _jump_to(player: Player, target_x: float, double_jump := false) -> void:
+	var direction := &"move_right" if target_x > player.position.x else &"move_left"
+	Input.action_press(direction)
+	Input.action_press(&"jump")
+	await _frames(1)
+	Input.action_release(&"jump")
+	for i in range(160):
+		if double_jump and i == 19:
+			Input.action_press(&"jump")
+		if i == 20:
+			Input.action_release(&"jump")
+		if absf(player.position.x - target_x) < 6.0:
+			Input.action_release(direction)
 		await _frames(1)
-		_check_view(stage)
-		for enemy in get_nodes_in_group("enemies"):
-			if enemy is BossEvilGenius:
-				enemy.set_physics_process(false)
-		if (player.global_position.x - x) * direction >= 0.0:
+		if player.is_on_floor() and i > 15:
+			break
+	Input.action_release(direction)
+	Input.action_release(&"jump")
+	assert(not player.dead and player.is_on_floor(),
+			"Jump toward %.1f ended at %.1f, %.1f (dead=%s)" % [target_x, player.position.x, player.position.y, str(player.dead)])
+
+func _walk_to(player: Player, target_x: float) -> void:
+	var direction := signf(target_x - player.position.x)
+	var action: StringName = &"move_right" if direction > 0.0 else &"move_left"
+	var limit := ceili(absf(target_x - player.position.x) / Player.SPEED * 60.0) + 120
+	Input.action_press(action)
+	for i in range(limit):
+		await _frames(1)
+		if (player.position.x - target_x) * direction >= 0.0:
 			break
 	Input.action_release(action)
 	await _frames(2)
-	assert(absf(player.global_position.x - x) <= Player.SPEED / 60.0 + 1.0, "Walking target %.2f, actual %.2f, velocity %s, room %d" % [x, player.global_position.x, player.velocity, stage.get("bichema_background_index")])
+	assert(absf(player.position.x - target_x) <= Player.SPEED / 60.0 + 1.0,
+			"Walk stopped at %.1f; expected %.1f" % [player.position.x, target_x])
 
 func _check_jump(stage: Node, index: int) -> void:
 	var player := stage.get("player") as Player
@@ -75,117 +111,164 @@ func _check_jump(stage: Node, index: int) -> void:
 		assert(absf(view.get_center().y - camera_y) < 1.1, "Jumping and double-jumping must not pan beyond the full-height painting")
 	assert(highest_feet < initial_feet - 100.0 and player.is_on_floor(), "Coverage must be exercised through an actual airborne jump and landing")
 
-func _check_pub_landing(stage: Node, feet_offset: float) -> void:
-	var pub: Dictionary = stage.get("bichema_rooms")[1]
-	var platforms: Array = pub["platforms"]
-	assert(not platforms.is_empty(), "The pub's painted ledges must be playable")
-	var ledge: Rect2 = platforms[0]
-	assert(ledge.position.y < _floor_y - 2.0, "The pub landing must exercise a raised painted ledge, not the ground")
-	var player := stage.get("player") as Player
-	player.global_position = Vector2(ledge.get_center().x, ledge.position.y - feet_offset - 100.0)
-	player.velocity = Vector2.ZERO
-	var landed := false
-	for i in range(120):
-		await _frames(1)
-		_check_view(stage, 1)
-		if player.is_on_floor():
-			landed = true
-			break
-	assert(landed and absf(_feet_y(player) - ledge.position.y) < 1.1, "The real player must land with feet on the pub's painted platform top")
-	assert(player.global_position.x > ledge.position.x and player.global_position.x < ledge.end.x)
+func _transition(route: BichemaRoute, player: Player, area: int, next_area: int, exit_x: float) -> void:
+	var truck_start_x := route.truck.position.x
+	player.position = Vector2(exit_x, 564.0)
+	route.update(0.0)
+	assert(route.transitioning and player.controls_locked, "Area exits must use the locked fade transition")
+	if next_area == 2:
+		await _frames(80)
+		assert(route.truck.visible and route.truck.position.x > truck_start_x,
+				"The Tacoma must drive into the Tacoma Brothers' area")
+		await _frames(130)
+	else:
+		await _frames(75)
+	assert(route.area_index == next_area and not route.transitioning and not player.controls_locked)
+	if next_area == 2:
+		assert(route.tacoma_arrived and not route.truck.visible
+				and route.room_enemies[2][0].visible and route.room_enemies[2][1].visible,
+				"The brothers must disembark only after the Tacoma arrives")
+		var view: Rect2 = player.get_viewport().get_visible_rect()
+		for enemy in route.room_enemies[2]:
+			if enemy is TacomaBro:
+				var screen_x: float = (enemy as TacomaBro).get_global_transform_with_canvas().origin.x
+				assert(screen_x >= view.position.x + 24.0 and screen_x <= view.end.x - 24.0,
+						"Both Tacoma Bros must fit in camera after their entrance")
 
 func _run() -> void:
+	GameSettings.loaded = true
+	GameSettings.music_on = false
+	GameSettings.sfx_on = false
 	assert(change_scene_to_file("res://scenes/bichema_level.tscn") == OK)
-	await _frames(3)
+	await _frames(4)
 	var stage := current_scene
 	var player := stage.get("player") as Player
+	var route := stage.get("bichema_route") as BichemaRoute
 	player.health = 10000
 	for enemy in get_nodes_in_group("enemies"):
 		enemy.set_physics_process(false)
-	await _frames(60)
-	assert(player.is_on_floor())
-	_floor_y = _feet_y(player)
-	var feet_offset := _floor_y - player.global_position.y
+	await _frames(30)
+	assert(route.AREAS.size() == 6 and YeralRoute.AREAS.size() == 6)
+	for i in range(5):
+		assert(route.AREAS[i].position.x == YeralRoute.AREAS[i].position.x
+				and route.AREAS[i].size.x == YeralRoute.AREAS[i].size.x
+				and route.AREAS[i].position.y == 0.0,
+				"The route must keep Yeral's horizontal gates while staying on the painted Bichema map")
+	assert(route.AREAS[5].end.x == YeralRoute.AREAS[5].end.x and route.AREAS[5].position.y == 0.0)
 	var rooms: Array = stage.get("bichema_rooms")
-	assert(rooms.size() == 3, "Stage two must contain plaza, pub and factory, not separate level-select stages")
+	assert(rooms.size() == 4, "The route reuses the complete factory painting once to match stage length")
 	for i in range(rooms.size()):
 		var room: Dictionary = rooms[i]
 		var texture: Texture2D = room["texture"]
-		assert(texture.get_image().detect_alpha() == Image.ALPHA_NONE, "The full paintings must be opaque, not expose a backstop through transparent bands")
+		assert(texture.get_image().detect_alpha() == Image.ALPHA_NONE, "Keep the supplied paintings opaque and complete")
 		if i > 0:
-			var previous: Rect2 = rooms[i - 1]["rect"]
-			var rect: Rect2 = room["rect"]
-			assert(is_equal_approx(previous.end.x, rect.position.x), "Rooms must meet without a world-space gap")
+			assert(is_equal_approx((rooms[i - 1]["rect"] as Rect2).end.x, (room["rect"] as Rect2).position.x),
+					"Complete room paintings must meet without gaps")
+	assert((rooms[2]["texture"] as Texture2D).resource_path == (rooms[3]["texture"] as Texture2D).resource_path)
+	assert(route.AREAS[5].end.x == YeralRoute.AREAS[5].end.x
+			and stage.get("arena_right") == YeralRoute.AREAS[5].end.x,
+			"Bichema's route and boss arena must match Yeral's 8320 px length")
+	assert(route.room_enemies[2].size() == 2)
+	assert(route.truck.texture.resource_path == "res://assets/tacoma_truck.png",
+			"The entrance must use the Tacoma sprite extracted from the supplied sheet")
+	var capi: TacomaBro
+	var ludo: TacomaBro
+	for enemy in route.room_enemies[2]:
+		if enemy is TacomaBro and enemy.bro_name == &"capi":
+			capi = enemy
+		elif enemy is TacomaBro and enemy.bro_name == &"ludo":
+			ludo = enemy
+	assert(capi != null and capi.sergeant and capi.health == GameSettings.scale_health(12))
+	assert(ludo != null and not ludo.sergeant)
+	assert(not route.tacoma_arrived and not route.truck.visible and not capi.visible and not ludo.visible,
+			"The Tacoma and its riders must wait hidden until their entrance begins")
+	assert(capi.sprite.sprite_frames.has_animation(&"idle") and capi.sprite.sprite_frames.has_animation(&"run")
+			and capi.sprite.sprite_frames.has_animation(&"attack"))
 
-	var gates: Array = stage.get("gates").duplicate()
-	assert(not gates.is_empty(), "The longer stage must retain mob gates")
-	for gate in gates:
-		var gate_x: float = gate["x"]
-		var living: Array = []
-		for enemy in gate["bugs"]:
-			if is_instance_valid(enemy) and not enemy.dead:
-				living.append(enemy)
-		assert(not living.is_empty(), "Each closed gate must protect a live mob encounter")
-		# Leaving one survivor distinguishes an all-mobs gate from a first-kill gate.
-		for i in range(living.size() - 1):
-			living[i].take_damage(10000)
-		player.global_position = Vector2(gate_x - 70.0, _floor_y - feet_offset)
-		player.velocity = Vector2.ZERO
-		await _frames(90)
-		var blocked_index: int = stage.get("bichema_background_index")
-		Input.action_press(&"move_right")
-		await _frames(30)
-		Input.action_release(&"move_right")
-		assert(player.global_position.x < gate_x, "A surviving mob must still physically block the player at its gate")
-		var blocked_view := _check_view(stage, blocked_index)
-		var room_rect: Rect2 = rooms[blocked_index]["rect"]
-		assert(blocked_view.end.x <= maxf(gate_x, room_rect.position.x + blocked_view.size.x) + 1.1, "An uncleared gate must also clamp the camera's forward view")
-		living.back().take_damage(10000)
-		await _frames(5)
-		await _walk_to(stage, gate_x + 1.0)
-	assert(stage.get("gates").is_empty() and not stage.get("boss_started"), "Clearing mob gates must unlock traversal, not prematurely start the factory boss")
+	var boss_trigger_x := float(stage.get("boss_trigger_x"))
+	stage.set("boss_trigger_x", INF)
+	await _set_view(stage, 0, 40.0, 564.0, 0)
+	await _set_view(stage, 1, 2206.0, 564.0, 1)
+	await _set_view(stage, 2, 4011.0, 564.0, 2)
+	await _set_view(stage, 4, 6177.0, 564.0, 3)
+	stage.set("boss_trigger_x", boss_trigger_x)
 
-	for i in range(rooms.size()):
-		var rect: Rect2 = rooms[i]["rect"]
-		if i == 0:
-			player.global_position = Vector2(rect.position.x + 40.0, _floor_y - feet_offset)
-			player.velocity = Vector2.ZERO
-			await _frames(90)
-		else:
-			await _walk_to(stage, rect.position.x + 40.0)
-			_check_view(stage, i)
-			await _walk_to(stage, rect.position.x - 40.0)
-			_check_view(stage, i - 1)
-			await _walk_to(stage, rect.position.x + 40.0)
-		var left_view := _check_view(stage, i)
-		_check_image_edge(stage, true)
-		assert(absf(left_view.position.x - rect.position.x) < 2.1, "Walking to the room's left end must reveal the painting's leftmost details")
-		await _check_jump(stage, i)
-		if i == 1:
-			await _check_pub_landing(stage, feet_offset)
-			await _check_jump(stage, i)
-			player.global_position = Vector2(rect.position.x + 40.0, _floor_y - feet_offset)
-			player.velocity = Vector2.ZERO
-			await _frames(90)
-		var end_x := rect.end.x - 40.0
-		if i == rooms.size() - 1:
-			# The arena reveals the right edge before Ema's solid body blocks further walking.
-			end_x = float(stage.get("boss_trigger_x")) + 100.0
-		await _walk_to(stage, end_x)
-		var right_view := _check_view(stage, i)
-		_check_image_edge(stage, false)
-		assert(absf(right_view.end.x - rect.end.x) < 2.1, "Walking to the room's right end must reveal the painting's rightmost details")
-		assert(right_view.position.x > left_view.position.x + 1.0, "The camera must scroll across the painting, not hold a fixed cropped background")
-		await _check_jump(stage, i)
+	route._set_area(0)
+	player.position = Vector2(100.0, 564.0)
+	player.velocity = Vector2.ZERO
+	await _frames(3)
+	player.position.x = 1200.0
+	route.update(0.0)
+	assert(route.area_index == 0 and not route.transitioning, "Live plaza guards must hold the first exit")
+	_clear(route, 0)
+	player.position = Vector2(100.0, 564.0)
+	player.velocity = Vector2.ZERO
+	await _frames(3)
+	await _walk_to(player, 1100.0)
+	assert(player.is_on_floor() and absf(player.position.y - 564.0) < 1.0,
+			"The plaza route must follow its painted ground without an unexplained drop")
+	await _transition(route, player, 0, 1, 1200.0)
+	assert(player.is_on_floor() and absf(player.position.y - 564.0) < 1.0)
 
+	player.position.x = 2480.0
+	route.update(0.0)
+	assert(route.area_index == 1 and not route.transitioning, "Live pub guards must hold the second exit")
+	player.position = Vector2(1370.0, 564.0)
+	player.velocity = Vector2.ZERO
+	await _frames(2)
+	_clear(route, 1)
+	var pub_ledge: Rect2 = stage.get("bichema_rooms")[1]["platforms"][2]
+	var pub_landing_x := pub_ledge.position.x + 4.0
+	await _walk_to(player, 2300.0)
+	await _jump_to(player, pub_landing_x, true)
+	assert(absf(player.position.y + 36.0 - pub_ledge.position.y) < 2.0,
+			"Keep the reachable painted pub ledge aligned to the level map")
+	await _walk_to(player, 2300.0)
+	assert(player.is_on_floor() and absf(player.position.y - 564.0) < 1.0)
+	await _transition(route, player, 1, 2, 2480.0)
+	assert(player.is_on_floor() and absf(player.position.y - 564.0) < 1.0)
+
+	player.position = Vector2(4080.0, 564.0)
+	route.update(0.0)
+	assert(route.area_index == 2 and not route.transitioning, "Both Tacoma Bros must block the Sergeant-room exit")
+	player.position = Vector2(3800.0, 564.0)
+	player.velocity = Vector2.ZERO
+	await _frames(2)
+	_clear(route, 2)
+	await _walk_to(player, 4000.0)
+	assert(player.is_on_floor() and absf(player.position.y - 564.0) < 1.0,
+			"The pub-to-factory path must remain supported across the map seam")
+	await _transition(route, player, 2, 3, 4080.0)
+	assert(player.is_on_floor() and absf(player.position.y - 564.0) < 1.0)
+
+	var factory_ledge: Rect2 = stage.get("bichema_rooms")[2]["platforms"][1]
+	var factory_landing_x := factory_ledge.position.x + 20.0
+	await _jump_to(player, factory_landing_x)
+	assert(absf(player.position.y + 36.0 - factory_ledge.position.y) < 2.0,
+			"Use the factory's painted upper walkway instead of an arbitrary pit")
+	await _walk_to(player, 5300.0)
+	assert(player.is_on_floor() and absf(player.position.y - 564.0) < 1.0,
+			"The factory's mapped ground must catch the player after the ledge")
+	await _transition(route, player, 3, 4, 5360.0)
+	assert(player.is_on_floor() and absf(player.position.y - 564.0) < 1.0)
+
+	player.position.x = 6900.0
+	route.update(0.0)
+	assert(route.area_index == 4 and not route.transitioning, "The final factory guards must hold the last approach")
+	_clear(route, 4)
+	await _transition(route, player, 4, 5, 6900.0)
+	assert(not stage.get("boss_started"),
+			"Ema started before the final trigger: x=%.1f trigger=%.1f area=%d" % [player.position.x, stage.get("boss_trigger_x"), route.area_index])
+	player.position.x = float(stage.get("boss_trigger_x")) + 1.0
+	await _frames(3)
 	var factory: Rect2 = rooms.back()["rect"]
-	var trigger: float = stage.get("boss_trigger_x")
-	assert(trigger > factory.position.x and trigger < factory.end.x and is_equal_approx(float(stage.get("arena_right")), factory.end.x), "The boss entrance and final playable boundary must be inside the complete factory")
-	assert(player.global_position.x > trigger and stage.get("boss_started"), "Traversing the full stage must reach and trigger the relocated factory boss")
+	assert(stage.get("boss_started") and factory.position.x < stage.get("boss_trigger_x")
+			and stage.get("boss_trigger_x") < factory.end.x)
 	var boss: BossEvilGenius
 	for enemy in get_nodes_in_group("enemies"):
 		if enemy is BossEvilGenius:
 			boss = enemy
-	assert(boss != null and not boss.costume_form and boss.global_position.x > trigger and boss.global_position.x < factory.end.x, "The full factory must lead to the original first-form Ema encounter")
-	print("PASS: three complete opaque paintings; actual viewport coverage/aspect/floor at both ends and double-jump extremes; world scrolling; bidirectional room crossings; all-mob gates; real pub landing; final-factory boss entrance")
+	assert(boss != null and boss.global_position.x > float(stage.get("boss_trigger_x"))
+			and boss.global_position.x < factory.end.x)
+	print("PASS: complete paintings align to one safe ground path; six stage-one gates; Tacoma drive-in/disembark; real pub/factory ledges; final factory boss entry")
 	quit()
