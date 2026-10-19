@@ -12,7 +12,8 @@ func _run() -> void:
 	GameSettings.music_on = false
 	GameSettings.sfx_on = false
 	assert(ProjectSettings.get_setting("application/config/name") == "El Señor De La Noche")
-	assert(StoryIntro.STORY.contains("El Señor De La Noche"))
+	assert(StoryIntro.STORY.begins_with("BANSHEE: THE MOVIE IS OVER"))
+	assert(StoryIntro.STORY.contains('"El Señor de la Noche."'))
 	assert(not StoryIntro.STORY.to_lower().contains("night unc"))
 	var menu := load("res://scenes/main_menu.tscn").instantiate() as Control
 	root.add_child(menu)
@@ -47,9 +48,12 @@ func _run() -> void:
 	assert(get_nodes_in_group("enemies").is_empty(), "Gameplay must not run behind the intro")
 	var intro := current_scene as StoryIntro
 	assert(intro.crawl_height > 2000.0, "The full story must be laid out, not clipped")
-	assert(intro.STORY.contains("Laravel 13^3+"))
-	assert(intro.STORY.contains("ARAM God") and intro.STORY.contains("Penema"))
-	assert(intro.STORY.ends_with("the erection of a monument to his new rule."))
+	var story_label := intro.get_child(0).get_child(0) as Label
+	assert(story_label.text == StoryIntro.STORY, "Render the supplied story without the previous title or lore")
+	assert(intro.STORY.contains("Emanuel Vega") and intro.STORY.contains("El Bichotema"))
+	assert(intro.STORY.contains("La Metrocity") and intro.STORY.replace("\r", "").contains("\n\nBANSHEE.\n\n"))
+	assert(not intro.STORY.contains("Penema") and not intro.STORY.contains("The Super Intelligence"))
+	assert(intro.STORY.ends_with("Every movie must eventually end, and when the lights come on, everyone must face reality."))
 	var before := intro.scroll_position
 	intro._process(1.0)
 	assert(is_equal_approx(intro.scroll_position - before, StoryIntro.SCROLL_SPEED))

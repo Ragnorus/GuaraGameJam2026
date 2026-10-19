@@ -119,6 +119,8 @@ Run `Godot --headless --path . --fixed-fps 60 --script res://tests/bichema_backg
 
 ## Menus, difficulty and score
 
+- The opening story is now the supplied **BANSHEE: THE MOVIE IS OVER** narrative about La Metrocity, El Bichotema's pink-truffle illusion and BANSHEE's fight to end it. It replaces the previous Penema story and heading while retaining the gold perspective crawl, orchestral music, automatic completion and skip controls.
+
 - Ema's final arena now matches Yeral's three-platform layout: 240px-wide lower side platforms at y=470 and a raised center at y=350, above the unchanged safe floor. One-way capital platforms and landing markers render behind the characters. `tests/ema_boss_room.gd` exercises real platform traversal and floor double jumps over both Ema forms in both directions, without contact damage.
 
 - Enemy loot is spawned deferred from combat callbacks, avoiding Godot physics-query errors when a projectile kills a mob. `tests/loot_physics.gd` exercises real collision signals and projectile kills. Regression shutdown uses `tests/test_cleanup.gd` to stop/free scene audio and let the real mixer release playback even with accelerated fixed-FPS tests. Player animation tests exclude Mecha pickups; background traversal tests use the continuous camera/crossfade contract and held double jumps to the actual painted pub/factory ledges.

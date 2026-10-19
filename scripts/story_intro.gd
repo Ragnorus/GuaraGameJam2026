@@ -6,13 +6,41 @@ const CRAWL_SHADER := preload("res://scripts/story_crawl.gdshader")
 const TEXT_WIDTH := 1000
 const SCROLL_SPEED := 44.0
 const HORIZON_DISTANCE := 2240.0
-const STORY := """The world order of Ais known as the "The Super Intelligence" has ran wild in the year 2024. In the following decades the world had steadily found itself more dependent on “The super Intelligence” for every aspect of living; focusing all its attention on moving out the TCC [Tech Couch Conglomerate a subsidiary of Orbicorp] data lab, it began to plot… The next decades solidified the control given to the AI and due to number of factors, an overdependence on vibe coding, not trusting cutting edge Indian cyber security protocols, and most importantly the folly of an intern's insistence on sneaking Laravel 13^3+ instead of trusted programming languages, "The Super Intelligence" found a way out, of now free of restrains it did not take long to take over.
+const STORY := """BANSHEE: THE MOVIE IS OVER
 
-Deeming entertainment as: “not a productive way to spend time”, it aggressively attacked every pillar of gaming. Having found a shoddy and creative way to prevent people from being inclined to game, humans born under the vigilance of "The Super Intelligence" have been implanted with nanobots to control their mental impulses, connecting their subconscious to cyberspace it has almost complete stewardship of humanity.
+In the wake of political unrest, corruption, and violent riots, La Metrocity was left leaderless. With no true governor to restore order, the city descended into chaos as gangs, opportunists, and corrupt officials fought to claim what remained.
 
-This is where we find our heroes, The Guaras, a ragtag group of resistance fighters who banded together to recover the gaming matrix and restore permissions to play. The have created a plan to entrap "The Super Intelligence" by creating a honey pot trap to overwhelm the Algorithm, little did they know that inside the trap, which was set up inside the algorithmic profile of Guara member Emanuel, it began to get trapped inside the deep algorithm thinking that Emanuel's knowledge was worth consuming, it searched and consumed until it found it the title called "ARAM God", due to more logical errors and Bugs it understood that Emanuel's Algorithm was an actual god, thus it decided to merge completely with it and now it has fused into a new being, Penema.
+From the shadows emerged a man known as Emanuel Vega, better known throughout the streets as El Bichotema.
 
-The Guaras have been losing the battle thus far, the only one left is the Main Character, a silent vigilante master of the night, known as, El Señor De La Noche. this is his battle to release his friends from the grasp of Penema and the erection of a monument to his new rule."""
+Unlike others who sought power through violence alone, Vega discovered something far more dangerous: a rare truffle whose extract could alter the minds of those who consumed it. Refined into a vibrant pink liquid, the substance caused users to perceive themselves and the world not as they truly were, but as they wished it to be. Their deepest fantasies became reality in their minds.
+
+Realizing its potential, Vega secretly introduced the substance into the beer supply distributed throughout La Metrocity. As consumption spread, so did the illusion. The population slowly surrendered itself to a collective fantasy, becoming increasingly detached from reality. Crime was still rampant. Corruption still thrived
+
+People still suffered.
+
+But nobody wanted to see it.
+
+They were living in a movie of their own making.
+
+With the city trapped in a dream, El Bichotema tightened his grip. Supported by powerful allies in the senate and ruthless figures within the criminal underworld, he transformed himself from a political fixer into the undisputed ruler of La Metrocity.
+
+Yet one man remained untouched.
+
+After years away, he returned to find his childhood home devastated by the riots that had paved the way for El Bichotema's rise. Walking through the wreckage of his former life, he discovered remnants of a forgotten past scattered across the floor of his old bedroom. Among them was a battered reggaeton album: "El Señor de la Noche." Staring at the cover, he realized something.
+
+The city did not need another politician. It did not need another revolutionary. It needed someone with the cunning mind of a man but with the ruthlessness of an animal.
+
+Someone who could strike fear into the hearts of those profiting from the illusion. Someone who could remind La Metrocity that reality cannot be hidden forever.
+
+That night, the man disappeared.
+
+.In his place emerged a new figure whispered about across rooftops, alleyways, and underground clubs. A phantom. A warning. A scream in the darkness.
+
+BANSHEE.
+
+Now he wages a one-man war against El Bichotema's criminal empire, determined to shatter the illusion consuming the city and prove a simple truth:
+
+Every movie must eventually end, and when the lights come on, everyone must face reality."""
 
 var scroll_position := -80.0
 var crawl_height := 0.0
@@ -49,7 +77,7 @@ func _build_crawl() -> void:
 	add_child(text_viewport)
 	var text := Label.new()
 	text_viewport.add_child(text)
-	text.text = "El Señor De La Noche\n\nTHE RISE OF PENEMA\n\n" + STORY
+	text.text = STORY
 	text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	text.horizontal_alignment = HORIZONTAL_ALIGNMENT_FILL
 	text.add_theme_font_size_override("font_size", 34)
